@@ -39,11 +39,11 @@ Register [here](http://www.imgt.org/HighV-QUEST/login.action)
 # Installation
 
 Note: Jobs should be run in the directory containing the pipeline so that relative paths are used. 
-•	Ensure access to Local_immune_repertoire_annotator_1.0.py from:
-o	ANNOTATION_OF_TCRs_CDR3_REGIONS/Local_immune_repertoire_annotator_1.0.py
+*	Ensure access to Local_immune_repertoire_annotator_1.0.py from:
+* ANNOTATION_OF_TCRs_CDR3_REGIONS/Local_immune_repertoire_annotator_1.0.py
 ## 1.	FLASH: 
-•	Download current version from [here](https://ccb.jhu.edu/software/FLASH/). 
-•	Unpack. 
+* Download current version from [here](https://ccb.jhu.edu/software/FLASH/). 
+* Unpack. 
 ## 2.	CD-HIT(3):
 * Download current CD-HIT from [here](http://bioinformatics.org/cd-hit/).  
 * Unpack the file with: 
