@@ -2,7 +2,7 @@
 
 This Repository contains the code required to preform the BCR/TCR pre-processing pipeline for NGS data based on the IsoTyper and TCR protocols developed in the Bashford-Rogers Lab. For handling multiple samples we provide two solutions: a) a python based wrapper for job submission using bsub (Processing_sequences_large_scale.py) and b) a standard job submission bash script using qsub (BCR_TCR_Wrapper_Cluster.sh). The latter is preferable for running on the BMRC cluster (Recomp) as it utilises the module system and could be easily adapted for another cluster architecture. 
 
-*An indepth guide to installation/using the pipeline can be found in the BCR_TCR_preprocessingmanual2.0.pdf* 
+*An indepth guide to installation/using the pipeline can be found in the [BCR_TCR_preprocessingmanual2.0.pdf]()* 
 
 ## Summary 
 ### Stage 1: 
@@ -60,36 +60,36 @@ o	ANNOTATION_OF_TCRs_CDR3_REGIONS/Local_immune_repertoire_annotator_1.0.py
 ## 5.	Python Modules:
 Ensure that the following python modules are installed.
 **Note for Rescomp (BMRC, Oxford) users: These modules are already available using the Rescomp ‘module load’ system and need not be installed locally. However to enable access to these modules (load) you MUST run analysis using the BCR_TCR_Wrapper_Cluster.sh job submission script.** 
-•	Sys
-•	Collections
-•	Os
-•	Operator
-•	networkx 
+* Sys
+* Collections
+* Os
+* Operator
+* networkx 
 ## 6.	R Modules (optional analysis): 
 Ensure that the following R modules are installed: 
-•	tidyverse
-•	ggplot2
-•	foreach
-•	doParallel
-•	gridExtra
-•	cowplot  
+* tidyverse
+* ggplot2
+* foreach
+* doParallel
+* gridExtra
+* cowplot  
 ## 7.	Locations of Dependencies: 
-•	To ensure the pipeline can call the dependencies edit: “BCR_TCR_PROCESSING_PIPELINE/Locations_of_called_programmes.txt” file, providing the full path to correct locations of your versions of: 
-o	Reference library of genes and primers (already compiled for you)
-o	CD-HIT (from above)
-o	FLASH (from above)
-o	Quasr (4) (from above)
-o	Blast (from above)
+* To ensure the pipeline can call the dependencies edit: “BCR_TCR_PROCESSING_PIPELINE/Locations_of_called_programmes.txt” file, providing the full path to correct locations of your versions of: 
+* Reference library of genes and primers (already compiled for you)
+* CD-HIT (from above)
+* FLASH (from above)
+* Quasr (4) (from above)
+*	Blast (from above)
 ## 8.	Create Log Files Directory
-•	When using the BCR_TCR_Wrapper_Cluster.sh wrapper all log files will be output to a directory called COMMANDLOGS within the current working directory (directory containing pipeline). However this must be created prior to running the job submission wrapper using the following bash script e.g.:  
+* When using the BCR_TCR_Wrapper_Cluster.sh wrapper all log files will be output to a directory called COMMANDLOGS within the current working directory (directory containing pipeline). However this must be created prior to running the job submission wrapper using the following bash script e.g.:  
 `cd path_to/BCR_TCR_PROCESSING_PIPELINE`
 `mkdir COMMANDLOGS`
 
 
 # Author Contribution 
 
-Rachael J. M. Bashford-Rogers developed the python based TCR/BCR repertoire analysis pipeline and User Guide. 
-Lauren E. Overend developed the bash wrapper, R functions and helped write documentation. 
+* Rachael J. M. Bashford-Rogers developed the python based TCR/BCR repertoire analysis pipeline and User Guide. 
+* Lauren E. Overend developed the bash wrapper, R functions and helped write documentation. 
 
 # References 
 
