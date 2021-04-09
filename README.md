@@ -79,6 +79,9 @@ o	Quasr (4) (from above)
 o	Blast (from above)
 ## 8.	Create Log Files Directory
 •	When using the BCR_TCR_Wrapper_Cluster.sh wrapper all log files will be output to a directory called COMMANDLOGS within the current working directory (directory containing pipeline). However this must be created prior to running the job submission wrapper using the following bash script e.g.:  
+`cd path_to/BCR_TCR_PROCESSING_PIPELINE
+mkdir COMMANDLOGS`
+
 
 # Author Contribution 
 
