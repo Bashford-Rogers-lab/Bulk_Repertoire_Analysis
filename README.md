@@ -42,21 +42,24 @@ Note: Jobs should be run in the directory containing the pipeline so that relati
 •	Ensure access to Local_immune_repertoire_annotator_1.0.py from:
 o	ANNOTATION_OF_TCRs_CDR3_REGIONS/Local_immune_repertoire_annotator_1.0.py
 ## 1.	FLASH: 
-•	Download current version from https://ccb.jhu.edu/software/FLASH/
+•	Download current version from [here](https://ccb.jhu.edu/software/FLASH/). 
 •	Unpack. 
 ## 2.	CD-HIT(3):
-•	Download current CD-HIT from: http://bioinformatics.org/cd-hit/ 
-•	Unpack the file with “tar xvf cd-hit-XXX.tar.gz --gunzip”
-•	Change dir by “cd cd-hit-2006”
-•	Compile the programs by “make”
+•	Download current CD-HIT from [here](http://bioinformatics.org/cd-hit/).  
+•	Unpack the file with: 
+`tar xvf cd-hit-XXX.tar.gz --gunzip`
+•	Change dir by: 
+`cd cd-hit-2006`
+•	Compile the program by: 
+`make`
 ## 3.	Quasr(4):
-•	Download current version from: https://sourceforge.net/projects/quasr/
+•	Download current version from [here](https://sourceforge.net/projects/quasr/). 
 ## 4.	Blast:
-•	Download current version from: https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download 
+•	Download current version from [here](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).  
 •	For users of Rescomp (BMRC, Oxford) please not this is already installed so you do not need to perform this stage. 
 ## 5.	Python Modules:
 Ensure that the following python modules are installed.
-Note for Rescomp (BMRC, Oxford) users: These modules are already available using the Rescomp ‘module load’ system and need not be installed locally. However to enable access to these modules (load) you MUST run analysis using the BCR_TCR_Wrapper_Cluster.sh job submission script. 
+**Note for Rescomp (BMRC, Oxford) users: These modules are already available using the Rescomp ‘module load’ system and need not be installed locally. However to enable access to these modules (load) you MUST run analysis using the BCR_TCR_Wrapper_Cluster.sh job submission script.** 
 •	Sys
 •	Collections
 •	Os
@@ -71,7 +74,7 @@ Ensure that the following R modules are installed:
 •	gridExtra
 •	cowplot  
 ## 7.	Locations of Dependencies: 
-•	To ensure the pipeline can call the dependencies edit: “BCR_TCR_PROCESSING_PIPELINE/ Locations_of_called_programmes.txt” file, providing the full path to correct locations of your versions of: 
+•	To ensure the pipeline can call the dependencies edit: “BCR_TCR_PROCESSING_PIPELINE/Locations_of_called_programmes.txt” file, providing the full path to correct locations of your versions of: 
 o	Reference library of genes and primers (already compiled for you)
 o	CD-HIT (from above)
 o	FLASH (from above)
