@@ -121,7 +121,7 @@ id, dir = Get_sample_files(batch_file) # samples.post file as argument
 
 # Edited by LEO to run on command line without need to edit. 
 output_dir = args[2]
-path_to_IMGTfiles = output_dir + '/ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/'
+path_to_IMGTfiles = output_dir + 'ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/'
 batch_name = os.listdir(path_to_IMGTfiles) 
 batch_name1 = []
 for i in range(len(batch_name)): 
