@@ -34,7 +34,7 @@ a.	If this is abnormally low (potentially due to large clonal expansion) conside
 ## Register for IMGT
 As part of the analysis pipeline fatsq files will be annotated using IMGT/HighV-Quest – the gold standard for TCR and BCR repertoire analysis. However to use the high-throughput (HighV) version you must register a user account. All new users must be approved and accounts are then activated by an administrator. Therefore we recommend registering as soon as possible to avoid hold-ups later on. 
 
-Register here (new user): http://www.imgt.org/HighV-QUEST/login.action 
+Register [here](http://www.imgt.org/HighV-QUEST/login.action) 
 
 # Installation
 
