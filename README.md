@@ -92,10 +92,10 @@ Lauren E. Overend developed the bash wrapper, R functions and helped write docum
 
 If you find Immune-Network-Generation useful, please cite reference #2 (R. J. Bashford-Rogers et al., 2019). 
 
-*	1.	R. J. Bashford-Rogers et al., Network properties derived from deep sequencing of human B-cell receptor repertoires delineate B-cell populations. Genome Res 23, 1874-1884 (2013).
-* 2.	R. J. M. Bashford-Rogers et al., Analysis of the B cell receptor repertoire in six immune-mediated diseases. Nature,  (2019).
-* 3.	W. Li, A. Godzik, Cd-hit: a fast program for clustering and comparing large sets of protein or nucleotide sequences. Bioinformatics 22, 1658-1659 (2006).
-* 4.	S. J. Watson et al., Viral population analysis and minority-variant detection using short read next-generation sequencing. Philos Trans R Soc Lond B Biol Sci 368, 20120205 (2013).
-* 5.	T. Magoc, S. L. Salzberg, FLASH: fast length adjustment of short reads to improve genome assemblies. Bioinformatics 27, 2957-2963 (2011).
+1.	R. J. Bashford-Rogers et al., Network properties derived from deep sequencing of human B-cell receptor repertoires delineate B-cell populations. Genome Res 23, 1874-1884 (2013).
+2.	R. J. M. Bashford-Rogers et al., Analysis of the B cell receptor repertoire in six immune-mediated diseases. Nature,  (2019).
+3.	W. Li, A. Godzik, Cd-hit: a fast program for clustering and comparing large sets of protein or nucleotide sequences. Bioinformatics 22, 1658-1659 (2006).
+4.	S. J. Watson et al., Viral population analysis and minority-variant detection using short read next-generation sequencing. Philos Trans R Soc Lond B Biol Sci 368, 20120205 (2013).
+5.	T. Magoc, S. L. Salzberg, FLASH: fast length adjustment of short reads to improve genome assemblies. Bioinformatics 27, 2957-2963 (2011).
 
 
