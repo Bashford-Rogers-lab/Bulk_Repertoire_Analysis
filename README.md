@@ -1,4 +1,4 @@
-# Bulk_Repertoire_Analysis
+# Bulk Repertoire Analysis
 
 This Repository contains the code required to preform the BCR/TCR pre-processing pipeline for NGS data based on the IsoTyper and TCR protocols developed in the Bashford-Rogers Lab. For handling multiple samples we provide two solutions: a) a python based wrapper for job submission using bsub (Processing_sequences_large_scale.py) and b) a standard job submission bash script using qsub (BCR_TCR_Wrapper_Cluster.sh). The latter is preferable for running on the BMRC cluster (Recomp) as it utilises the module system and could be easily adapted for another cluster architecture. 
 
