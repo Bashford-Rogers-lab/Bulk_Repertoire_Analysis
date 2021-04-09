@@ -45,18 +45,18 @@ o	ANNOTATION_OF_TCRs_CDR3_REGIONS/Local_immune_repertoire_annotator_1.0.py
 •	Download current version from [here](https://ccb.jhu.edu/software/FLASH/). 
 •	Unpack. 
 ## 2.	CD-HIT(3):
-•	Download current CD-HIT from [here](http://bioinformatics.org/cd-hit/).  
-•	Unpack the file with: 
+* Download current CD-HIT from [here](http://bioinformatics.org/cd-hit/).  
+* Unpack the file with: 
 `tar xvf cd-hit-XXX.tar.gz --gunzip`
-•	Change dir by: 
+* Change dir by: 
 `cd cd-hit-2006`
-•	Compile the program by: 
+* Compile the program by: 
 `make`
 ## 3.	Quasr(4):
-•	Download current version from [here](https://sourceforge.net/projects/quasr/). 
+* Download current version from [here](https://sourceforge.net/projects/quasr/). 
 ## 4.	Blast:
-•	Download current version from [here](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).  
-•	For users of Rescomp (BMRC, Oxford) please not this is already installed so you do not need to perform this stage. 
+* Download current version from [here](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).  
+* **For users of Rescomp (BMRC, Oxford) please not this is already installed so you do not need to perform this stage.** 
 ## 5.	Python Modules:
 Ensure that the following python modules are installed.
 **Note for Rescomp (BMRC, Oxford) users: These modules are already available using the Rescomp ‘module load’ system and need not be installed locally. However to enable access to these modules (load) you MUST run analysis using the BCR_TCR_Wrapper_Cluster.sh job submission script.** 
