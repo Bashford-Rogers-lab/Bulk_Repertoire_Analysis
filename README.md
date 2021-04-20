@@ -66,7 +66,7 @@ Ensure that the following python modules are installed.
 * Operator
 * networkx 
 ## 6.	R Modules (optional analysis): 
-Ensure that the following R modules are installed: 
+Ensure that the following R packages are installed: 
 * tidyverse
 * ggplot2
 * data.table
