@@ -69,10 +69,14 @@ Ensure that the following python modules are installed.
 Ensure that the following R modules are installed: 
 * tidyverse
 * ggplot2
+* data.table
 * foreach
 * doParallel
 * gridExtra
-* cowplot  
+* cowplot 
+* optparse
+* Gvis
+* gtools 
 ## 7.	Locations of Dependencies: 
 * To ensure the pipeline can call the dependencies edit: “BCR_TCR_PROCESSING_PIPELINE/Locations_of_called_programmes.txt” file, providing the full path to correct locations of your versions of: 
 * Reference library of genes and primers (already compiled for you)
