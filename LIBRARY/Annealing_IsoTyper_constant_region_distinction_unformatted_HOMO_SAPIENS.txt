@@ -1,0 +1,10 @@
+IGHA1*01|CH1  g c a t c c c c g a c c a g c c c c a a g g t c t t c c c g c t g a g c c t c t g c a g c a c c c a g c c                                               
+IGHA2*01|CH1  g c a t c c c c g a c c a g c c c c a a g g t c t t c c c g c t g a g c c t c g a c a g c a c c c c c c a                                               
+IGHD*01|CH1 g c a c c c a c c a a g g c t c c g g a t g t g t t c c c c a t c a t a t c a g g g t g c a g a                                                         
+IGHE*01|CH1 g c c t c c a c a c a g a g c c c a t c c g t c t t c c c c t t g a c c c g c t g c t g c a a a a a c                                                   
+IGHG1*01|CH1  g c c t c c a c c a a g g g c c c a t c g g t c t t c c c c c t g g c a c c c t c c t c c a a g a g c a c c t c t g g g g g c a c a g c g g c c c t g g g
+IGHG2*01|CH1  g c c t c c a c c a a g g g c c c a t c g g t c t t c c c c c t g g c g c c c t g c t c c a g g a g c a c c t c c g a g a g c a c a g c c g c c c t g g g
+IGHG3*01|CH1  g c t t c c a c c a a g g g c c c a t c g g t c t t c c c c c t g g c g c c c t g c t c c a g g a g c a c c t c t g g g g g c a c a g c g g c c c t g g g
+IGHG4*01|CH1  g c t t c c a c c a a g g g c c c a t c c g t c t t c c c c c t g g c g c c c t g c t c c a g g a g c a c c t c c g a g a g c a c a g c c g c c c t g g g
+IGHGP*01|CH1  g c c t c c a c c a a g g g c c c a t c g g t c t t c c c c c t g g t g c c c t c c t c c a g g a g c g t c t c t g a g g g c a c a g c g g c c c t g g g
+IGHM*01|CH1 g g g a g t g c a t c c g c c c c a a c c c t t t t c c c c c t c g t c t c c t g t g a                                                                 
