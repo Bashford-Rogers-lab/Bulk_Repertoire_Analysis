@@ -42,10 +42,10 @@ def Get_sample_files(batch_file):
 def Extract_sequences_for_IMGT(id,dir,batch_name):
   dir_use = dir[0]
   extract = True
-  # extract = False
+  #extract = False
   if(extract):
     for batch in batch_name: 
-      IMGT_file_compressed =dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+".txz"
+      IMGT_file_compressed=dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+".txz"
       command = "tar Jxvf "+IMGT_file_compressed+" -C "+dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+"/"
       os.system("mkdir "+dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+"/")
       os.system(command)

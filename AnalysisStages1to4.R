@@ -13,6 +13,7 @@ suppressMessages(library(foreach))
 suppressMessages(library(doParallel))
 suppressMessages(library(gridExtra))
 suppressMessages(library(cowplot))
+suppressMessages(library(gtools))
 
 parser <- OptionParser()
 option_list <- list( 
@@ -40,12 +41,14 @@ if(gene=="IGH"){
 	visualise_constant_region_bcr(results_outputdir, runname)
 	visualise_vj_usage_bcr(results_outputdir, runname)
 	visualise_isoptype_cluster_bcr(results_outputdir, runname)
+	calculate_jaccard_matrix(results_outputdir)
 } 
 
 if(gene=="TCR"){
 	visualise_filtering_tcr(results_outputdir, runname)
 	visualise_vj_usage_tcr(results_outputdir, runname)
 	visualise_isoptype_cluster_tcr(results_outputdir, runname)
+	calculate_jaccard_matrix(results_outputdir)
 } 
 
 ## PIPELINE COMPLETE

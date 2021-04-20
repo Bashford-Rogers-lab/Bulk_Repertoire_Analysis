@@ -323,6 +323,7 @@ def Get_nearest_neighbours(edge_file, merged_cluster_file, seq_file,merged_clust
 
 def IMGT_sequence_trimming_constant_regions(seq_file, IMGT_trimmed_sequence_file, annot_file3):
   seqs,freqs,alias = Get_sequences(seq_file)
+  print IMGT_trimmed_sequence_file
   seq_tree = Tree()
   fh=open(annot_file3,"r")
   for l in fh:
@@ -835,7 +836,6 @@ def Classify_sequences_into_developmental_stages(sample, annot_file, cluster_fil
       out, ind = '',0
   Write_out(out, developmental_classification_file)
   SHM_IGHDM.sort()
-  print SHM_IGHDM
   return()
 
 def Get_cluster_mutation_sharing_stats(cluster_file, annot_file, seq_file, cluster_mutation_sharing_probability,sample):
@@ -1266,7 +1266,7 @@ def Raw_values_Get_network_parameters_per_classificiation_subsample_vertices(sam
   print len(clusters), len(seq_types["ALL"]), "length arrays"
   out="#Id\trepeat\tIsotype\tN reads\tN vertices\tN_clusters\tVertex Gini Index\tCluster Gini Index\tmean_total_cluster_size\tmean_vertex_size\tmax_clust_pop\tmax_vertex_pop\tVertex Reyni\tCluster_Renyi\tThielC1\tThielC2\n"
   ind = 0
-  repeats =1000
+  repeats =5000
   for clas in seq_types:
     if(clas in subsample_depth):
       depth=subsample_depth[clas]
@@ -2611,7 +2611,7 @@ def Subsample_secondary_rearrangments(raw_secondary_rearrangement_file, sample_d
       array.append(["All",sum(freq)])
       id_annotation[id] = array
       total = total+sum(freq)
-  repeats = 1000
+  repeats = 5000
   fh=open(secondary_rearrangement_file_SAMPLED,"w")
   fh.close()
   out = '#sample\tsample_ID\tisotype\tsample depth\tisotype_total\tid_replacement_freq\tuniq_id_replacement_freq\treplacement_v_gene_incidence\treplacement_incidence\n'
@@ -2891,7 +2891,7 @@ def Get_class_overlap_subsample(IMGT_trimmed_sequence_file, class_overlap_file,s
       total_ids = total_ids+[id]*f[i]
       total_isotypes = total_isotypes+[c]*f[i]
   depth_isotype = [50,100,500]
-  repeats = 2000
+  repeats = 5000
   chains = []
   for c in chains_sub: 
     chains.append(c)
@@ -3820,7 +3820,7 @@ cluster_file = input_dir+"NETWORKS/Cluster_CDR3_defined_identities_"+id+".txt"
 pre_CDR3_cluster_file = input_dir+"NETWORKS/Cluster_identities_"+id+".txt"
 edge_file = input_dir+"NETWORKS/Edges_"+id+".txt"
 ########################## output files
-IMGT_trimmed_sequence_file = seq_file
+IMGT_trimmed_sequence_file = output_dir+"ISOTYPER/IMGT_trimmed_sequences_"+id+".txt"
 developmental_classification_file = output_dir+"ISOTYPER/Classification_per_sequence_"+id+".txt"
 per_cluster_developmental_classification_file = output_dir+"ISOTYPER/Classification_per_cluster_"+id+".txt"
 merged_cluster_file  = output_dir+"ISOTYPER/Cluster_identities_merged_"+id+".txt"
@@ -3907,6 +3907,8 @@ STAGE = [1,2,3,4,5,6]
 IMGT = True
 
 if(1 in STAGE):
+  command = "mkdir "+output_dir+"ISOTYPER/"
+  commands.getoutput(command)
   if(IMGT== True): ### when IMGT files have been generated
     IMGT_sequence_trimming_constant_regions(seq_file, IMGT_trimmed_sequence_file, annot_file3)
     Get_CDR3_defined_cluster_file(annot_file4, cluster_file,merged_cluster_file,pre_CDR3_cluster_file,IMGT_trimmed_sequence_file)
