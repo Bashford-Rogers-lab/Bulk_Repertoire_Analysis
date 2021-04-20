@@ -68,7 +68,7 @@ calculate_jaccard_matrix <- function(path_to_output){
 	## Calculate Jaccard Matrix 
 	JACCARD_MATRIX <- foreach(i = 1:dim(retry1)[1], .combine=rbind) %dopar% {
 		incl <- retry1[i,]
-		#print(i) 
+		print(i) 
 		# Read in the sequences and replicate based on constant region counts. 
 		bcr_1 <- read.delim(incl[1], header=FALSE)
 		bcr_1_sequence <- bcr_1$V3
