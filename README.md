@@ -56,7 +56,7 @@ Note: Jobs should be run in the directory containing the pipeline so that relati
 * Download current version from [here](https://sourceforge.net/projects/quasr/). 
 ## 4.	Blast:
 * Download current version from [here](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).  
-* **For users of Rescomp (BMRC, Oxford) please not this is already installed so you do not need to perform this stage.** 
+* **For users of Rescomp (BMRC, Oxford) please note this is already installed so you do not need to perform this stage.** 
 ## 5.	Python Modules:
 Ensure that the following python modules are installed.
 **Note for Rescomp (BMRC, Oxford) users: These modules are already available using the Rescomp ‘module load’ system and need not be installed locally. However to enable access to these modules (load) you MUST run analysis using the BCR_TCR_Wrapper_Cluster.sh job submission script.** 
