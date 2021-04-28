@@ -185,7 +185,8 @@ calculate_jaccard_matrix_filter <- function(path_to_output, runname){
 	plot(plot_grid(g, m, ncol=2))
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
-	dev.off()  
+	dev.off() 
+	print("Finished calculate_jaccard_matrix_filter")
 	}
 	
 	
@@ -378,6 +379,7 @@ calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, run
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
 	dev.off()  
+	print("Finished calculate_jaccard_matrix_libhopcorrection_filter")
 	}
 	
 ##-----------------------------------------------------------------------------------
@@ -569,13 +571,8 @@ calculate_jaccard_matrix_libcontam_correction_filter <- function(path_to_output,
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
 	dev.off()  
+	print("Finished calculate_jaccard_matrix_libcontam_correction_filter")
 	}
-
-
-	
-	
-	
-	
 	
 	
 	

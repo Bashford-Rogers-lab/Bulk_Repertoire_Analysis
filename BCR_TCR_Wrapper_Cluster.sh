@@ -26,8 +26,15 @@ module load networkx/2.2-foss-2019b-Python-2.7.16
 SAMPLES_FILE_POST=$1
 TASK=$2
 RUNNAME=$3
+BATCH_FILE=$4
 
 if [[ "$TASK" == "RS" ]]; then
+module purge
+module use -a /apps/eb/dev/ivybridge/modules/all
+module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
+fi
+
+if [[ "$TASK" == "RSB" ]]; then
 module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
@@ -99,6 +106,8 @@ elif [[ "$TASK" == 6 ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Combine_extract_IMGT_information.py $1 ${OUTPUTDIR}"
 elif [[ "$TASK" == "RS" ]]; then
 CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE}"
+elif [[ "$TASK" == "RSB" ]]; then
+CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE}"
 elif [[ "$TASK" == "ISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
 elif [[ "$TASK" == "ISO2" ]]; then

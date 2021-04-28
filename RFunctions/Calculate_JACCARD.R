@@ -181,6 +181,7 @@ calculate_jaccard_matrix <- function(path_to_output, runname){
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
 	dev.off()
+	print("Finished calculate_jaccard_matrix") 
 	}
 
 ##-----------------------------------------------------------------------------------
@@ -370,7 +371,8 @@ calculate_jaccard_matrix_libhopcorrection <- function(path_to_output, runname, p
 	plot(plot_grid(g, m, ncol=2))
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
-	dev.off()      
+	dev.off()  
+	print("Finished calculate_jaccard_matrix_libhopcorrection")     
 	}
 
 
@@ -566,7 +568,8 @@ calculate_jaccard_matrix_libcontam_correction <- function(path_to_output, runnam
 	plot(plot_grid(g, m, ncol=2))
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
-	dev.off()    
+	dev.off()
+	print("Finished calculate_jaccard_matrix_libcontam_correction")
 	}
 
 
