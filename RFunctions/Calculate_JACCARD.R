@@ -16,42 +16,6 @@ library(cowplot)
 library(optparse)
 library(gtools)
 
-
-##-----------------------------------------------------------------------------------
-`%notin%` <- Negate(`%in%`)	
-
-calculate_jaccard <- function(seq_1, seq_2, depth){
-	jaccard <- c()
-	shared_seq_count <- c()
-	sample_count  <- c()
-	for(i in 1:10000){
-		bcr_1_sample <- sample(seq_1, depth, replace=FALSE)
-		bcr_2_sample <- sample(seq_2, depth, replace=FALSE)
-		a <- length(bcr_1_sample[bcr_1_sample %in% bcr_2_sample])
-		b <- length(bcr_1_sample[bcr_1_sample %notin% bcr_2_sample])
-		cc <- length(bcr_2_sample[bcr_2_sample %notin% bcr_1_sample])
-		jaccard_subset <- a /(a + b + cc) 
-		jaccard <- c(jaccard, jaccard_subset)
-		shared_seq_count <- c(shared_seq_count, a) 
-		sample_count <- c(sample_count, (depth+depth))
-	} 
-	mean_jaccard_subsampled <- mean(jaccard)
-	mean_no_shared_sequences <- mean(shared_seq_count)
-	mean_sample_count <- mean(sample_count)
-	## nosubsampling
-	a_full <- length(seq_1[seq_1 %in% seq_2])
-	b_full <- length(seq_1[seq_1 %notin% seq_2])
-	cc_full <- length(seq_2[seq_2 %notin% seq_1])
-	jaccard_full <- a_full /(a_full + b_full + cc_full) 
-    shared_seq_count_full <- a_full
-	sample_count_full <- (a_full + b_full + cc_full)
-	results <- c(mean_no_shared_sequences,mean_sample_count, mean_jaccard_subsampled, shared_seq_count_full, sample_count_full, jaccard_full)
-	return(results)
-	}
-
-##-----------------------------------------------------------------------------------
-##-----------------------------------------------------------------------------------
-
 ## Function for calculating and plotting the basic Jaccard Index on  BCR/TCR output. 
 ## Union of shared sequences. 
 
@@ -73,7 +37,7 @@ calculate_jaccard_matrix <- function(path_to_output, runname){
 	subsample_depth <- floor(sample_depth*0.9)
 	
 	#Register doParrallel (10 nodes seems to be the maximum you can run on the cluster with 1 slot or it crashes!
-	cl <- 10
+	cl <- 14
 	registerDoParallel(cl)
 	
 	#dim(retry1)[1]
@@ -82,7 +46,7 @@ calculate_jaccard_matrix <- function(path_to_output, runname){
 		incl <- retry1[i,]
 		# print i in multiples of 50(ish) to give a rough estimate of where we are in the function
 		## This wont be an exact count as we are running in parrallelel therefore some nodes may be further ahead 
-		if(i %% 50 == 0){
+		if(i %% 100 == 0){
 			print(i)
 		}
 		# Read in the sequences and replicate based on constant region counts. 
@@ -102,7 +66,6 @@ calculate_jaccard_matrix <- function(path_to_output, runname){
 		}
 		return(results)
 	}
-	
 	colnames(JACCARD_MATRIX) <- c("Sample1", "Sample2", "SharedSeq.MeanSubsample", "Size.MeanSubsample", "Jaccard.MeanSubsample", "SharedSeq.Full", "Size.Full", "Jaccard.Full", "SharedSeq.MeanSubsample.Weighted", "Size.MeanSubsample.Weighted", "Jaccard.MeanSubsample.Weighted", "SharedSeq.Full.Weighted", "Size.Full.Weighted", "Jaccard.Full.Weighted")
 
 	## RENAME SAMPLE NAMES: 
@@ -147,7 +110,7 @@ calculate_jaccard_matrix <- function(path_to_output, runname){
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_", runname, ".txt"), sep='\t')
 	
 	## Generate Summary Plots 
-	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_", runname, ".pdf"), width=23, height=10)
+	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_", runname, ".pdf"), width=26, height=14)
 	e <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2, fill=SharedSeq.MeanSubsample)) + geom_tile() + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1")) + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') 
 	f <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2, fill=Size.MeanSubsample)) + geom_tile()  + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5))+scale_fill_gradientn( colours=c("navyblue", "darkorange1"))+ geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') 
 	g <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2, fill=Jaccard.MeanSubsample)) + geom_tile()  + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5))+scale_fill_gradientn( colours=c("navyblue", "darkorange1"))+ geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') 
@@ -239,7 +202,7 @@ calculate_jaccard_matrix_libhopcorrection <- function(path_to_output, runname, p
 	subsample_depth <- floor(sample_depth*0.9)
 
 	#Register doParrallel
-	cl <- 10
+	cl <- 14
 	registerDoParallel(cl)
 	#dim(retry1)[1]
 	## Calculate Jaccard Matrix 
@@ -247,7 +210,7 @@ calculate_jaccard_matrix_libhopcorrection <- function(path_to_output, runname, p
 		incl <- retry1[i,]
 		# print i in multiples of 50(ish) to give a rough estimate of where we are in the function
 		## This wont be an exact count as we are running in parrallelel therefore some nodes may be further ahead 
-		if(i %% 50 == 0){
+		if(i %% 100 == 0){
 			print(i)
 		}
 		#return(incl)
@@ -338,7 +301,7 @@ calculate_jaccard_matrix_libhopcorrection <- function(path_to_output, runname, p
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_LIBHOP_CORRECTED_", runname, ".txt"), sep='\t')
 	
 	## Generate Summary Plots
-	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBHOP_CORRECTED_", runname, ".pdf"), width=23, height=10)
+	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBHOP_CORRECTED_", runname, ".pdf"), width=26, height=14)
 	e <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=SharedSeq.MeanSubsample)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	f <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Size.MeanSubsample))+  theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	g <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Jaccard.MeanSubsample))  + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000')) 
@@ -436,7 +399,7 @@ calculate_jaccard_matrix_libcontam_correction <- function(path_to_output, runnam
 	subsample_depth <- floor(sample_depth*0.9)
 
 	#Register doParrallel
-	cl <- 10
+	cl <- 14
 	registerDoParallel(cl)
 	#dim(retry1)[1]
 	## Calculate Jaccard Matrix 
@@ -444,7 +407,7 @@ calculate_jaccard_matrix_libcontam_correction <- function(path_to_output, runnam
 		incl <- retry1[i,]
 		# print i in multiples of 50(ish) to give a rough estimate of where we are in the function
 		## This wont be an exact count as we are running in parrallelel therefore some nodes may be further ahead 
-		if(i %% 50 == 0){
+		if(i %% 100 == 0){
 			print(i)
 		}
 		#return(incl)
@@ -535,7 +498,7 @@ calculate_jaccard_matrix_libcontam_correction <- function(path_to_output, runnam
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_LIBCONTAM_CORRECTED_", runname, ".txt"), sep='\t')
 	
 	## Generate Summary Plots
-	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBCONTAM_CORRECTED_", runname, ".pdf"), width=23, height=10)
+	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBCONTAM_CORRECTED_", runname, ".pdf"), width=26, height=14)
 	e <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=SharedSeq.MeanSubsample)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	f <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Size.MeanSubsample))+  theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	g <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Jaccard.MeanSubsample))  + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000')) 

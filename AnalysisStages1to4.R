@@ -19,8 +19,7 @@ parser <- OptionParser()
 option_list <- list( 
   make_option(c("-o", "--outputdir"), action="store", type="character", default="NA", help="Path to BCR/TCR Outputdir"),
   make_option(c("-r", "--runname"), action="store", type="character", default="BCR_TCR_ANALYSIS", help="Runname for analysis [default]"),
-  make_option(c("-g", "--gene"), action="store", type="character", help="GENE either TCR or BCR"),
-  make_option(c("-b", "--batchfile"), action="store", type="character", default="FALSE", help="Location of Barcode Batch file")
+  make_option(c("-g", "--gene"), action="store", type="character", help="GENE either TCR or BCR")
 )
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trailingOnly = TRUE)) 
@@ -42,36 +41,15 @@ if(gene=="IGH"){
 	visualise_constant_region_bcr(results_outputdir, runname)
 	visualise_vj_usage_bcr(results_outputdir, runname)
 	visualise_isoptype_cluster_bcr(results_outputdir, runname)
-	if(opt$b != "FALSE"){
-		calculate_jaccard_matrix(results_outputdir, runname)
-		calculate_jaccard_matrix_libhopcorrection(results_outputdir, runname, opt$b)
-		calculate_jaccard_matrix_libcontam_correction(results_outputdir, runname, opt$b)
-		calculate_jaccard_matrix_filter(results_outputdir, runname)
-		calculate_jaccard_matrix_libhopcorrection_filter(results_outputdir, runname, opt$b)
-		calculate_jaccard_matrix_libcontam_correction_filter(results_outputdir, runname, opt$b)
-	} else {
-		calculate_jaccard_matrix(results_outputdir, runname)
-		calculate_jaccard_matrix_filter(results_outputdir, runname)
-	}
-	
 } 
 
 if(gene=="TCR"){
 	visualise_filtering_tcr(results_outputdir, runname)
 	visualise_vj_usage_tcr(results_outputdir, runname)
 	visualise_isoptype_cluster_tcr(results_outputdir, runname)
-	if(opt$b != "FALSE"){
-		calculate_jaccard_matrix(results_outputdir, runname)
-		calculate_jaccard_matrix_libhopcorrection(results_outputdir, runname, opt$b)
-		calculate_jaccard_matrix_libcontam_correction(results_outputdir, runname, opt$b)
-		calculate_jaccard_matrix_filter(results_outputdir, runname)
-		calculate_jaccard_matrix_libhopcorrection_filter(results_outputdir, runname, opt$b)
-		calculate_jaccard_matrix_libcontam_correction_filter(results_outputdir, runname, opt$b)
-	} else {
-		calculate_jaccard_matrix(results_outputdir, runname)
-		calculate_jaccard_matrix_filter(results_outputdir, runname)
-	}
 } 
+
+print("Done")
 
 ## PIPELINE COMPLETE
 

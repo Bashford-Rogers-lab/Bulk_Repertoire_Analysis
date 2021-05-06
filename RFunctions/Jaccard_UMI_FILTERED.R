@@ -23,7 +23,7 @@ library(gtools)
 ## Union of shared sequences
 
   
-calculate_jaccard_matrix_filter <- function(path_to_output, runname){
+calculate_jaccard_matrix_filter_UMI <- function(path_to_output, runname){
 	path <- paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/")
 	samples <- list.files(path, full.name=TRUE)
 	samples <- grep("Att", samples, value=TRUE)
@@ -40,6 +40,18 @@ calculate_jaccard_matrix_filter <- function(path_to_output, runname){
 	sample_depth <- min(mins[mins>=223]) 
 	subsample_depth <- floor(sample_depth*0.9)
 	
+	retry1 <- data.frame(retry1)
+	colnames(retry1) <- c("Sample1Path", "Sample2Path")
+	## Get sample id
+	retry1$Sample1 <- retry1$Sample1Path
+	retry1$Sample1 <- gsub(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS//Att_"), "", retry1$Sample1)
+	retry1$Sample1 <- gsub(paste0(".txt"), "", retry1$Sample1)
+	
+	retry1$Sample2 <- retry1$Sample2Path
+	retry1$Sample2 <- gsub(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS//Att_"), "", retry1$Sample2)
+	retry1$Sample2 <- gsub(paste0(".txt"), "", retry1$Sample2)
+	
+	
 	#Register doParrallel (10 nodes seems to be the maximum you can run on the cluster with 1 slot or it crashes!
 	cl <- 14
 	registerDoParallel(cl)
@@ -53,23 +65,34 @@ calculate_jaccard_matrix_filter <- function(path_to_output, runname){
 		if(i %% 100 == 0){
 			print(i)
 		}
+
+		bcr_1 <- read.delim(as.character(incl[1]), header=FALSE)
+		colnames(bcr_1) <- c("id", "OldNumber", "Sequence")
+		counts_1 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", incl[3], ".txt"), header=TRUE, sep="\t")
+		bcr_1 <- merge(bcr_1, counts_1, by="id")
+		
+		bcr_2 <- read.delim(as.character(incl[2]), header=FALSE)
+		colnames(bcr_2) <- c("id", "OldNumber", "Sequence")
+		counts_2 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", incl[4], ".txt"), header=TRUE, sep="\t")
+		bcr_2 <- merge(bcr_2, counts_2, by="id")
+		
 		# Read in the sequences and replicate based on constant region counts.
 		# Filter to ensure they have a minimum of 2 reads. 
-		bcr_1 <- read.delim(incl[1], header=FALSE)
-		bcr_1 <- bcr_1[bcr_1$V2 >= 2,]
-		bcr_1_sequence <- bcr_1$V3
-		bcr_1_sequence_w <- rep(bcr_1$V3, bcr_1$V2)
-		bcr_2 <- read.delim(incl[2], header=FALSE)
-		bcr_2  <- bcr_2 [bcr_2 $V2 >= 2,]
-		bcr_2_sequence <- bcr_2$V3
-		bcr_2_sequence_w <- rep(bcr_2$V3, bcr_2$V2)
+		bcr_1 <- bcr_1[bcr_1$OldNumber >= 2,]
+		bcr_1_sequence <- bcr_1$Sequence
+		bcr_1_sequence_w <- rep(bcr_1$Sequence, bcr_1$consensus_count)
+		
+		bcr_2 <- bcr_2[bcr_2$OldNumber >= 2,]
+		bcr_2_sequence <- bcr_2$Sequence
+		bcr_2_sequence_w <- rep(bcr_2$Sequence, bcr_2$consensus_count)
+		
 		## Calculate Jaccard on Weighed  and Non Weighted Repertoire
 		if(dim(bcr_1)[1] >= sample_depth  & dim(bcr_2)[1] >= sample_depth){
 			jaccard_results <- calculate_jaccard(bcr_1_sequence, bcr_2_sequence, subsample_depth)
 			jaccard_results_w <- calculate_jaccard(bcr_1_sequence_w, bcr_2_sequence_w, subsample_depth)
-			results <- c(incl[1], incl[2], jaccard_results,  jaccard_results_w)
+			results <- c(as.character(incl[1]), as.character(incl[2]), jaccard_results,  jaccard_results_w)
 		} else {
-			results <- c(incl[1], incl[2], NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
+			results <- c(as.character(incl[1]), as.character(incl[2]), NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA)
 		}
 		return(results)
 	}
@@ -115,10 +138,10 @@ calculate_jaccard_matrix_filter <- function(path_to_output, runname){
 	JACCARD_MATRIX_2$ANYNAS[is.na(JACCARD_MATRIX_2$Jaccard.Full)] <- "YES"
 	
 	## Save the basic Jaccard Index. 
-	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_2ormore_AllSAMPLES_", runname, ".txt"), sep='\t')
+	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_2ormore_AllSAMPLES_UMI_", runname, ".txt"), sep='\t')
 	
 	## Generate Summary Plots
-	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_2ormore_AllSAMPLES_", runname, ".pdf"), width=26, height=14)
+	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_2ormore_AllSAMPLES_UMI_", runname, ".pdf"), width=26, height=14)
 	e <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=SharedSeq.MeanSubsample)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000')
 	f <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Size.MeanSubsample))+  theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') 
 	g <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Jaccard.MeanSubsample))  + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') 
@@ -152,7 +175,7 @@ calculate_jaccard_matrix_filter <- function(path_to_output, runname){
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
 	dev.off() 
-	print("Finished calculate_jaccard_matrix_filter")
+	print("Finished calculate_jaccard_matrix_filter_UMI")
 	}
 	
 	
@@ -160,7 +183,7 @@ calculate_jaccard_matrix_filter <- function(path_to_output, runname){
 ## Function for calculating Jaccard Matrix and correcting for Library Hopping	
 ## Looks at sequences with 2 or more reads 
 	
-calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, runname, path_to_layout){
+calculate_jaccard_matrix_libhopcorrection_filter_UMI <- function(path_to_output, runname, path_to_layout){
 	path <- paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/")
 	samples <- list.files(path, full.name=TRUE)
 	samples <- grep("Att", samples, value=TRUE)
@@ -196,6 +219,15 @@ calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, run
 	layouts_2 <- read.delim(path_to_layout, sep="\t")
 	colnames(layouts_2) <- c("SampleID", "Barcode2",  "BCR_Lane_S2", "Plate_S2", "Library2", "Position2", "PCRBarcode2")
 	retry1 <- merge(retry1, layouts_2, by.x="Sample2", by.y="SampleID")
+	
+	## Rename to allow for matching
+	retry1$Sample1 <- retry1$Sample1Path
+	retry1$Sample1 <- gsub(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS//Att_"), "", retry1$Sample1)
+	retry1$Sample1 <- gsub(paste0(".txt"), "", retry1$Sample1)
+	
+	retry1$Sample2 <- retry1$Sample2Path
+	retry1$Sample2 <- gsub(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS//Att_"), "", retry1$Sample2)
+	retry1$Sample2 <- gsub(paste0(".txt"), "", retry1$Sample2)
 
 	## Calculating a new sample depth based on max number of sample overlaps (headache I know!)
 	## Read all samples, substract the maximum possible overlap and then times by 0.9 to avoid subsampling whole dataset. 
@@ -210,7 +242,7 @@ calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, run
 	## Ensure that susbample must be at least 200 sequences. 
 	sample_depth <- min(mins[mins>=223]) 
 	subsample_depth <- floor(sample_depth*0.9)
-	
+		
 	#Register doParrallel
 	cl <- 14
 	registerDoParallel(cl)
@@ -224,24 +256,49 @@ calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, run
 		#return(incl)
 		# Read in the sequences and replicate based on constant region counts. 
 		if(incl$Sample1 == incl$Sample2 | incl$PCRBarcode1 != incl$PCRBarcode2 | incl$Barcode1 == incl$Barcode2 | incl$BCR_Lane_S1 != incl$BCR_Lane_S2 ){
+			
 			bcr_1 <- read.delim(as.character(incl[3]), header=FALSE)
-			bcr_1 <- bcr_1[bcr_1$V2 >= 2,]
-			bcr_1_sequence <- bcr_1$V3
-			bcr_1_sequence_w <- rep(bcr_1$V3, bcr_1$V2)
+			colnames(bcr_1) <- c("id", "OldNumber", "Sequence")
+			counts_1 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[2]), ".txt"), header=TRUE, sep="\t")
+			bcr_1 <- merge(bcr_1, counts_1, by="id")
+			
 			bcr_2 <- read.delim(as.character(incl[4]), header=FALSE)
-			bcr_2 <- bcr_2[bcr_2$V2 >= 2,]
-			bcr_2_sequence <- bcr_2$V3
-			bcr_2_sequence_w <- rep(bcr_2$V3, bcr_2$V2)
+			colnames(bcr_2) <- c("id", "OldNumber", "Sequence")
+			counts_2 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[1]), ".txt"), header=TRUE, sep="\t")
+			bcr_2 <- merge(bcr_2, counts_2, by="id")
+			
+			# Read in the sequences and replicate based on constant region counts.
+			# Filter to ensure they have a minimum of 2 reads. 
+			bcr_1 <- bcr_1[bcr_1$OldNumber >= 2,]
+			bcr_1_sequence <- bcr_1$Sequence
+			bcr_1_sequence_w <- rep(bcr_1$Sequence, bcr_1$consensus_count)
+			
+			bcr_2 <- bcr_2[bcr_2$OldNumber >= 2,]
+			bcr_2_sequence <- bcr_2$Sequence
+			bcr_2_sequence_w <- rep(bcr_2$Sequence, bcr_2$consensus_count)
+		
 		} else {
 			bcr_1 <- read.delim(as.character(incl[3]), header=FALSE)
-			bcr_2 <- read.delim(as.character(incl[4]), header=FALSE)
-			bcr_1 <- bcr_1[bcr_1$V2 >= 2,]
-			bcr_1_sequence <- bcr_1$V3
-			bcr_1_sequence_w <- rep(bcr_1$V3, bcr_1$V2)
-			bcr_2 <- bcr_2[bcr_2$V2 >= 2,]
-			bcr_2_sequence <- bcr_2$V3
-			bcr_2_sequence_w <- rep(bcr_2$V3, bcr_2$V2)
+			colnames(bcr_1) <- c("id", "OldNumber", "Sequence")
+			counts_1 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[2]), ".txt"), header=TRUE, sep="\t")
+			bcr_1 <- merge(bcr_1, counts_1, by="id")
 			
+			bcr_2 <- read.delim(as.character(incl[4]), header=FALSE)
+			colnames(bcr_2) <- c("id", "OldNumber", "Sequence")
+			counts_2 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[1]), ".txt"), header=TRUE, sep="\t")
+			bcr_2 <- merge(bcr_2, counts_2, by="id")
+				
+			# Read in the sequences and replicate based on constant region counts.
+			# Filter to ensure they have a minimum of 2 reads. 
+			bcr_1 <- bcr_1[bcr_1$OldNumber >= 2,]
+			bcr_1_sequence <- bcr_1$Sequence
+			bcr_1_sequence_w <- rep(bcr_1$Sequence, bcr_1$consensus_count)
+			
+			bcr_2 <- bcr_2[bcr_2$OldNumber >= 2,]
+			bcr_2_sequence <- bcr_2$Sequence
+			bcr_2_sequence_w <- rep(bcr_2$Sequence, bcr_2$consensus_count)
+			
+			## Look for shared sequences
 			shared_seq <- bcr_1_sequence[bcr_1_sequence %in% bcr_2_sequence]
 			
 			bcr_1_sequence <- bcr_1_sequence[bcr_1_sequence %notin% shared_seq]
@@ -308,10 +365,10 @@ calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, run
 	JACCARD_MATRIX_2$ANYNAS[is.na(JACCARD_MATRIX_2$Jaccard.Full)] <- "YES"
 	
 	## Save the basic Jaccard Index
-	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_2ormore_AllSAMPLES_LIBHOP_CORRECTED_", runname, ".txt"), sep='\t')
+	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_2ormore_AllSAMPLES_LIBHOP_CORRECTED_UMI_", runname, ".txt"), sep='\t')
 	
 	## Generate Summary Plots
-	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_2ormore_AllSAMPLES_LIBHOP_CORRECTED_", runname, ".pdf"), width=26, height=14)
+	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_2ormore_AllSAMPLES_LIBHOP_CORRECTED_UMI_", runname, ".pdf"), width=26, height=14)
 	e <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=SharedSeq.MeanSubsample)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	f <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Size.MeanSubsample))+  theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	g <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Jaccard.MeanSubsample))  + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000')) 
@@ -345,14 +402,14 @@ calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, run
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
 	dev.off()  
-	print("Finished calculate_jaccard_matrix_libhopcorrection_filter")
+	print("Finished calculate_jaccard_matrix_libhopcorrection_filter_UMI")
 	}
 	
 ##-----------------------------------------------------------------------------------
 ## Function for calculating Jaccard Matrix and correcting for Library Contamination	
 ## Looks at sequences with 2 or more reads 
 
-calculate_jaccard_matrix_libcontam_correction_filter <- function(path_to_output, runname, path_to_layout){
+calculate_jaccard_matrix_libcontam_correction_filter_UMI <- function(path_to_output, runname, path_to_layout){
 	path <- paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/")
 	samples <- list.files(path, full.name=TRUE)
 	samples <- grep("Att", samples, value=TRUE)
@@ -388,6 +445,16 @@ calculate_jaccard_matrix_libcontam_correction_filter <- function(path_to_output,
 	layouts_2 <- read.delim(path_to_layout, sep="\t")
 	colnames(layouts_2) <- c("SampleID", "Barcode2",  "BCR_Lane_S2", "Plate_S2", "Library2", "Position2", "PCRBarcode2")
 	retry1 <- merge(retry1, layouts_2, by.x="Sample2", by.y="SampleID")
+	
+	## Rename to allow for matching
+	retry1$Sample1 <- retry1$Sample1Path
+	retry1$Sample1 <- gsub(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS//Att_"), "", retry1$Sample1)
+	retry1$Sample1 <- gsub(paste0(".txt"), "", retry1$Sample1)
+	
+	retry1$Sample2 <- retry1$Sample2Path
+	retry1$Sample2 <- gsub(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS//Att_"), "", retry1$Sample2)
+	retry1$Sample2 <- gsub(paste0(".txt"), "", retry1$Sample2)
+	
 
 	## Calculating a new sample depth based on max number of sample overlaps (headache I know!)
 	## Read all samples, substract the maximum possible overlap and then times by 0.9 to avoid subsampling whole dataset. 
@@ -417,22 +484,45 @@ calculate_jaccard_matrix_libcontam_correction_filter <- function(path_to_output,
 		# Read in the sequences and replicate based on constant region counts. 
 		if(incl$Sample1 == incl$Sample2 | incl$PCRBarcode1 != incl$PCRBarcode2 | incl$Barcode1 == incl$Barcode2){
 			bcr_1 <- read.delim(as.character(incl[3]), header=FALSE)
-			bcr_1 <- bcr_1[bcr_1$V2 >= 2,]
-			bcr_1_sequence <- bcr_1$V3
-			bcr_1_sequence_w <- rep(bcr_1$V3, bcr_1$V2)
+			colnames(bcr_1) <- c("id", "OldNumber", "Sequence")
+			counts_1 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[2]), ".txt"), header=TRUE, sep="\t")
+			bcr_1 <- merge(bcr_1, counts_1, by="id")
+			
 			bcr_2 <- read.delim(as.character(incl[4]), header=FALSE)
-			bcr_2 <- bcr_2[bcr_2$V2 >= 2,]
-			bcr_2_sequence <- bcr_2$V3
-			bcr_2_sequence_w <- rep(bcr_2$V3, bcr_2$V2)
+			colnames(bcr_2) <- c("id", "OldNumber", "Sequence")
+			counts_2 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[1]), ".txt"), header=TRUE, sep="\t")
+			bcr_2 <- merge(bcr_2, counts_2, by="id")
+			
+			# Read in the sequences and replicate based on constant region counts.
+			# Filter to ensure they have a minimum of 2 reads. 
+			bcr_1 <- bcr_1[bcr_1$OldNumber >= 2,]
+			bcr_1_sequence <- bcr_1$Sequence
+			bcr_1_sequence_w <- rep(bcr_1$Sequence, bcr_1$consensus_count)
+			
+			bcr_2 <- bcr_2[bcr_2$OldNumber >= 2,]
+			bcr_2_sequence <- bcr_2$Sequence
+			bcr_2_sequence_w <- rep(bcr_2$Sequence, bcr_2$consensus_count)
 		} else {
 			bcr_1 <- read.delim(as.character(incl[3]), header=FALSE)
+			colnames(bcr_1) <- c("id", "OldNumber", "Sequence")
+			counts_1 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[2]), ".txt"), header=TRUE, sep="\t")
+			bcr_1 <- merge(bcr_1, counts_1, by="id")
+			
 			bcr_2 <- read.delim(as.character(incl[4]), header=FALSE)
-			bcr_1 <- bcr_1[bcr_1$V2 >= 2,]
-			bcr_1_sequence <- bcr_1$V3
-			bcr_1_sequence_w <- rep(bcr_1$V3, bcr_1$V2)
-			bcr_2 <- bcr_2[bcr_2$V2 >= 2,]
-			bcr_2_sequence <- bcr_2$V3
-			bcr_2_sequence_w <- rep(bcr_2$V3, bcr_2$V2)
+			colnames(bcr_2) <- c("id", "OldNumber", "Sequence")
+			counts_2 <- read.delim(paste0(path_to_output, "ORIENTATED_SEQUENCES/NETWORKS/Consensus_counts_", as.character(incl[1]), ".txt"), header=TRUE, sep="\t")
+			bcr_2 <- merge(bcr_2, counts_2, by="id")
+			
+			# Read in the sequences and replicate based on constant region counts.
+			# Filter to ensure they have a minimum of 2 reads. 
+			bcr_1 <- bcr_1[bcr_1$OldNumber >= 2,]
+			bcr_1_sequence <- bcr_1$Sequence
+			bcr_1_sequence_w <- rep(bcr_1$Sequence, bcr_1$consensus_count)
+			
+			bcr_2 <- bcr_2[bcr_2$OldNumber >= 2,]
+			bcr_2_sequence <- bcr_2$Sequence
+			bcr_2_sequence_w <- rep(bcr_2$Sequence, bcr_2$consensus_count)
+			
 			
 			shared_seq <- bcr_1_sequence[bcr_1_sequence %in% bcr_2_sequence]
 			
@@ -500,10 +590,10 @@ calculate_jaccard_matrix_libcontam_correction_filter <- function(path_to_output,
 	JACCARD_MATRIX_2$ANYNAS[is.na(JACCARD_MATRIX_2$Jaccard.Full)] <- "YES"
 	
 	## Save the basic Jaccard Index
-	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_2ormore_AllSAMPLES_LIBCONTAM_CORRECTED_filter_", runname, ".txt"), sep='\t')
+	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_2ormore_AllSAMPLES_LIBCONTAM_CORRECTED_filter_UMI_", runname, ".txt"), sep='\t')
 	
 	## Generate Summary Plots
-	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_2ormore_AllSAMPLES_LIBCONTAM_CORRECTED_filter_", runname, ".pdf"), width=26, height=14)
+	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_2ormore_AllSAMPLES_LIBCONTAM_CORRECTED_filter_UMI_", runname, ".pdf"), width=26, height=14)
 	e <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=SharedSeq.MeanSubsample)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	f <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Size.MeanSubsample))+  theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'))
 	g <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=Jaccard.MeanSubsample))  + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1), text = element_text(size=5)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000')) 
@@ -537,7 +627,7 @@ calculate_jaccard_matrix_libcontam_correction_filter <- function(path_to_output,
 	plot(plot_grid(h, n, ncol=2))
 	plot(plot_grid(j, p, ncol=2))
 	dev.off()  
-	print("Finished calculate_jaccard_matrix_libcontam_correction_filter")
+	print("Finished calculate_jaccard_matrix_libcontam_correction_filter_UMI")
 	}
 	
 	

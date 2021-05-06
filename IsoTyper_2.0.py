@@ -1269,7 +1269,7 @@ def Raw_values_Get_network_parameters_per_classificiation_subsample_vertices(sam
   repeats =5000
   for clas in seq_types:
     if(clas in subsample_depth):
-      depth=subsample_depth[clas]
+      depth=max([5,subsample_depth[clas]])
       print clas,"\t",len(seq_types[clas]),"\t", depth
       if(depth <= len(seq_types[clas])):
         ids_sub,cluster_sub = [],[]
@@ -2371,6 +2371,7 @@ def Get_secondary_rearrangement_sequences(sample, annot_file,annot_file3, second
     break
   total= [0]*len(freqs[id])
   total_all, total_IGHDM = 0,0
+  classification = ''
   for l in fh:
     l=l.strip().split("\t")
     if(l[0]!='Sequence number'):
@@ -2462,24 +2463,25 @@ def Get_secondary_rearrangement_sequences(sample, annot_file,annot_file3, second
   totals = {}
   Write_out(out, raw_secondary_rearrangement_file)
   out, ind = '',0
-  for i in range(0,len(total)):
-    c = classification[i].split("*")[0]
-    #if(reverse_primer_group!="ISOTYPER"):
-    #  if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
-    #  elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
-    if(c in totals): totals[c] = totals[c]+total[i]
-    else:totals[c] = total[i]
-  totals["ALL"] =total_all
-  totals["IGHD_M"] =total_IGHDM
-  out="#sample\tchain\tsecondary rearrangement count\ttotal\tpercentage\n"
-  for c in totals:
-    if(totals[c] !=0):
-      if(c not in stem_count):stem_count[c] = 0
-      out=out+sample+"\t"+c+"\t"+str(stem_count[c])+"\t"+str(totals[c])+"\t"+str(stem_count[c]*100.0/totals[c])+"\n"
-  fh=open(secondary_rearrangement_file,"w")
-  fh.write(out)
-  fh.close()
-  print out
+  if(len(classification)!=0):
+    for i in range(0,len(total)):
+      c = classification[i].split("*")[0]
+      #if(reverse_primer_group!="ISOTYPER"):
+      #  if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
+      #  elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
+      if(c in totals): totals[c] = totals[c]+total[i]
+      else:totals[c] = total[i]
+    totals["ALL"] =total_all
+    totals["IGHD_M"] =total_IGHDM
+    out="#sample\tchain\tsecondary rearrangement count\ttotal\tpercentage\n"
+    for c in totals:
+      if(totals[c] !=0):
+        if(c not in stem_count):stem_count[c] = 0
+        out=out+sample+"\t"+c+"\t"+str(stem_count[c])+"\t"+str(totals[c])+"\t"+str(stem_count[c]*100.0/totals[c])+"\n"
+    fh=open(secondary_rearrangement_file,"w")
+    fh.write(out)
+    fh.close()
+    print out
   return()
 
 def Subsample_per_Vgene(raw_secondary_rearrangement_file, sample_depth, secondary_rearrangement_file_SAMPLED,cluster_file,seq_file,sample,annot_file):
@@ -2735,6 +2737,10 @@ def Get_CDR3_length_VJ_genes(seq_file,annot_file,CDR3_length_vjgenes,sample):
               v_muts, j_muts = map(int,v_muts.split()[0].split("/")), map(int,j_muts.split()[0].split("/"))
               v_muts, j_muts = v_muts[1]-v_muts[0], j_muts[1]-j_muts[0]
               mut_n = 1
+            elif(v_muts.count('nt')!=0):
+              v_muts= map(int,v_muts.split()[0].split("/"))
+              v_muts= v_muts[1]-v_muts[0]
+              j_muts = -1
             for i in nz:
               chains_sub[chains[i]] = 1
             #j1 = "NA"
@@ -3889,6 +3895,7 @@ receptor_type = "IGH"
 subsample_depth_file= output_dir+"ANNOTATIONS/Sampling_depth_per_isotype_"+type
 #subsample_depth_file= "/well/immune-rep/shared/MISEQ/COMBAT/ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_Samples_COMBAT_BCR_post1.txt"
 subsample_depth = Subsample_depth_read(subsample_depth_file)
+print subsample_depth_file
 
 ########################## set by user: 
 STAGE = 1 ### reclustering based on CDR3 sequence
@@ -3952,7 +3959,7 @@ if(5 in STAGE):### get CDR3 and mutational information
   Indel_analysis_per_chain(seq_file, sample, indel_file,annot_file,reverse_primer_group)
     #################################Get_public_CDR3_percentages(subsample_file,annot_file, per_cluster_developmental_classification_file, unique_CDR3_regions_per_isotype_group_file,annot_file3,sample,public_CDR3_file)
   Get_cluster_mutation_sharing_stats(cluster_file, annot_file_internal, seq_file, cluster_mutation_sharing_probability,sample)
-  Get_mutational_positions_per_gene(seq_file, developmental_classification_file, mutational_positions_per_gene_file,annot_file7,sample,mutational_positions_per_gene_file_summary)
+  #Get_mutational_positions_per_gene(seq_file, developmental_classification_file, mutational_positions_per_gene_file,annot_file7,sample,mutational_positions_per_gene_file_summary)
 
 if(6 in  STAGE): ### get secondary rearrangement information
   Get_secondary_rearrangement_potential(sample, annot_file,annot_file3, secondary_rearrangement_file,IMGT_trimmed_sequence_file,raw_secondary_rearrangement_file,secondary_rearrangement_V_genes,mapped_secondary_rearrangements,tmp_file1,v_replacement_transition_counts,secondary_rearrangement_file_SAMPLED,cluster_file,reverse_primer_group,cd_ref_file,secondary_rearrangement_clone_sizes_file)

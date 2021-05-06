@@ -2,8 +2,8 @@
 
 #$ -cwd
 #$ -N BCR_TCR_p2
-#$ -q short.qc
-#$ -pe shmem 1
+#$ -q long.qc
+#$ -pe shmem 7
 #$ -e COMMANDLOGS/
 #$ -o COMMANDLOGS/
 
@@ -34,7 +34,7 @@ module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
 fi
 
-if [[ "$TASK" == "JACCARD" ]]; then
+if [[ "$TASK" == "RSB" ]]; then
 module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
@@ -106,8 +106,8 @@ elif [[ "$TASK" == 6 ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Combine_extract_IMGT_information.py $1 ${OUTPUTDIR}"
 elif [[ "$TASK" == "RS" ]]; then
 CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE}"
-elif [[ "$TASK" == "JACCARD" ]]; then
-CMD="Rscript AnalysisJaccard.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE}"
+elif [[ "$TASK" == "RSB" ]]; then
+CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE}"
 elif [[ "$TASK" == "ISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
 elif [[ "$TASK" == "ISO2" ]]; then
@@ -120,8 +120,6 @@ elif [[ "$TASK" == "CSR" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Class_switch_recombination_analysis.py ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/ ${ID} ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_${ID}.fasta ${OUTPUTDIR}ORIENTATED_SEQUENCES/Filtered_ORFs_sequences_all_${ID}.fasta ${GENE} ${SPECIES} ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_${ID}.txt 1"
 elif [[ "$TASK" == "SUBSAMPLE" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Subsampling_networks.py ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/ ${ID} ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_${ID}.fasta ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Edges_${ID}.txt" 
-elif [[ "$TASK" == "CONSENSUS" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Get_consensus_counts.py ${OUTPUTDIR} ${ID}" 
 else
 echo "PARAMETER NOT RECOGNISED."
 fi 
