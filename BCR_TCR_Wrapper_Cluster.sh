@@ -2,7 +2,7 @@
 
 #$ -cwd
 #$ -N BCR_TCR_p2
-#$ -q short.qc
+#$ -q long.qc
 #$ -pe shmem 1
 #$ -e COMMANDLOGS/
 #$ -o COMMANDLOGS/
@@ -25,20 +25,99 @@ module load networkx/2.2-foss-2019b-Python-2.7.16
 # File two containing the PCR multiplexed samples 
 SAMPLES_FILE_POST=$1
 TASK=$2
+## Runname or in the case of part 2 it will be the samples file pre 
 RUNNAME=$3
 BATCH_FILE=$4
 
-if [[ "$TASK" == "RS" ]]; then
+echo "********************************************************"
+echo "* Job Dependancies"
+echo "********************************************************"
+
+#------------------------------------------------------------
+## Which job was run previously: 
+## For numerical tasks: 
+PRIORTASK=$((TASK-1))
+
+## For named tasks:  
+if [[ "$TASK" == "RS" ]]; then 
+	PRIORTASK=5
+fi
+if [[ "$TASK" == "ISO1"  || "$TASK" == "TCRISO1" ]]; then 
+	PRIORTASK=6
+fi
+if [[ "$TASK" == "JACCARD" ]]; then 
+	PRIORTASK="CONSENSUS"
+fi
+
+#------------------------------------------------------------
+## Which Sample file was Used and how long was it. 
+## Stages using 'post-file' (2 onwards and Consensus Task)
+if [[ "$PRIORTASK" -ge 2 || "$PRIORTASK" == "-1" || "$PRIORTASK" == "CONSENSUS" ]]; then 
+FILE="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
+	if [ ! -e "$FILE" ]; then
+		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
+		exit 888
+	else 
+		echo "DEPENDANCIES: Final File from previous job exists: ${FILE}"
+	fi 
+LENGTHJOBS=$(cat ${FILE} | wc -l)
+SAMPLES=$(cat ${SAMPLES_FILE_POST} | wc -l)
+SAMPLES=$((SAMPLES+1))
+fi 
+## Stages using 'pre-file' (stage 1)
+if [[ "$PRIORTASK" == "1" ]]; then
+FILE="COMMANDLOGS/job_${RUNNAME}_${PRIORTASK}.txt"
+echo $FILE
+	if [ ! -e "$FILE" ]; then
+		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
+		exit 888
+	else 
+		echo "DEPENDANCIES: Final File from previous job exists: ${FILE}"
+	fi 
+LENGTHJOBS=$(cat ${FILE} | wc -l)
+SAMPLES=$(cat ${RUNNAME} | wc -l)
+SAMPLES=$((SAMPLES+1))
+fi 
+
+#------------------------------------------------------------
+## Checking whether prior jobs ran sucessfully - if not terminate script. 
+if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIORTASK" == "CONSENSUS" ]]; then
+	if [[ $LENGTHJOBS -ne $SAMPLES ]]; then 
+		echo "DEPENDANCIES: Not all dependancies ran sucessfully to completion"
+		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
+		exit 999
+	else 
+		echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
+		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
+	fi
+else   
+    if [[ "$PRIORTASK" == "0" ]]; then
+		echo "DEPENDANCIES: NO DEPENDANCIES REQUIRED"
+		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
+    fi 
+    if [[ "$PRIORTASK" -ge 5 && $LENGTHJOBS -ne "1" ]]; then
+		echo "DEPENDANCIES: Not all dependancies ran sucessfully to completion"
+		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
+		exit 999
+    fi 
+	if [[ "$PRIORTASK" -ge 5 && $LENGTHJOBS -eq "1" ]]; then
+		echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
+		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
+	fi
+fi 
+
+
+
+#------------------------------------
+
+## Set up module environement for R scripts
+if [[ "$TASK" == "RS" || "$TASK" == "JACCARD" ]]; then
 module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
 fi
 
-if [[ "$TASK" == "JACCARD" ]]; then
-module purge
-module use -a /apps/eb/dev/ivybridge/modules/all
-module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
-fi
+
 
 # Task Arguments for TASK 1
 ID=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$1}" $SAMPLES_FILE_POST) 
@@ -138,6 +217,9 @@ echo
 ## RUN THE JOB 1
 eval "${CMD}"
 
+## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
+NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
+eval "${NWCMD}"
 
 # Done 
 echo
