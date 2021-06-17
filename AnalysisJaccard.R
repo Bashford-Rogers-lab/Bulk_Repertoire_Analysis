@@ -20,7 +20,8 @@ option_list <- list(
   make_option(c("-o", "--outputdir"), action="store", type="character", default="NA", help="Path to BCR/TCR Outputdir"),
   make_option(c("-r", "--runname"), action="store", type="character", default="BCR_TCR_ANALYSIS", help="Runname for analysis [default]"),
   make_option(c("-g", "--gene"), action="store", type="character", help="GENE either TCR or BCR"),
-  make_option(c("-b", "--batchfile"), action="store", type="character", default="FALSE", help="Location of Barcode Batch file")
+  make_option(c("-b", "--batchfile"), action="store", type="character", default="FALSE", help="Location of Barcode Batch file"), 
+  make_option(c("-t", "--task"), action="store", type="character", default=1, help="JACCARD_INDEX_CALCULATE") 
 )
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trailingOnly = TRUE)) 
@@ -37,64 +38,70 @@ for (f in source_files) {
 }
 
 ## Part Number 1: Invesitgate sample read detection and filtering
-if(opt$b != "FALSE"){
-	calculate_jaccard_matrix(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libhopcorrection(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libcontam_correction(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_filter(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libhopcorrection_filter(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libcontam_correction_filter(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
+if(opt$b != "FALSE" || opt$b != "False" || opt$b != "false" ){
+    
+	if(opt$t == "1"){
+	# Basic Jaccard
+		print("Calculating JACCARD Statistics for BASIC VDJ \n")
+		calculate_jaccard_matrix(results_outputdir, runname)
+		print("\n Done \n")
+		gc()
+		calculate_jaccard_matrix_libhopcorrection(results_outputdir, runname, opt$b)
+		print("\n Done \n")
+		gc()
+		calculate_jaccard_matrix_libcontam_correction(results_outputdir, runname, opt$b)
+		print("\n Done \n")
+		gc()
+	}
 	
-	## RUN on UMIs
+	if(opt$t == "2" ){
+		print("Calculating JACCARD Statistics for VDJ with 2 or more reads \n")
+		#Jaccard 2 or more
+		calculate_jaccard_matrix_filter(results_outputdir, runname)
+		print("\n Done \n")
+		gc()
+		calculate_jaccard_matrix_libhopcorrection_filter(results_outputdir, runname, opt$b)
+		print("\n Done \n")
+		gc()
+		calculate_jaccard_matrix_libcontam_correction_filter(results_outputdir, runname, opt$b)
+		print("\n Done \n")
+		gc()
+	}
 	
-	calculate_jaccard_matrix_UMI(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libhopcorrection_UMI(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libcontam_correction_UMI(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_filter_UMI(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libhopcorrection_filter_UMI(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_libcontam_correction_filter_UMI(results_outputdir, runname, opt$b)
-	print("\n Done \n")
-	gc()
+	#Jaccard_UMI_RAW
+	if(opt$t == "3"){
+		print("\n Calculating JACCARD Statistics for UMIs (RAW) \n")
+		calculate_jaccard_matrix_UMI_RAW(results_outputdir, runname)
+		print("\n Done \n")
+		gc()
+		calculate_jaccard_matrix_libhopcorrection_UMI_RAW(results_outputdir, runname, opt$b)
+		print("\n Done \n")
+		gc()
+		calculate_jaccard_matrix_libcontam_correction_UMI_RAW(results_outputdir, runname, opt$b)
+		print("\n Done \n")
+		gc()
+	}
 	
 	} else {
-	calculate_jaccard_matrix(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_filter(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
+	if(opt$t==1){
+		print("\n Calculating BASIC JACCARD Statistics on VDJ \n")
+		calculate_jaccard_matrix(results_outputdir, runname)
+		print("\n Done \n")
+		gc()
+	} 
 	
-	## RUN on UMIs
+	if(opt$t==2){
+		print("\n Calculating JACCARD Statistics for VDJ with 2 or more reads \n")
+			calculate_jaccard_matrix_filter(results_outputdir, runname)
+		print("\n Done \n")
+		gc()
+	} 
 	
-	calculate_jaccard_matrix_UMI(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
-	calculate_jaccard_matrix_filter_UMI(results_outputdir, runname)
-	print("\n Done \n")
-	gc()
-	
+	if(opt$t==3){
+		print("\n Calculating JACCARD Statistics for UMIs (RAW) \n")
+		calculate_jaccard_matrix_UMI_RAW(results_outputdir, runname)
+		print("\n Done \n")
+		gc()
 	}
 	
 } 

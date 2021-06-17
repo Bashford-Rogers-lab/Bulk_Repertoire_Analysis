@@ -1,11 +1,9 @@
 #!/bin/bash
 
 #$ -cwd
-#$ -N BCR_TCR_p2
+#$ -N BCR_TCR_PIPELINE
 #$ -q long.qc
-#$ -pe shmem 7
-#$ -e COMMANDLOGS/
-#$ -o COMMANDLOGS/
+#$ -pe shmem 8
 
 # If there's an error, fail the whole script
 set -e -o pipefail
@@ -28,6 +26,8 @@ TASK=$2
 ## Runname or in the case of part 2 it will be the samples file pre 
 RUNNAME=$3
 BATCH_FILE=$4
+JACCARD_TASK=$5
+
 
 echo "********************************************************"
 echo "* Job Dependancies"
@@ -46,14 +46,14 @@ if [[ "$TASK" == "ISO1"  || "$TASK" == "TCRISO1" ]]; then
 	PRIORTASK=6
 fi
 if [[ "$TASK" == "JACCARD" ]]; then 
-	PRIORTASK="CONSENSUS"
+	PRIORTASK=5
 fi
 
 #------------------------------------------------------------
 ## Which Sample file was Used and how long was it. 
 ## Stages using 'post-file' (2 onwards and Consensus Task)
 if [[ "$PRIORTASK" -ge 2 || "$PRIORTASK" == "-1" || "$PRIORTASK" == "CONSENSUS" ]]; then 
-FILE="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
+FILE="IMMUNOAGINGCOMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
 	if [ ! -e "$FILE" ]; then
 		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
 		exit 888
@@ -66,7 +66,7 @@ SAMPLES=$((SAMPLES+1))
 fi 
 ## Stages using 'pre-file' (stage 1)
 if [[ "$PRIORTASK" == "1" ]]; then
-FILE="COMMANDLOGS/job_${RUNNAME}_${PRIORTASK}.txt"
+FILE="IMMUNOAGINGCOMMANDLOGS/job_${RUNNAME}_${PRIORTASK}.txt"
 echo $FILE
 	if [ ! -e "$FILE" ]; then
 		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
@@ -116,6 +116,9 @@ module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
 fi
+
+
+
 # Task Arguments for TASK 1
 ID=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$1}" $SAMPLES_FILE_POST) 
 SAMPLE=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$2}" $SAMPLES_FILE_POST)      # Sample ID
@@ -132,6 +135,32 @@ TYPE=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$12}" $SAMPLES_FILE_POST)
 BARCODE=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$13}" $SAMPLES_FILE_POST)
 RECEPTOR=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$14}" $SAMPLES_FILE_POST)
 ORF_FILTER=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$15}" $SAMPLES_FILE_POST)
+FILE_LENGTH=$(awk '{print NF}' $SAMPLES_FILE_POST | sort -nu | tail -n 1)
+
+OTHER="${TYPE},${BARCODE},${RECEPTOR}"
+
+## If ORF Filter not provided (when full 14 other columns provided - defaults to TRUE 
+if [[ -z "$ORF_FILTER" && "$FILE_LENGTH" -eq 14 ]] ;then 
+	ORF_FILTER="True"
+fi 
+
+if [[ "$FILE_LENGTH" -lt 14 && "$FILE_LENGTH" -gt 11 ]]; then 
+	ORF_FILTER=$(awk  -F '\t' "{if (NR==$SGE_TASK_ID) print \$NF}" $SAMPLES_FILE_POST)
+	RECEPTOR="STANDARD"
+fi 
+
+if [[ ! "$ORF_FILTER" =~ (True|ORF) ]]; then 
+	ORF_FILTER="True"
+fi 
+
+if [[ "$ORF_FILTER" == "TRUE" ]]; then 
+	ORF_FILTER="True"
+fi 
+
+if [[ "$FILE_LENGTH" -le 12 ]]; then 
+	OTHER=""
+fi 
+	
 
 echo "********************************************************"
 echo "* Job Details"
@@ -146,6 +175,7 @@ echo
 echo "********************************************************"
 echo "* Job Parameters"
 echo "********************************************************"
+echo "No. Inputs      : ${FILE_LENGTH}"
 echo "ID     		  : ${ID}"
 echo "SAMPLE          : ${SAMPLE}"
 echo "INFO     		  : ${INFO}"
@@ -157,23 +187,22 @@ echo "OUTPUTDIR       : ${OUTPUTDIR}"
 echo "PLATFORM        : ${PLATFORM}"
 echo "SPECIES         : ${SPECIES}"
 echo "CONSTANTPRIMER  : ${CONSTANTPRIMER}"
-echo "TYPE            : ${TYPE}"
-echo "BARCODE         : ${BARCODE}"
+echo "OTHER           : ${OTHER}"
 echo "RECEPTOR        : ${RECEPTOR}"
 echo "ORF Filtering   : ${ORF_FILTER}"
 echo "Run Name        : ${RUNNAME}"
 echo "********************************************************"
 
 
-# PRINT JOB 1
+
 if [[ "$TASK" == 1 ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 1 ${TYPE},${BARCODE},${RECEPTOR} ${RECEPTOR}"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 1 $OTHER ${RECEPTOR}"
 elif [[ "$TASK" == 2 ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 2 ${TYPE},${BARCODE},${RECEPTOR} ${RECEPTOR} ${ORF_FILTER}"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 2 $OTHER ${RECEPTOR} ${ORF_FILTER}"
 elif [[ "$TASK" == "2UJ" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality_unjoined.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 2 ${TYPE},${BARCODE},${RECEPTOR} ${RECEPTOR}"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality_unjoined.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 2 $OTHER ${RECEPTOR}"
 elif [[ "$TASK" == 3 ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 3 ${TYPE},${BARCODE},${RECEPTOR} ${RECEPTOR}"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 3 $OTHER ${RECEPTOR}"
 elif [[ "$TASK" == 4 ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Generate_repertoire_statistics.py ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/ ${ID} ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_${ID}.fasta ${OUTPUTDIR}ORIENTATED_SEQUENCES/Filtered_ORFs_sequences_all_${ID}.fasta ${GENE} ${SPECIES} ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_${ID}.txt ANNOTATE,STATISTICS ${RECEPTOR}"
 elif [[ "$TASK" == 5 ]]; then
@@ -183,7 +212,7 @@ CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Combine_ext
 elif [[ "$TASK" == "RS" ]]; then
 CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE}"
 elif [[ "$TASK" == "JACCARD" ]]; then
-CMD="Rscript AnalysisJaccard.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE}"
+CMD="Rscript AnalysisJaccard.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE} -t ${JACCARD_TASK}"
 elif [[ "$TASK" == "ISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
 elif [[ "$TASK" == "ISO2" ]]; then
@@ -217,7 +246,7 @@ echo
 eval "${CMD}"
 
 ## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
-NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
+NWCMD="echo ${ID} >> IMMUNOAGINGCOMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
 eval "${NWCMD}"
 
 

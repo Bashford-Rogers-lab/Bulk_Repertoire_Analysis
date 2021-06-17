@@ -39,6 +39,94 @@ def Get_sample_files(batch_file):
   fh.close()
   return(id, dir)
 
+def Split_functional_non_function(id,dir): 
+  for s in range(len(id)):
+    print "\t\t", s, id
+    sample,dir_use = id[s],dir[s]
+    dir_IMGT = dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT/"
+    fasta_file = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+sample+".fasta"
+    fh= open(fasta_file,"r")
+    ids = {}
+    for header,sequence in fasta_iterator(fh):
+      ids[header.split("__")[0]] = ">"+header+"\n"+sequence
+    print "\r","read samples:",sample, "n sequences:",len(ids)
+    fh.close()
+    files = ['10_V-REGION-mutation-hotspots.txt','1_Summary.txt','2_IMGT-gapped-nt-sequences.txt','3_Nt-sequences.txt','4_IMGT-gapped-AA-sequences.txt',
+        '5_AA-sequences.txt','6_Junction.txt','7_V-REGION-mutation-and-AA-change-table.txt','8_V-REGION-nt-mutation-statistics.txt','9_V-REGION-AA-change-statistics.txt']
+    type_seq = Tree()
+    file = dir_IMGT+"IMGT_"+sample+"_1_Summary.txt"
+    fh=open(file,"r")
+    for l in fh:
+      l=l.strip().split("\t")
+      if(l[0]!='Sequence number'):
+        typ = l[2]
+        if(typ=="productive (see comment)"):typ = "productive"
+        if(typ=="unproductive (see comment)"):typ = "unproductive"
+        if(typ in [ "productive", "unproductive"]):
+          type_seq[typ][l[1].split("__")[0]].value = 1
+    fh.close()
+    for t in type_seq: 
+      print "\t",t, len(type_seq[t])
+      ### fasta file
+      out, ind = '',0
+      file = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+sample+"_"+t+".fasta"
+      fh=open(file, "w")
+      fh.close()
+      for id1 in type_seq[t]: 
+        if(id1 in ids):
+          out=out+ids[id1]+"\n"
+          ind = ind+1
+          if(ind>500):
+            Write_out(out, file)
+            out, ind = '',0
+        else:
+          print "not found",id1
+      fh.close()
+      Write_out(out, file)
+      ### cluster file
+      file_in = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+sample+".txt"
+      file_out = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+sample+"_"+t+".txt"
+      h=open(file_out, "w")
+      fh.close()
+      fh=open(file_in,"r")
+      out, ind = '',0
+      for l in fh:
+        if(l[0]!='#'):
+          l1=l
+          l=l.strip().split()
+          if(l[2].split("__")[0] in type_seq[t]):
+            out=out+l1
+            ind = ind+1
+            if(ind>500):
+              Write_out(out, file_out)
+              out, ind = '',0
+      fh.close()
+      Write_out(out, file)
+      out, ind = '',0
+      for f in range(len(files)): 
+        file_in = dir_IMGT+"IMGT_"+sample+"_"+files[f]
+        file_out = dir_IMGT+"IMGT_"+sample+"_"+t+"_"+files[f]
+        fh=open(file_out, "w")
+        fh.close()
+        fh=open(file_in,"r")
+        out, ind = '',0
+        for l in fh:
+          l1 = l
+          l=l.strip().split("\t")
+          if(l[0]!='Sequence number'):
+            id1 = l[1].split("__")[0]
+            if(id1 in type_seq[t]):
+              out = out+l1
+              ind = ind+1
+              if(ind>500):
+                Write_out(out, file_out)
+                out, ind = '',0
+        fh.close()
+        Write_out(out, file_out)
+        out, ind = '',0
+        print files[f]
+  return()
+
 def Extract_sequences_for_IMGT(id,dir,batch_name):
   dir_use = dir[0]
   extract = True
@@ -131,8 +219,9 @@ for i in range(len(batch_name)):
 batch_name = list(set(batch_name1))
 print batch_name
 ##### extract sequences from batched files for IMGT
-Extract_sequences_for_IMGT(id,dir,batch_name)
-### check sequences which ones are missed/added
+#Extract_sequences_for_IMGT(id,dir,batch_name)
 
+#### split functional and non-functional sequences + IMGT files for IsoTyper
+Split_functional_non_function(id,dir)
 
 

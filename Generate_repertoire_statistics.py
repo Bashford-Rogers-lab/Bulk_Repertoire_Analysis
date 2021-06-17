@@ -58,71 +58,6 @@ def Uniq(v):
   C=set(v)
   return list(C)
 
-def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_repertoire_statistics_file,isotyper_primer_set):
-  fh=open(cluster_file,"r")
-  cluster,vertices=Tree(), Tree()
-  index, totalc, totalv, totalreads, sizesv, c_sizes,vertices_in_max_cluster = 0,0,0,0,[],{},0
-  total_v, total_reads = [],[]
-  sizesv, c_sizes= {},{}
-  chains_short = []
-  t1,t2 = 0,0
-  n = 0
-  for l in fh:
-    if(l[0]!="#"):
-      l=l.strip().split()
-      id = l[2]
-      chains, freq, id_short = id.split("|")[1].split("_"), map(int, id.split("__")[1].split("|")[0].split("_")), id.split("__")[0]
-      t1 = t1+sum(freq)
-      n = n+1
-      if(len(chains_short)==0):
-        for i in range(0,len(chains)):
-          c = chains[i].split("*")[0]
-          if(isotyper_primer_set =="INNER_DD"):
-            if(c in ["IGHA1","IGHA2"]):c = "IGHA"
-            elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
-          if(c not in chains_short):chains_short.append(c)
-          #if(c in chains_short):chains_index[chains[i].split("*")[0]] = chains_short.index(c)
-          #else:
-          #  chains_short.append(c)
-          #  chains_index[chains[i].split("*")[0]] = chains_short.index(c)
-      non_zero = [i for i in range(len(freq)) if freq[i]!=0]
-      if(len(total_v)==0):
-        total_v, total_reads = [0]*len(chains_short),[0]*len(chains_short)
-        for c in chains_short:
-          sizesv[c], c_sizes[c] = [],[]
-      for i in non_zero:
-        c = chains[i].split("*")[0]
-        if(isotyper_primer_set =="INNER_DD"):
-          if(c in ["IGHA1","IGHA2"]):c = "IGHA"
-          elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
-        cluster[c][l[1]][freq[i]][id_short].value=1
-        index = chains_short.index(c)
-        total_v[index] = total_v[index]+1
-        sizesv[c] =sizesv[c]+[freq[i]]
-        total_reads[index] =total_reads[index]+freq[i]
-  fh.close()
-  print total_reads, t1, n
-  if(t1 != sum(total_reads)):print "ERROR IN COUNTING!!"
-  out="#Id\tIsotype\tN reads\tN vertices\tVertex Gini Index\tCluster Gini Index\tLargest Cluster (%)\t2nd Largest Cluster (%)\n"
-  #out="#Id\tAnalysis\tN reads\tN vertices\tVertex Gini Index\tCluster Gini Index\tLargest Cluster (%)\t2nd Largest Cluster (%)\t% Vertices in largest cluster\tVertex Renyi\tCluster Renyi\tGene\tSpecies\n"
-  for c1 in chains_short: 
-    cluster_sizes_sub = []
-    for clus in cluster[c1]:
-      f = 0
-      for f1 in cluster[c1][clus]:
-        f = f+(f1*len(cluster[c1][clus][f1]))
-      cluster_sizes_sub = cluster_sizes_sub+[f]
-    if(len(cluster_sizes_sub)>0):
-      (vpoints,vvdf)=VDF(sizesv[c1])
-      (cpoints,cvdf)=VDF(cluster_sizes_sub)
-      vgini, cgini=Gini_index(cpoints,cvdf, vpoints,vvdf,sum(cluster_sizes_sub),sum(sizesv[c1]),total_v)
-      max_pop, max_1_pop = cpoints[len(cpoints)-1]*100.0/sum(sizesv[c1]), cpoints[len(cpoints)-2]*100.0/sum(sizesv[c1])
-      out = out+str(sample)+"\t"+c1+"\t"+str(sum(sizesv[c1]))+"\t"+str(len(sizesv[c1]))+"\t"+str(vgini)+"\t"+str(cgini)+"\t"+str(max_pop)+"\t"+str(max_1_pop)+"\n"
-  fh=open(per_chain_repertoire_statistics_file, "w")
-  fh.write(out)
-  fh.close()
-  return()
-
 def VDF (n):
   points=sorted(Uniq(n))
   vdf=[]
@@ -233,7 +168,7 @@ def Get_Gini(n,v):
   giniIdx = 100 + (100 - 2 * sumYs)/n #Gini index 
   return(giniIdx/100)
 
-def Get_constant_region_distribution(seq_file,constant_region_count_file,pat,annot_file):
+def Get_constant_region_distribution(seq_file,constant_region_count_file,pat,annot_file,constant_region):
   IHGDM_ind,cw_ind = [],[]
   IGHDM_seqs,counts = {},{}
   start = 0
@@ -250,7 +185,8 @@ def Get_constant_region_distribution(seq_file,constant_region_count_file,pat,ann
   for header,sequence in fasta_iterator(fh):
     header1 = header.split("__")[0]
     if(header1 in muts): 
-      freq, const = map(int,header.split("__")[1].split("|")[0].split("_")), header.split("|")[1].split("_")
+      if(constant_region=="TRUE"):freq, const = map(int,header.split("__")[1].split("|")[0].split("_")), header.split("|")[1].split("_")
+      else:freq, const = map(int,header.split("__")[1].split("|")[0].split("_")),"ALL"
       if(start==0):
         start = 1
         tcr = [i for i in range(len(const)) if const[i].count("TR")!=0]
@@ -455,7 +391,7 @@ def Intialise_files(dir):
     if(c.count("No such file or directory")==1):commands.getoutput("mkdir "+d)
   return()
 
-def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_repertoire_statistics_file,isotyper_primer_set):
+def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_repertoire_statistics_file,isotyper_primer_set,constant_region):
   fh=open(cluster_file,"r")
   cluster,vertices=Tree(), Tree()
   index, totalc, totalv, totalreads, sizesv, c_sizes,vertices_in_max_cluster = 0,0,0,0,[],{},0
@@ -468,7 +404,9 @@ def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_reperto
     if(l[0]!="#"):
       l=l.strip().split()
       id = l[2]
-      chains, freq, id_short = id.split("|")[1].split("_"), map(int, id.split("__")[1].split("|")[0].split("_")), id.split("__")[0]
+      id_short=id.split("__")[0]
+      if(constant_region=="TRUE"):freq, chains = map(int,id.split("__")[1].split("|")[0].split("_")), id.split("|")[1].split("_")
+      else:freq, chains = map(int,id.split("__")[1].split("|")[0].split("_")),"ALL"
       t1 = t1+sum(freq)
       n = n+1
       if(len(chains_short)==0):
@@ -580,11 +518,12 @@ if("ANNOTATE" in command):
     command1 = "python "+Local_immune_repertoire_annotator+" "+dir+"TMP/ "+id+" "+seq_file+" "+gene+" "+species
     commands.getoutput(command1)
     Get_gene_frequencies(annot_file, gene_freq_file,gene,id)
-    Get_constant_region_distribution(seq_file,constant_region_count_file,id,annot_file)
+    Get_constant_region_distribution(seq_file,constant_region_count_file,id,annot_file,constant_region)
 if("STATISTICS" in command):
   Initalise_file(network_statistics)
   Initalise_file(cluster_statistics)
   Get_network_statistics(cluster_file, id, dir,network_statistics,gene,species,cluster_size_distribution,vertex_size_distribution)
   Get_cluster_stats(annot_file, cluster_file, id, dir,cluster_statistics,gene,species,seq_file,loc)
-  Get_network_statistics_per_chain(cluster_file, id, dir,per_chain_repertoire_statistics_file,isotyper_primer_set)
+  Get_network_statistics_per_chain(cluster_file, id, dir,per_chain_repertoire_statistics_file,isotyper_primer_set,constant_region)
+
 

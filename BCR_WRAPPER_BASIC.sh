@@ -1,10 +1,11 @@
 #!/bin/bash
 
 #$ -cwd
-#$ -N BCR_TCR_PIPELINE
+#$ -N BCR_TCR_p2
 #$ -q long.qc
 #$ -pe shmem 1
-
+#$ -e COMMANDLOGS/
+#$ -o COMMANDLOGS/
 
 # If there's an error, fail the whole script
 set -e -o pipefail
@@ -24,90 +25,10 @@ module load networkx/2.2-foss-2019b-Python-2.7.16
 # File two containing the PCR multiplexed samples 
 SAMPLES_FILE_POST=$1
 TASK=$2
-## Runname or in the case of part 2 it will be the samples file pre 
+## Runname or in the case of part 2 and 1  it will be the samples file pre/post 
 RUNNAME=$3
 BATCH_FILE=$4
 JACCARD_TASK=$5
-
-echo "********************************************************"
-echo "* Job Dependancies"
-echo "********************************************************"
-
-#------------------------------------------------------------
-## Which job was run previously: 
-## For numerical tasks: 
-PRIORTASK=$((TASK-1))
-
-## For named tasks:  
-if [[ "$TASK" == "RS" ]]; then 
-	PRIORTASK=5
-fi
-if [[ "$TASK" == "ISO1"  || "$TASK" == "TCRISO1" ]]; then 
-	PRIORTASK=6
-fi
-if [[ "$TASK" == "JACCARD" ]]; then 
-	PRIORTASK=5
-fi
-
-#------------------------------------------------------------
-## Which Sample file was Used and how long was it. 
-## Stages using 'post-file' (2 onwards and Consensus Task)
-if [[ "$PRIORTASK" -ge 2 || "$PRIORTASK" == "-1" || "$PRIORTASK" == "CONSENSUS" ]]; then 
-FILE="IMMUNOAGINGCOMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
-echo ${FILE}
-	if [ ! -e "$FILE" ]; then
-		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
-		exit 888
-	else 
-		echo "DEPENDANCIES: Final File from previous job exists: ${FILE}"
-	fi 
-LENGTHJOBS=$(cat ${FILE} | wc -l)
-SAMPLES=$(cat ${SAMPLES_FILE_POST} | wc -l)
-SAMPLES=$((SAMPLES+1))
-fi 
-## Stages using 'pre-file' (stage 1)
-if [[ "$PRIORTASK" == "1" ]]; then
-FILE="IMMUNOAGINGCOMMANDLOGS/job_${RUNNAME}_${PRIORTASK}.txt"
-echo ${FILE}
-	if [ ! -e "$FILE" ]; then
-		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
-		exit 888
-	else 
-		echo "DEPENDANCIES: Final File from previous job exists: ${FILE}"
-	fi 
-LENGTHJOBS=$(cat ${FILE} | wc -l)
-SAMPLES=$(cat ${RUNNAME} | wc -l)
-SAMPLES=$((SAMPLES+1))
-fi 
-
-#------------------------------------------------------------
-## Checking whether prior jobs ran sucessfully - if not terminate script. 
-if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIORTASK" == "CONSENSUS" ]]; then
-	if [[ $LENGTHJOBS -ne $SAMPLES ]]; then 
-		echo "DEPENDANCIES: Not all dependancies ran sucessfully to completion"
-		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
-		exit 999
-	else 
-		echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
-		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
-	fi
-else   
-    if [[ "$PRIORTASK" == "0" ]]; then
-		echo "DEPENDANCIES: NO DEPENDANCIES REQUIRED"
-		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
-    fi 
-    if [[ "$PRIORTASK" -ge 5 && $LENGTHJOBS -ne "1" ]]; then
-		echo "DEPENDANCIES: Not all dependancies ran sucessfully to completion"
-		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
-		exit 999
-    fi 
-	if [[ "$PRIORTASK" -ge 5 && $LENGTHJOBS -eq "1" ]]; then
-		echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
-		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
-	fi
-fi 
-
-
 
 #------------------------------------
 
@@ -117,7 +38,6 @@ module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
 fi
-
 
 
 # Task Arguments for TASK 1
@@ -161,6 +81,7 @@ fi
 if [[ "$FILE_LENGTH" -le 12 ]]; then 
 	OTHER=""
 fi 
+
 	
 
 echo "********************************************************"
@@ -188,16 +109,14 @@ echo "OUTPUTDIR       : ${OUTPUTDIR}"
 echo "PLATFORM        : ${PLATFORM}"
 echo "SPECIES         : ${SPECIES}"
 echo "CONSTANTPRIMER  : ${CONSTANTPRIMER}"
-echo "TYPE  		  : ${TYPE}"
-echo "BARCODE         : ${BARCODE}"
-echo "RECEPTOR        : ${RECEPTOR}"
 echo "OTHER           : ${OTHER}"
+echo "RECEPTOR        : ${RECEPTOR}"
 echo "ORF Filtering   : ${ORF_FILTER}"
 echo "Run Name        : ${RUNNAME}"
 echo "********************************************************"
 
 
-# PRINT JOB 1
+
 if [[ "$TASK" == 1 ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_processing_and_quality.py ${OUTPUTDIR} ${ID} ${SAMPLE} ${GENE} ${INITIALPAIRING} ${SPECIES} ${FASTQDIRECTORY} 200 ${CONSTANTPRIMER} ${PLATFORM} 1 $OTHER ${RECEPTOR}"
 elif [[ "$TASK" == 2 ]]; then

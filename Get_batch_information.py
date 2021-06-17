@@ -110,7 +110,6 @@ print batch_file
 
 id, dir = Get_sample_files(batch_file)
 
-
 Get_isotype_depth(id,dir)
 Batch_sequences_for_IMGT(id,dir)
 

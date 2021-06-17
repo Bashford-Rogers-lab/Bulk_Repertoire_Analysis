@@ -1144,6 +1144,8 @@ def Non_barcoded_trimming(forward, reverse,  barcoded_j, barcoded_v, rc,Tmp_file
   J_found,v_found,tot,indexing=0,0,0,0
   seqs1,t=Tree(),0
   for header,seq in fasta_iterator(fh):
+    header = header.split()[0]
+    header = header.replace(":","").replace("-","")
     seq=seq.upper()
     seqs1[seq][header].value=1
     t=t+1
@@ -1378,19 +1380,27 @@ def Filter_IgJ_genes(Trim1, Trim2, refj,primer_file,ref_const,primer_tag_file_co
       fh=open(Trim1, "r")
       e_value = 10
       c = 0
+      out2,ind2 = '',0
       for header,sequence in fasta_iterator(fh):
-        #inf = len(sequence)-indent
-        inf = 0
-        #if(inf<0):10
-        out=out+">"+header+"\n"+sequence[inf:len(sequence)].replace("...","")+"\n"
-        seqs[header]=sequence
-        ind,batch = ind+1,batch+1
-        c = c+1
-        if(batch>=batch_size):
-          Blast_match_J(out, seqs, Trim1, Trim2, refj,e_value,blastall,refv,primer_length)
-          out,batch,seqs = '',0,{}
-          print "BATCH"
+        freq = map(int, header.split("__")[1].split("|")[0].split("_"))
+        if(sum(freq)<=1):
+          inf = 0
+          #if(inf<0):10
+          out=out+">"+header+"\n"+sequence[inf:len(sequence)].replace("...","")+"\n"
+          seqs[header]=sequence
+          ind,batch = ind+1,batch+1
+          c = c+1
+          if(batch>=batch_size):
+            Blast_match_J(out, seqs, Trim1, Trim2, refj,e_value,blastall,refv,primer_length)
+            out,batch,seqs = '',0,{}
+        else:
+          out2=out2+">"+header+"\n"+sequence+"\n"
+          ind2 = ind2+1
+          if(ind2>=30):
+            Write_out(out2, Trim2)
+            out2,ind2 = '',0
       fh.close()
+      Write_out(out2, Trim2)
       if(len(out)>2):
         Blast_match_J(out, seqs, Trim1, Trim2, refj,e_value,blastall,refv,primer_length)
         out,batch = '',0
@@ -1399,7 +1409,7 @@ def Filter_IgJ_genes(Trim1, Trim2, refj,primer_file,ref_const,primer_tag_file_co
       out,ind,batch,batch_size = '',0,0,500
       seqs,indent={},150
       fh=open(Trim1, "r")
-      e_value = 0.1
+      e_value = 1
       for header,sequence in fasta_iterator(fh):
         inf = len(sequence)-indent
         if(inf<0):10
@@ -1435,8 +1445,7 @@ def Blast_match_J(out, seqs, Trim1, Trim2, refj,e_value, blastall,refv,primer_le
   for l in fh:
     l=l.strip().split()
     if(l[0] not in done):
-      print int(l[3])
-      if(int(l[3])>50):
+      if(int(l[3])>20):
         start = int(l[5])+primer_length
         done[l[0]]= start
   fh.close()
@@ -2640,7 +2649,9 @@ Seq_file2 = dir+"FASTQ_FILES/Sequences_"+id+"_2.fasta"
 #Tmp_file = dir+"ORIENTATED_SEQUENCES/TMP/Untrimmed_"+id+".fasta"
 if(method=="Multiplex_FORWARD_BARCODE_GROUPED" or method=="Multiplex_REVERSE_BARCODE_GROUPED"): 
   Tmp_file = dir+"FASTQ_FILES/Seqs_barcode_split_"+barcode_group+"_"+other.split(",")[0]+".fasta" 
-else: Tmp_file = dir+"FASTQ_FILES/Seqs_barcode_split_"+barcode_group+".fasta"
+else: 
+  Tmp_file = dir+"FASTQ_FILES/Seqs_barcode_split_"+barcode_group+".fasta"
+  Tmp_file = dir+"FASTQ_FILES/Sequences_"+id+"_1.fasta"
 Trim1=dir+"ORIENTATED_SEQUENCES/TMP/Trimmed_orientated_all_"+id+".fasta"
 Trim2=dir+"ORIENTATED_SEQUENCES/TMP/Filtered_J_"+id+".fasta"
 Trim3=dir+"ORIENTATED_SEQUENCES/TMP/Filtered_reduced_"+id+".fasta"
@@ -2695,6 +2706,7 @@ print gene
 ### Filtering and processing reads
 if(command_source.count("2")!=0):
   if(gene.count("IG")!=0):
+    print Tmp_file
     Trim_sequences_BCR_TCR(Tmp_file,Fail_file,Trim1, gene,paired,species,primer_file,primer_tag_file,tmp_file,primer_tag_file_count,id,ref_const,reverse_primer_group,cd_hit_directory,other,barcode_group)
     Filter_IgJ_genes(Trim1, Trim2, refj,primer_file,ref_const,primer_tag_file_count,blastall,refv,primer_length)
     Reduce_sequences(Trim2, Trim3,primer_file)

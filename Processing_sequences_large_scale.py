@@ -90,23 +90,32 @@ else:
       command2 = python+" "+wkg_dir+"Generate_repertoire_statistics.py "+dir+"ORIENTATED_SEQUENCES/ANNOTATIONS/ "+id+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+id+".fasta "+dir+"ORIENTATED_SEQUENCES/Filtered_ORFs_sequences_all_"+id+".fasta "+gene_types+" "+species+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+id+".txt ANNOTATE,STATISTICS "+reverse_primer_group[i]
       commands.append(command2)
     if("ISO1" in command):
-      command1 = "python "+wkg_dir+"IsoTyper_2.0.py "+id+" "+id+" "+dir+" "+species+" "+reverse_primer_group[i]+" "+file
+      command1 = python+" "+wkg_dir+"IsoTyper_2.0.py "+id+" "+id+" "+dir+" "+species+" "+reverse_primer_group[i]+" "+file
+      commands.append(command1)
+    if("ISO1_PRODUCTIVE" in command):
+      command1 = python+" "+wkg_dir+"IsoTyper_2.0.py "+id+"_productive "+id+"_productive "+dir+" "+species+" "+reverse_primer_group[i]+" "+file
+      commands.append(command1)
+    if("ISO1_NON_PRODUCTIVE" in command):
+      command1 = python+" "+wkg_dir+"IsoTyper_2.0.py "+id+"_unproductive "+id+"_unproductive "+dir+" "+species+" "+reverse_primer_group[i]+" "+file
       commands.append(command1)
     if("ISO2" in command):
-      command1 = "python "+wkg_dir+"Per_isotype_cluster_analyses.py "+id+" "+id+" "+dir+" "+species+" "+reverse_primer_group[i]+" "+file
+      command1 = python+" "+wkg_dir+"Per_isotype_cluster_analyses.py "+id+" "+id+" "+dir+" "+species+" "+reverse_primer_group[i]+" "+file
       commands.append(command1)
     if("NONISO1" in command):
-      command1 = "python "+wkg_dir+"Non_isotyper_1.0.py "+id+" "+id+" "+dir+" "+species+" "
+      command1 = python+" "+wkg_dir+"Non_isotyper_1.0.py "+id+" "+id+" "+dir+" "+species+" "
       commands.append(command1)
     if("TCRISO1" in command):
-      command1 = "python "+wkg_dir+"TCRoTyper_1.0.py "+id+" "+id+" "+dir+" "+species+" "+reverse_primer_group[i]
+      command1 = python+" "+wkg_dir+"TCRoTyper_1.0.py "+id+" "+id+" "+dir+" "+species+" "+reverse_primer_group[i]
       commands.append(command1)
     if("CSR" in command):
-      command14 = "python "+wkg_dir+"Class_switch_recombination_analysis.py "+dir+"ORIENTATED_SEQUENCES/ANNOTATIONS/ "+id+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+id+".fasta "+dir+"ORIENTATED_SEQUENCES/Filtered_ORFs_sequences_all_"+id+".fasta "+gene_types+" "+species+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+id+".txt 1"
+      command14 = python+" "+wkg_dir+"Class_switch_recombination_analysis.py "+dir+"ORIENTATED_SEQUENCES/ANNOTATIONS/ "+id+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+id+".fasta "+dir+"ORIENTATED_SEQUENCES/Filtered_ORFs_sequences_all_"+id+".fasta "+gene_types+" "+species+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+id+".txt 1"
       commands.append(command14)
     if("SUBSAMPLE" in command):
-      command16 = "python "+wkg_dir+"Subsampling_networks.py "+dir+"ORIENTATED_SEQUENCES/ANNOTATIONS/ "+id+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+id+".fasta "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Edges_"+id+".txt"
+      command16 = python+" "+wkg_dir+"Subsampling_networks.py "+dir+"ORIENTATED_SEQUENCES/ANNOTATIONS/ "+id+" "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+id+".fasta "+dir+"ORIENTATED_SEQUENCES/NETWORKS/Edges_"+id+".txt"
       commands.append(command16)
+    if( "CONSENSUS" in command):
+      command1 = python+" "+wkg_dir+"Get_consensus_counts.py  "+dir+" "+id+" "
+      commands.append(command1)
   ##### only run once per batch here: 
   if("5" in command):
     command2 = python+" "+wkg_dir+"Get_batch_information.py "+file
