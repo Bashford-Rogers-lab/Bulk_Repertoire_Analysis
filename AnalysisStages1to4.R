@@ -43,7 +43,7 @@ if(gene=="IGH"){
 	visualise_isoptype_cluster_bcr(results_outputdir, runname)
 } 
 
-if(gene=="TCR" || gene=="TRB" || gene=="TRA"){
+if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
 	visualise_filtering_tcr(results_outputdir, runname)
 	visualise_vj_usage_tcr(results_outputdir, runname)
 	visualise_isoptype_cluster_tcr(results_outputdir, runname)

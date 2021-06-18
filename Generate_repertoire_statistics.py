@@ -259,7 +259,7 @@ def Get_gene_frequencies(annot_file, gene_freq_file,gene,id):
   print "TOTAL READS:",total,"FOUND READS:", found
   out=''
   for g in genes:
-    out=out+id+"\t"+g+"\t"+str(genes[g])+"\t"+g[0:5]+"\n"
+    out=out+id+"\t"+g+"\t"+str(genes[g])+"\t"+g.split("-")[0].split("*")[0].split("|")[0]+"\n"
   fh=open(gene_freq_file, "w")
   fh.write(out)
   fh.close()
