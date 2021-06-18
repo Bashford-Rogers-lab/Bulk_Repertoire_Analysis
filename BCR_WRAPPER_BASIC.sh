@@ -2,7 +2,7 @@
 
 #$ -cwd
 #$ -N BCR_TCR_p2
-#$ -q long.qc
+#$ -q short.qc
 #$ -pe shmem 1
 #$ -e COMMANDLOGS/
 #$ -o COMMANDLOGS/
@@ -166,7 +166,7 @@ echo
 eval "${CMD}"
 
 ## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
-NWCMD="echo ${ID} >> IMMUNOAGINGCOMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
+NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
 eval "${NWCMD}"
 
 # Done 

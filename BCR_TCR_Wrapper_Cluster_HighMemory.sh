@@ -53,7 +53,7 @@ fi
 ## Which Sample file was Used and how long was it. 
 ## Stages using 'post-file' (2 onwards and Consensus Task)
 if [[ "$PRIORTASK" -ge 2 || "$PRIORTASK" == "-1" || "$PRIORTASK" == "CONSENSUS" ]]; then 
-FILE="IMMUNOAGINGCOMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
+FILE="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
 	if [ ! -e "$FILE" ]; then
 		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
 		exit 888
@@ -66,7 +66,7 @@ SAMPLES=$((SAMPLES+1))
 fi 
 ## Stages using 'pre-file' (stage 1)
 if [[ "$PRIORTASK" == "1" ]]; then
-FILE="IMMUNOAGINGCOMMANDLOGS/job_${RUNNAME}_${PRIORTASK}.txt"
+FILE="COMMANDLOGS/job_${RUNNAME}_${PRIORTASK}.txt"
 echo $FILE
 	if [ ! -e "$FILE" ]; then
 		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
@@ -246,7 +246,7 @@ echo
 eval "${CMD}"
 
 ## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
-NWCMD="echo ${ID} >> IMMUNOAGINGCOMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
+NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
 eval "${NWCMD}"
 
 
