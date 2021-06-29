@@ -26,7 +26,7 @@ if [[ "$STAGE" == "1" ]]; then
 
 	#Run Jobs and capture job submission IDS
 	# Part one uses pre-file
-	JOB_ID=$(qsub -t 1-${TASKS} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE 1 $SAMPLES_FILE_POST)
+	JOB_ID=$(qsub -pe shmem 1 -t 1-${TASKS} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE 1 $SAMPLES_FILE_POST)
 	echo "${SAMPLES_FILE_PRE},TASK1,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 	JOB_ID=${JOB_ID%.*}
 
@@ -34,27 +34,27 @@ if [[ "$STAGE" == "1" ]]; then
 	TASKS=$(cat ${SAMPLES_FILE_POST} | wc -l)
 	TASKS=$((TASKS+1))
 
-	JOB_ID=$(qsub -t 1-${TASKS} -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
+	JOB_ID=$(qsub -pe shmem 1 -t 1-${TASKS} -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK2,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	JOB_ID=$(qsub -t 1-${TASKS} -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 3)
+	JOB_ID=$(qsub -pe shmem 1 -t 1-${TASKS} -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 3)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK3,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	JOB_ID=$(qsub -t 1-${TASKS} -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 4)
+	JOB_ID=$(qsub -pe shmem 1 -t 1-${TASKS} -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 4)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK4,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
 	#Part five uses only 'one'
-	JOB_ID=$(qsub -t 1 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 5)
+	JOB_ID=$(qsub -pe shmem 1 -t 1 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} 5)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK5,ARRAYSIZE:1,JOBID:${JOB_ID}"
 
 	#Part five uses only 'one' and runs the R script 
-	JOB_ID=$(qsub -t 1 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} RS ${RUNNAME})
+	JOB_ID=$(qsub -pe shmem 8 -t 1 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE})
 	JOB_ID=${JOB_ID%.*}
-	echo "${SAMPLES_FILE_POST},TASK.RS,ARRAYSIZE:1,JOBID:${JOB_ID},RUNNAME:${RUNNAME}"
+	echo "${SAMPLES_FILE_POST},TASK.RS,ARRAYSIZE:1,JOBID:${JOB_ID},RUNNAME:${RUNNAME},BATCH_FILE:${BATCH_FILE}"
 
 	## Submitted all jobs stages 1-5+RS
 	exit 0
@@ -65,7 +65,7 @@ if [[ "$STAGE" == "2" ]]; then
 	echo "RUNNING STAGES 6 and ISO1"
 	#Run Jobs and capture job submission IDS
 	# Part one uses pre-file
-	JOB_ID=$(qsub -t 1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE 6)
+	JOB_ID=$(qsub -pe shmem 1 -t 1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE 6)
 	echo "${SAMPLES_FILE_PRE},TASK6,ARRAYSIZE:1},JOBID:${JOB_ID}"
 	JOB_ID=${JOB_ID%.*}
 	
@@ -74,7 +74,7 @@ if [[ "$STAGE" == "2" ]]; then
 	TASKS=$((TASKS+1))
 
 	#Run Jobs and capture job submission IDS
-	JOB_ID=$(qsub -t 1-${TASKS} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse -hold_jid ${JOB_ID} BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE ISO1)
+	JOB_ID=$(qsub -pe shmem 1 -t 1-${TASKS} -e COMMANDLOGS/${SAMPLES_FILE_POST}/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ -terse -hold_jid ${JOB_ID} BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE ISO1)
 	echo "${SAMPLES_FILE_PRE},TASK.ISO1,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 	JOB_ID=${JOB_ID%.*}
 	
@@ -91,14 +91,14 @@ if [[ "$STAGE" == "3" ]]; then
 	
 	#Run Jobs and capture job submission IDS
 	# Part one uses pre-file
-	JOB_ID=$(qsub -t 1-${TASKS} -terse BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE CONSENSUS)
+	JOB_ID=$(qsub -pe shmem 1 -t 1-${TASKS} -terse BCR_TCR_Wrapper_Cluster.sh $SAMPLES_FILE_PRE CONSENSUS)
 	echo "${SAMPLES_FILE_PRE},TASK.CONSENSUS,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 	JOB_ID=${JOB_ID%.*}
 	
 	TASKS=$(cat ${SAMPLES_FILE_POST} | wc -l)
 	TASKS=$((TASKS+1))
 	
-	JOB_ID=$(qsub -t 1 -terse -hold_jid ${JOB_ID} BCR_TCR_Wrapper_Cluster_HighMemory.sh $SAMPLES_FILE_PRE JACCARD ${RUNNAME} ${BATCH_FILE})
+	JOB_ID=$(qsub -pe shmem 10 -t 1 -terse -hold_jid ${JOB_ID} BCR_TCR_Wrapper_Cluster_HighMemory.sh $SAMPLES_FILE_PRE JACCARD ${RUNNAME} ${BATCH_FILE})
 	echo "${SAMPLES_FILE_PRE},TASK.JACCARD,ARRAYSIZE:1,JOBID:${JOB_ID}"
 	JOB_ID=${JOB_ID%.*}
 	

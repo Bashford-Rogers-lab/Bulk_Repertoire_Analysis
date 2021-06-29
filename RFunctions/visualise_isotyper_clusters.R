@@ -23,7 +23,7 @@ visualise_isoptype_cluster_bcr <- function(path_to_outputdir = path_to_outputdir
 	if(dir.exists(paste0(path_to_outputdir, "/Plots"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
-	pdf(paste0(path_to_outputdir,'/Plots/Isotype_Cluster_Usage_QC_', Run_name, '.pdf'),width=30, height=20)
+	pdf(paste0(path_to_outputdir,'/Plots/Clustering_Results_QC_', Run_name, '.pdf'),width=30, height=20)
 	p1 <- ggplot(Iso_Clustering, aes(x=Sample, y=Largest_cluster_percent, fill=Isotype)) +geom_bar(stat="identity", position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Largest Cluster (%)") +labs(fill="Isotype")
 	p2 <- ggplot(Iso_Clustering, aes(x=Sample, y=Second_cluster_percent, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Second Large Cluster (%)") +labs(fill="Isotype")
 	p3 <- ggplot(Iso_Clustering, aes(x=Sample, y= Cluster_Gini_Index, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Cluster Gini Index") +labs(fill="Isotype")
@@ -34,7 +34,7 @@ visualise_isoptype_cluster_bcr <- function(path_to_outputdir = path_to_outputdir
 	if(dir.exists(paste0(path_to_outputdir, "/Summary"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Summary"))
 	}				
-	write.table(Iso_Clustering, paste0(path_to_outputdir, "/Summary/Isotype_Clustering_Results_", Run_name, ".txt"), sep="\t")
+	write.table(Iso_Clustering, paste0(path_to_outputdir, "/Summary/Clustering_Results_QC_", Run_name, ".txt"), sep="\t")
 }
 
 
@@ -62,18 +62,43 @@ visualise_isoptype_cluster_tcr <- function(path_to_outputdir = path_to_outputdir
 	if(dir.exists(paste0(path_to_outputdir, "/Plots"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
-	pdf(paste0(path_to_outputdir,'/Plots/Constant_Usage_and_Clustering_Results_QC_', Run_name, '.pdf'), width=30, height=20)
-	p1.1 <- ggplot(Iso_Clustering, aes(x=Sample, y=constant_percentage, fill=Isotype)) +geom_col(position = "fill", colour = "black") + scale_y_continuous(labels = scales::percent) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Constant Region")
-	p1 <- ggplot(Iso_Clustering, aes(x=Sample, y=Largest_cluster_percent, fill=Isotype)) +geom_bar(stat="identity", position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Largest Cluster (%)") +labs(fill="Constant Region")
-	p2 <- ggplot(Iso_Clustering, aes(x=Sample, y=Second_cluster_percent, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Second Large Cluster (%)") +labs(fill="Constant Region")
-	p3 <- ggplot(Iso_Clustering, aes(x=Sample, y= Cluster_Gini_Index, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Cluster Gini Index") +labs(fill="Constant Region")
-	p4 <- ggplot(Iso_Clustering, aes(x=Sample, y= Vertex_Gini_Index, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Vertex Gini Index") +labs(fill="Constant Region")
-	plot(p1.1)
+
+	max_identified <- as.character(Iso_Clustering$Isotype[which.max(Iso_Clustering$N_Reads)])
+	
+	if(max_identified =="TRBC2"){
+		max_identified <- c(max_identified, "TRBC1")
+	}
+	
+	if(max_identified =="TRBC1"){
+		max_identified <- c(max_identified, "TRBC2")
+	}
+	
+	if(max_identified =="TRGC2"){
+		max_identified <- c(max_identified, "TRGC1")
+	}
+	
+	if(max_identified =="TRGC1"){
+		max_identified <- c(max_identified, "TRGC2")
+	}
+	
+	Iso_Clustering_subset <- Iso_Clustering[Iso_Clustering$Isotype==max_identified[1]| Iso_Clustering$Isotype==max_identified[length(max_identified)],] 
+		
+	if(length(max_identified)==2){
+		plot_width <- 60
+	} else {
+		plot_width <- 30
+	} 
+	pdf(paste0(path_to_outputdir,'/Plots/Clustering_Results_QC_', Run_name, '.pdf'), width=plot_width, height=20)
+	p1 <- ggplot(Iso_Clustering_subset, aes(x=Sample, y=Largest_cluster_percent, fill=Isotype)) +geom_bar(stat="identity", position=position_dodge(), colour="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Largest Cluster (%)") +labs(fill="Constant Region") +facet_wrap(~Isotype, scales="free_y")
+	p2 <- ggplot(Iso_Clustering_subset, aes(x=Sample, y=Second_cluster_percent, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge(), colour="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Second Large Cluster (%)") +labs(fill="Constant Region")+facet_wrap(~Isotype, scales="free_y")
+	p3 <- ggplot(Iso_Clustering_subset, aes(x=Sample, y= Cluster_Gini_Index, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge(), colour="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Cluster Gini Index") +labs(fill="Constant Region")+facet_wrap(~Isotype, scales="free_y")
+	p4 <- ggplot(Iso_Clustering_subset, aes(x=Sample, y= Vertex_Gini_Index, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge(), colour="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Vertex Gini Index") +labs(fill="Constant Region")+facet_wrap(~Isotype, scales="free_y")
 	plot(plot_grid(p1, p2, ncol=1))
 	plot(plot_grid(p3, p4, ncol=1))
-	dev.off()				
+	dev.off()		
+	
 	if(dir.exists(paste0(path_to_outputdir, "/Summary"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Summary"))
 	}				
-	write.table(Iso_Clustering, paste0(path_to_outputdir, "/Summary/Constant_Usage_and_Clustering_Results_", Run_name, ".txt"), sep="\t")
+	write.table(Iso_Clustering, paste0(path_to_outputdir, "/Summary/Clustering_Results_QC_", Run_name, ".txt"), sep="\t")
 }

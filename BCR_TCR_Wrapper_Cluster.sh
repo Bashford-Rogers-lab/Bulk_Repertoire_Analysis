@@ -3,7 +3,6 @@
 #$ -cwd
 #$ -N BCR_TCR_PIPELINE
 #$ -q short.qc
-#$ -pe shmem 1
 
 
 # If there's an error, fail the whole script
@@ -213,7 +212,7 @@ CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Get_batch_i
 elif [[ "$TASK" == 6 ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Combine_extract_IMGT_information.py $1 ${OUTPUTDIR}"
 elif [[ "$TASK" == "RS" ]]; then
-CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE}"
+CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE}"
 elif [[ "$TASK" == "JACCARD" ]]; then
 CMD="Rscript AnalysisJaccard.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE} -t ${JACCARD_TASK}"
 elif [[ "$TASK" == "ISO1" ]]; then
