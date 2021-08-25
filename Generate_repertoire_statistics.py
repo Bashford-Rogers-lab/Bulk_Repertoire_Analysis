@@ -180,10 +180,12 @@ def Get_constant_region_distribution(seq_file,constant_region_count_file,pat,ann
       if(len(l)>=19):
         mm_v,mm_j =  int(l[17]),int(l[18])
         muts[l[0].split("__")[0]] = mm_v+mm_j
+      else:print("error1:",l)
   fh.close()
   fh=open(seq_file,"r")
   for header,sequence in fasta_iterator(fh):
     header1 = header.split("__")[0]
+    if(header1 not in muts):print("error2:",header1)
     if(header1 in muts): 
       if(constant_region=="TRUE"):freq, const = map(int,header.split("__")[1].split("|")[0].split("_")), header.split("|")[1].split("_")
       else:freq, const = map(int,header.split("__")[1].split("|")[0].split("_")),"ALL"
@@ -413,8 +415,10 @@ def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_reperto
         for i in range(0,len(chains)):
           c = chains[i].split("*")[0]
           if(isotyper_primer_set =="INNER_DD"):
-            if(c in ["IGHA1","IGHA2"]):c = "IGHA"
+            if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
             elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
+          if(c in ["TRBC1","TRBC2"]):c = "TRBC"
+          if(c in ["TRGC1","TRGC2"]):c = "TRCG"
           if(c not in chains_short):chains_short.append(c)
           #if(c in chains_short):chains_index[chains[i].split("*")[0]] = chains_short.index(c)
           #else:
@@ -430,6 +434,8 @@ def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_reperto
         if(isotyper_primer_set =="INNER_DD"):
           if(c in ["IGHA1","IGHA2"]):c = "IGHA"
           elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
+        if(c in ["TRBC1","TRBC2"]):c = "TRBC"
+        if(c in ["TRGC1","TRGC2"]):c = "TRCG"
         cluster[c][l[1]][freq[i]][id_short].value=1
         index = chains_short.index(c)
         total_v[index] = total_v[index]+1

@@ -1,9 +1,6 @@
 #!/bin/bash
 
 #$ -cwd
-#$ -N BCR_TCR_PIPELINE
-#$ -q short.qc
-
 
 # If there's an error, fail the whole script
 set -e -o pipefail
@@ -12,11 +9,12 @@ set -e -o pipefail
 # read/write what it's created by the script
 umask 002
 
+echo "********************************************************"
 # Load software modules
 module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load networkx/2.2-foss-2019b-Python-2.7.16
-
+echo "Loaded networkx/2.2-foss-2019b-Python-2.7.16 Module"
 
 # Job Arguments
 # File one containing the libraries
@@ -28,12 +26,21 @@ RUNNAME=$3
 BATCH_FILE=$4
 JACCARD_TASK=$5
 
+## Set up module environement for R scripts
+if [[ "$TASK" == "RS" || "$TASK" == "JACCARD" ]]; then
+module purge
+module use -a /apps/eb/dev/ivybridge/modules/all
+module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
+echo "Loaded R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0 Module"
+fi
+
+echo "********************************************************"
 echo "********************************************************"
 echo "* Job Dependancies"
 echo "********************************************************"
 
 #------------------------------------------------------------
-## Which job was run previously: 
+## Determining Pior Task Dependancies: 
 ## For numerical tasks: 
 PRIORTASK=$((TASK-1))
 
@@ -41,21 +48,30 @@ PRIORTASK=$((TASK-1))
 if [[ "$TASK" == "RS" ]]; then 
 	PRIORTASK=5
 fi
-if [[ "$TASK" == "ISO1"  || "$TASK" == "TCRISO1" ]]; then 
+if [[ "$TASK" == "ISO1"  || "$TASK" == "TCRISO1" || "$TASK" == "ISO1_NON_PRODUCTIVE" || "$TASK" == "ISO1_PRODUCTIVE" ]]; then 
 	PRIORTASK=6
 fi
-if [[ "$TASK" == "JACCARD" ]]; then 
+if [[ "$TASK" == "CONSENSUS" ]]; then 
 	PRIORTASK=5
 fi
 
+if [[ "$TASK" == "JACCARD" ]]; then 
+	PRIORTASK="CONSENSUS"
+fi
+
+if [[ "$JACCARD_TASK" -eq 1 || "$JACCARD_TASK" -eq 2 ]]; then 
+	PRIORTASK=5
+fi
+
+
 #------------------------------------------------------------
-## Which Sample file was Used and how long was it. 
-## Stages using 'post-file' (2 onwards and Consensus Task)
+## Determining which sample file (pre/post was used) and file length. 
+## Stages using 'post-file' (2 onwards and Consensus)
 if [[ "$PRIORTASK" -ge 2 || "$PRIORTASK" == "-1" || "$PRIORTASK" == "CONSENSUS" ]]; then 
 FILE="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
 echo ${FILE}
 	if [ ! -e "$FILE" ]; then
-		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
+		echo "DEPENDANCIES: Final File from previous job does NOT exist - something has gone wrong and no samples have run!"
 		exit 888
 	else 
 		echo "DEPENDANCIES: Final File from previous job exists: ${FILE}"
@@ -64,12 +80,13 @@ LENGTHJOBS=$(cat ${FILE} | wc -l)
 SAMPLES=$(cat ${SAMPLES_FILE_POST} | wc -l)
 SAMPLES=$((SAMPLES+1))
 fi 
+
 ## Stages using 'pre-file' (stage 1)
 if [[ "$PRIORTASK" == "1" ]]; then
 FILE="COMMANDLOGS/job_${RUNNAME}_${PRIORTASK}.txt"
 echo ${FILE}
 	if [ ! -e "$FILE" ]; then
-		echo "DEPENDANCIES: Final File from previous job does not exist - something has gone wrong!"
+		echo "DEPENDANCIES: Final File from previous job does NOT exist - something has gone wrong and no samples have run!"
 		exit 888
 	else 
 		echo "DEPENDANCIES: Final File from previous job exists: ${FILE}"
@@ -81,7 +98,45 @@ fi
 
 #------------------------------------------------------------
 ## Checking whether prior jobs ran sucessfully - if not terminate script. 
+## Print out Failed Samples to a failure file to easily identify.
+
+# Task Arguments for checks
+ID=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$1}" $SAMPLES_FILE_POST) 
+# All Samples for array job
+SAMPLE=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$2}" $SAMPLES_FILE_POST) 
+# All IDs for array job
+IDS=$(awk -F '\t' "{ print \$1 }" $SAMPLES_FILE_POST)
+
+## Samples and ID files
+SAMPLE_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_SAMPLES.txt
+IDs_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
+
+
 if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIORTASK" == "CONSENSUS" ]]; then
+	if [[ "$PRIORTASK" -ge 2 && "$PRIORTASK" -lt 4 ]]; then 
+		if fgrep -qx "$ID" $FILE
+		then
+			echo "ID ${ID} PRESENT in Outs file of PRIOR TASK ${PRIORTASK}"
+		else 
+			FAILED="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
+			eval "${FAILED}" 
+		fi 
+	fi 
+	
+	if [[ "$PRIORTASK" -eq 4 ]]; then
+		grep -v -f $IDS_FILE $FILE > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt
+	fi 
+		
+	if [[ "$PRIORTASK" -eq 1 ]]; then 
+		if fgrep -qx "$SAMPLE" $FILE
+		then
+			echo "ID ${SAMPLE} PRESENT in Outs file of PRIOR TASK ${PRIORTASK}"
+		else 
+			FAILED="echo ${SAMPLE} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
+			eval "${FAILED}"
+		fi 
+	fi 
+		
 	if [[ $LENGTHJOBS -ne $SAMPLES ]]; then 
 		echo "DEPENDANCIES: Not all dependancies ran sucessfully to completion"
 		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
@@ -91,17 +146,26 @@ if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIO
 		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
 	fi
 else   
-    if [[ "$PRIORTASK" == "0" ]]; then
+    if [[ "$PRIORTASK" -eq 0 ]]; then
 		echo "DEPENDANCIES: NO DEPENDANCIES REQUIRED"
 		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
     fi 
-    if [[ "$PRIORTASK" -ge 5 && $LENGTHJOBS -ne "1" ]]; then
-		echo "DEPENDANCIES: Not all dependancies ran sucessfully to completion"
+	 if [[ "$PRIORTASK" -eq 6 && $LENGTHJOBS -eq "1" ]]; then
+		echo "DEPENDANCIES: STAGE RAN SUCESSFULLY TO COMPLETION (Post-IMGT)"
+		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
+    fi 
+    if [[ "$PRIORTASK" -eq 5 && $LENGTHJOBS -ne "1" ]]; then
+		echo "DEPENDANCIES: STAGE 5 DID not run sucessfully to completion"
 		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
 		exit 999
     fi 
-	if [[ "$PRIORTASK" -ge 5 && $LENGTHJOBS -eq "1" ]]; then
-		echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
+	   if [[ "$PRIORTASK" -eq 6 && $LENGTHJOBS -ne "1" ]]; then
+		echo "DEPENDANCIES: STAGE 6 DID not run sucessfully to completion (Post-IMGT)"
+		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
+		exit 999
+    fi 
+	if [[ "$PRIORTASK" -eq 5 && $LENGTHJOBS -eq "1" ]]; then
+		echo "DEPENDANCIES: STAGE 5 ran sucessfully to completion"
 		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
 	fi
 fi 
@@ -109,16 +173,6 @@ fi
 
 
 #------------------------------------
-
-## Set up module environement for R scripts
-if [[ "$TASK" == "RS" || "$TASK" == "JACCARD" ]]; then
-module purge
-module use -a /apps/eb/dev/ivybridge/modules/all
-module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
-fi
-
-
-
 # Task Arguments for TASK 1
 ID=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$1}" $SAMPLES_FILE_POST) 
 SAMPLE=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$2}" $SAMPLES_FILE_POST)      # Sample ID
@@ -217,8 +271,15 @@ elif [[ "$TASK" == "JACCARD" ]]; then
 CMD="Rscript AnalysisJaccard.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE} -t ${JACCARD_TASK}"
 elif [[ "$TASK" == "ISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
-elif [[ "$TASK" == "ISO2" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Per_isotype_cluster_analyses.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
+elif [[ "$TASK" == "ISO1" ]]; then
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
+elif [[ "$TASK" == "ISO1_PRODUCTIVE" ]]; then
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_productive ${ID}_productive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
+elif [[ "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_unproductive ${ID}_unproductive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
 elif [[ "$TASK" == "NONISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Non_isotyper_1.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES}"
 elif [[ "$TASK" == "TCRISO1" ]]; then
@@ -244,6 +305,13 @@ echo
 
 ## RUN THE JOB 1
 eval "${CMD}"
+
+
+# Move the file if running isotyper 
+if [[ "$TASK" == "ISO1" || "$TASK" == "ISO1_PRODUCTIVE" || "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then 
+	eval "${CMD2}"
+fi
+
 
 ## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
 NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"

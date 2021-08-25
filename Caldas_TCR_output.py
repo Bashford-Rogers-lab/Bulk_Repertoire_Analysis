@@ -34,8 +34,8 @@ def Get_sample_files(batch_file):
     ind = ind+1
     if(l[0]!="#" and len(l)>3):
       l=l.strip().split()
-      id.append(l[0])
-      dir.append(l[7])
+      id.append(l[1])
+      dir.append(l[5])
   fh.close()
   return(id, dir)
 
@@ -127,73 +127,54 @@ def Split_functional_non_function(id,dir):
         print files[f]
   return()
 
-def Extract_sequences_for_IMGT(id,dir,batch_name):
+def Extract_sequences_for_IMGT(id,dir):
   dir_use = dir[0]
-  extract = True
-  #extract = False
-  if(extract):
-    for batch in batch_name: 
-      IMGT_file_compressed=dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+".txz"
-      command = "tar Jxvf "+IMGT_file_compressed+" -C "+dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+"/"
-      os.system("mkdir "+dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+"/")
-      os.system(command)
-  ids = {}
-  samples_count = Tree()
-  print "\n"
-#  id = ["BCR_1_HV_58_T0"] ########## remove
-#  id = ["BCR_2_UK02XX0029_T5"] ##### remove
   for s in range(len(id)):
     sample,dir_use = id[s],dir[s]
     fasta_file = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+sample+".fasta"
     fh= open(fasta_file,"r")
+    seqs =  {}
     for header,sequence in fasta_iterator(fh):
-      ids[header.split("__")[0]] = sample
-      samples_count[sample][header.split("__")[0]].value = 1
-    print "\r","read samples:",s, "n sequences:",len(ids),
-  fh.close()
-  for s in samples_count:
-    print s, "\t",len(samples_count[s]), "unique sequences"
-  dir_IMGT = dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT/"
-  ## Added by LEO as caused an error
-  os.system("mkdir "+dir_IMGT)
-  ##################################
-  files = ['10_V-REGION-mutation-hotspots.txt',
-  '1_Summary.txt',
-  '2_IMGT-gapped-nt-sequences.txt',
-  '3_Nt-sequences.txt',
-  '4_IMGT-gapped-AA-sequences.txt',
-  '5_AA-sequences.txt',
-  '6_Junction.txt',
-  '7_V-REGION-mutation-and-AA-change-table.txt',
-  '8_V-REGION-nt-mutation-statistics.txt',
-  '9_V-REGION-AA-change-statistics.txt']
-  for f in range(len(files)):
-    for s in range(len(id)):
-       out_file = dir_IMGT+"IMGT_"+id[s]+"_"+files[f]
-       fh=open(out_file, "w")
-       fh.close()
-    info = {}
-    for batch in batch_name:
-      input_file = dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+"/"+files[f]
-      fh=open(input_file,"r")
-      for l in fh:
-        if(l[0]!="S"):
-          l1 = l.strip()
-          l=l1.split()
-          if(l[1].split("__")[0] in ids): 
-            sam = ids[l[1].split("__")[0]]
-            if(sam in info): info[sam] = info[sam]+l1+"\n"
-            else:info[sam]=l1+"\n"
-            if(len(info[sam])>10000):
-              Write_out(info[sam], dir_IMGT+"IMGT_"+sam+"_"+files[f])
-              info[sam] = ''
-          #else:
-          #  print l
-      fh.close()
-      for sam in info: 
-        Write_out(info[sam], dir_IMGT+"IMGT_"+sam+"_"+files[f])
-        info[sam] = ''
-    print f, files[f]
+      seqs[header.split("__")[0]] = [header, sequence]
+    dir_IMGT = dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_ISOTYPER/"
+    IMGT_file = dir_IMGT+"IMGT_"+sample.replace("PUBLIC_REDUCED_","")+"_1_Summary.txt"
+    fh= open(IMGT_file,"r")
+    annot1 = {}
+    for l in fh:
+      l=l.strip().split("\t")
+      if(l[0]!='Sequence number'):
+        if(l[1].split("__")[0] in seqs):
+          v, j = l[3].split()[1], l[9].split()[1]
+          cdr3 = l[20]
+          annot1[l[1].split("__")[0]] = [v,j,cdr3]
+    fh.close()
+    IMGT_file = dir_IMGT+"IMGT_"+sample.replace("PUBLIC_REDUCED_","")+"_3_Nt-sequences.txt"
+    fh= open(IMGT_file,"r")
+    annot2 = {}
+    for l in fh:
+      l=l.strip().split("\t")
+      if(l[0]!='Sequence number'):
+        if(l[1].split("__")[0] in seqs):
+          cdr3 = l[14]
+          VDJ,VJ = l[6],l[7]
+          if(len(VDJ)==0):VDJ = VJ
+          annot2[l[1].split("__")[0]] = [VDJ, cdr3]
+    fh.close()
+    file_out = dir_use+"ORIENTATED_SEQUENCES/TCR_SUMMARY_FILES/TCR_sequence_annotation_"+sample+".txt"
+    fh=open(file_out,"w")
+    fh.close()
+    out="#sample\tsequence_id\tduplicate_count\tchain\tV_gene\tJ_gene\tCDR3(nn)\tCDR3(aa)\tV(D)J_sequence\n"
+    ind = 0
+    for id1 in seqs: 
+      freq = map(int, seqs[id1][0].split("__")[1].split("|")[0].split("_"))
+      out=out+"\t".join([sample, seqs[id1][0], str(sum(freq)),annot1[id1][0] [0:3], annot1[id1][0], annot1[id1][1], annot2[id1][1],  annot1[id1][2], annot2[id1][0]])+"\n"
+      ind = ind+1
+      if(ind>100):
+        Write_out(out, file_out)
+        out, ind = '',0
+    Write_out(out, file_out)
+    out, ind = '',0
+    print sample, "\t",len(seqs),"\t", len(annot1),"\t", len(annot2)
   return()
 
 def Write_out(out, file):
@@ -203,25 +184,10 @@ def Write_out(out, file):
   return()
 
 ################################################
-args=sys.argv
-batch_file = args[1]
+batch_file = "/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Samples_Caldas_BREAST_TCR1.txt"
 id, dir = Get_sample_files(batch_file) # samples.post file as argument 
 
-# Edited by LEO to run on command line without need to edit. 
-output_dir = args[2]
-path_to_IMGTfiles = output_dir + 'ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/'
-batch_name = os.listdir(path_to_IMGTfiles) 
-batch_name1 = []
-for i in range(len(batch_name)): 
-  if(batch_name[i].count('.txz')!=0):
-    batch_name1 = batch_name1+[batch_name[i].split('.txz')[0]]
-
-batch_name = list(set(batch_name1))
-print batch_name
 ##### extract sequences from batched files for IMGT
-Extract_sequences_for_IMGT(id,dir,batch_name)
-
-#### split functional and non-functional sequences + IMGT files for IsoTyper
-Split_functional_non_function(id,dir)
+Extract_sequences_for_IMGT(id,dir)
 
 

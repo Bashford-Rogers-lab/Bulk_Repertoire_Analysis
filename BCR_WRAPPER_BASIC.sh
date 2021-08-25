@@ -137,8 +137,15 @@ elif [[ "$TASK" == "JACCARD" ]]; then
 CMD="Rscript AnalysisJaccard.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE} -t ${JACCARD_TASK}"
 elif [[ "$TASK" == "ISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
-elif [[ "$TASK" == "ISO2" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Per_isotype_cluster_analyses.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
+elif [[ "$TASK" == "ISO1" ]]; then
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
+elif [[ "$TASK" == "ISO1_PRODUCTIVE" ]]; then
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_productive ${ID}_productive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
+elif [[ "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_unproductive ${ID}_unproductive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
 elif [[ "$TASK" == "NONISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Non_isotyper_1.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES}"
 elif [[ "$TASK" == "TCRISO1" ]]; then
@@ -165,9 +172,11 @@ echo
 ## RUN THE JOB 1
 eval "${CMD}"
 
-## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
-NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
-eval "${NWCMD}"
+
+# Move the file if running isotyper 
+if [[ "$TASK" == "ISO1" || "$TASK" == "ISO1_PRODUCTIVE" || "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then 
+	eval "${CMD2}"
+fi
 
 # Done 
 echo

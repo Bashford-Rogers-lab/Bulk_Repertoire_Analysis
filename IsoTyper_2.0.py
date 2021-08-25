@@ -652,6 +652,7 @@ def Get_seq_type(per_cluster_developmental_classification_file):
       clust = l[10]
       id, clas = l[1],l[2]#.split("|")
       c = "ALL"
+      c = clas
       if(clas.count("Class_switched")!=0):c = "Class_switched"
       elif(clas.count("IGHD,IGHM_unmutated")!=0): c = "IGHD/M_unmutated"
       elif(clas.count("IGHD,IGHM_mutated")!=0): c = "IGHD/M_mutated"
@@ -764,6 +765,7 @@ def Get_unique_CDR3_regions_per_isotype_group(subsample_file,annot_file, per_clu
         CDR3_aa = CDR3_aa[1:len(CDR3_aa)-1]
         if(len(CDR3_nn)>9 and len(CDR3_aa)>3):
           CDR3s_refined[id] = [CDR3_nn,CDR3_aa]
+          print seq_types[id]
           if(seq_types[id] in types):types[seq_types[id]] = types[seq_types[id]]+[id]#, CDR3_nn, CDR3_aa]]
           else:types[seq_types[id]]=[id]#, CDR3_nn, CDR3_aa]]
           t = "ALL"
@@ -819,6 +821,12 @@ def Classify_sequences_into_developmental_stages(sample, annot_file, cluster_fil
     if(chain in ["IGHD,IGHM","IGHD","IGHM"] and mm <= 4):classifiations.append("IGHD,IGHM_unmutated")
     elif(chain in ["IGHD,IGHM","IGHD","IGHM"] and mm > 4):classifiations.append("IGHD,IGHM_mutated")
     if(chain in ["IGHD,IGHM","IGHD","IGHM"]):SHM_IGHDM = SHM_IGHDM+[mm]
+    if(chain in ["TRBC1","TRBC2"]):
+      classifiations.append("TRBC")
+      chain = "TRBC"
+    if(chain in ["TRGC1","TRGC2"]):
+      classifiations.append("TRGC")
+      chain = "TRGC"
     #if(mm > 0):classifiations.append("mutated")
     MD = 0
     if("IGHD" in chains_used):MD = MD+1
@@ -1014,6 +1022,8 @@ def Get_network_parameters_per_sequence_classification(sample, cluster_file, dev
         for i in nz:
           c,f = chains[i],freq[i]
           c = c.split("*")[0]
+          if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+          if(c in ["TRGC1","TRGC2"]):c ="TRGC"
           #if(reverse_primer_group!="ISOTYPER"):
           #  if(c in ["IGHA1","IGHA2"]):c = "IGHA"
           #  elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
@@ -1220,10 +1230,13 @@ def Raw_values_Get_network_parameters_per_classificiation_subsample_vertices(sam
       cluster, id = l[1],l[2].split("__")[0]
       clusters[id] = cluster
       freq, classes = map(int, l[2].split("__")[1].split("|")[0].split("_")), l[2].split("|")[1].split("_")
+      classes = ["TRBC" if i in ["TRBC1","TRBC2"] else i for i in classes]
+      classes = ["TRGC" if i in ["TRGC1","TRGC2"] else i for i in classes]
       nz = [i for i in range(len(freq)) if freq[i]!=0]
       sw,ighdm = 0,0
       for i in nz:
-        freqs[id+"|"+classes[i]]=freq[i]
+        if(id+"|"+classes[i] in freqs):freqs[id+"|"+classes[i]]=freqs[id+"|"+classes[i]]+freq[i]
+        else:freqs[id+"|"+classes[i]]=freq[i]
         if(classes[i] in ["IGHD","IGHM"]):ighdm = ighdm+freq[i]
         else:sw=sw+freq[i]
       if(ighdm!=0):freqs[id+"|IGHD,IGHM"]=ighdm
@@ -1441,6 +1454,8 @@ def Get_expanded_cluster_summary(cluster_file,sample, cluster_isotype_expansion_
       total = total+sum(freq)
   fh.close()
   classes = id.split("|")[1].split("_")
+  classes = ["TRBC" if i in ["TRBC1","TRBC2"] else i for i in classes]
+  classes = ["TRGC" if i in ["TRGC1","TRGC2"] else i for i in classes]
   freqs1 = [0]*len(classes)
   freqs2 = [0]*len(classes)
   ### n sequences to be > 1% of repertoire
@@ -1455,6 +1470,8 @@ def Get_expanded_cluster_summary(cluster_file,sample, cluster_isotype_expansion_
     nz = [i for i in range(len(freq)) if freq[i]!=0]
     for i in range(len(nz)):
       c1 = classes[nz[i]]
+      if(c1 in ["TRBC1","TRBC2"]):c1 ="TRBC"
+      if(c1 in ["TRGC1","TRGC2"]):c1 ="TRGC"
       if(c1 in clone_sizes):clone_sizes[c1] = clone_sizes[c1]+[freq[nz[i]]]
       else:clone_sizes[c1]=[freq[nz[i]]]
     if(sum(clone_size[c])>threshold1):
@@ -1464,6 +1481,7 @@ def Get_expanded_cluster_summary(cluster_file,sample, cluster_isotype_expansion_
   classes.append("all")
   out = "#sample\tisotype\texpansion_threshold\tnumber_reads_0.5%\tnumber_reads_5%\td5\td10\td50\n"
   out = "#sample\tisotype\td5\td10\td50\n"
+  classes = list(set(classes))
   for i in range(0,len(classes)):
     d5,d10,d50=-1,-1,-1
     if(classes[i] in clone_sizes):
@@ -1620,6 +1638,8 @@ def Get_V_gene_isotype_frequency(sample, annot_file, V_gene_isotype_frequency_fi
       nz = [i for i in range(len(freq)) if freq[i]!=0]
       for i in nz:
         c = classification[i].split("*")[0]
+        if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+        if(c in ["TRGC1","TRGC2"]):c ="TRGC"
         #if(reverse_primer_group!="ISOTYPER"):
         #  if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
         #  elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
@@ -2434,6 +2454,8 @@ def Get_secondary_rearrangement_sequences(sample, annot_file,annot_file3, second
             IGHDM = 0
             for i in nz:
               c = classification[i].split("*")[0]
+              if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+              if(c in ["TRGC1","TRGC2"]):c ="TRGC"
               #if(reverse_primer_group!="ISOTYPER"):
               #  if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
               #  elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
@@ -2570,8 +2592,10 @@ def Subsample_secondary_rearrangments(raw_secondary_rearrangement_file, sample_d
       mut =  annots[id][0]
       for i in nz:
         c = classification[i].split("*")[0]
-        if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
-        elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
+        if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+        if(c in ["TRGC1","TRGC2"]):c ="TRGC"
+        #if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
+        #elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
         elif(c in ["IGHD","IGHM"]):c = "IGHD/M"
         if(c in classes):classes[c] = classes[c]+freq[i]
         else:classes[c]=freq[i]
@@ -2691,8 +2715,10 @@ def Get_CDR3_length_VJ_genes(seq_file,annot_file,CDR3_length_vjgenes,sample):
   classifications = alias[id].split("|")[1].split("_")
   for c in classifications:
     c = c.split("*")[0]
-    if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
-    if(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
+    #if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
+    #if(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
+    if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+    if(c in ["TRGC1","TRGC2"]):c ="TRGC"
     chains.append(c)
   fh=open(annot_file,"r")
   cdr3s = {}
@@ -2868,6 +2894,8 @@ def Get_class_overlap_subsample(IMGT_trimmed_sequence_file, class_overlap_file,s
     nz = [i for i in range(len(f)) if f[i]!=0]
     for i in nz:
       c = chains[i].split("*")[0]
+      if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+      if(c in ["TRGC1","TRGC2"]):c ="TRGC"
       #if(reverse_primer_group!="ISOTYPER"):
       #  if(c in ["IGHA1", "IGHA2"]):c = "IGHA1/2"
       #  if(c in ["IGHG1", "IGHG2"]):c = "IGHG1/2"
@@ -3271,8 +3299,10 @@ def Get_unexpanded_cluster_proportions(seq_file, sample,unexpanded_cluster_file,
   print (threshold_number_of_sequences, count_seqs)
   for i in range(0,len(classification)):
     c = classification[i].split("*")[0]
-    if(c in ["IGHA1","IGHA2"]):c="IGHA1/2"
-    if(c in ["IGHG1","IGHG2"]):c="IGHG1/2"
+    #if(c in ["IGHA1","IGHA2"]):c="IGHA1/2"
+    #if(c in ["IGHG1","IGHG2"]):c="IGHG1/2"
+    if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+    if(c in ["TRGC1","TRGC2"]):c ="TRGC"
     classes.append(c)
   for c in clusters:
     total_freqs,per_cluster_freqs = 0,{}
@@ -3307,7 +3337,8 @@ def Get_unexpanded_cluster_proportions(seq_file, sample,unexpanded_cluster_file,
     else:unexp = unexpanded_cluster_props[c]
     if(c not in expanded_cluster_props):exp = 0
     else:exp = expanded_cluster_props[c]
-    out=out+sample+"\t"+c+"\t"+str(unexp)+"\t"+str(unexp*100.0/total)+"\t"+str(all_unexpanded_cluster_props[c])+"\t"+str(all_unexpanded_cluster_props[c]*100.0/total_all)+"\t"+str(exp)+"\t"+str(exp*100.0/total)+"\n"
+    print total, total_all, count_seqs
+    out=out+sample+"\t"+c+"\t"+str(unexp)+"\t"+str(unexp*100.0/total_all)+"\t"+str(total_all)+"\t"+str(all_unexpanded_cluster_props[c]*100.0/total_all)+"\t"+str(exp)+"\t"+str(exp*100.0/total)+"\n"
   fh=open(unexpanded_cluster_file,"w")
   fh.write(out)
   fh.close()
@@ -3459,6 +3490,8 @@ def Get_mutations_per_expanded_cluster(seq_file, annot_file2, sample,mutations_p
       for i in range(0,len(count_names)):
         values_print.append(values[count_names[i]]*1.0/totals)
       info = [isotype_cluster_size, total_cluster_size,values['total_mm'],values['silent_mm'],values['non_silent_mm'], values['CDR_mm'], values['FWR_mm']]
+      if(clas in ["TRBC1","TRBC2"]):clas ="TRBC"
+      if(clas in ["TRGC1","TRGC2"]):clas ="TRGC"
       if(clas in isotypes_information):
         isotypes_information[clas] = isotypes_information[clas]+[info]
       else:isotypes_information[clas]=[info]
@@ -3495,6 +3528,8 @@ def Indel_analysis_per_chain(seq_file, sample, indel_file,annot_file,reverse_pri
         classes = {}
         for i in nz:
           c = classification[i].split("*")[0]
+          if(c in ["TRBC1","TRBC2"]):c ="TRBC"
+          if(c in ["TRGC1","TRGC2"]):c ="TRGC"
         #if(reverse_primer_group !="ISOTYPER"):
         #  if(c in ["IGHA1","IGHA2"]):c="IGHA1/2"
         #  if(c in ["IGHG1","IGHG2"]):c="IGHG1/2"
@@ -3586,6 +3621,8 @@ def Mutation_selection_per_chain(seq_file, annot_file2, sample, syn_non_syn_muta
             c = classification[i].split("*")[0]
             c1 = [c]
             if(CDR_mm+FWR_mm>=2  and c in ["IGHD","IGHM"]):c1 = c1+["IGHD_IGHM_mutated"]
+            c1 = ["TRBC" if i in ["TRBC1","TRBC2"] else i for i in c1]
+            c1 = ["TRGC" if i in ["TRGC1","TRGC2"] else i for i in c1]
             for c in c1:
               for i1 in range(0,len(info1)):
                 if(info1[i1]!=-1):
@@ -3690,6 +3727,8 @@ def Classify_sequences_into_developmental_stages_per_cluster(sample, annot_file_
       total = total+sum(freqs[id])
   for i in range(0,len(chains)):
     chains[i] = chains[i].split("*")[0]
+    if(chains[i] in ["TRBC1","TRBC2"]):chains[i] ="TRBC"
+    if(chains[i] in ["TRGC1","TRGC2"]):chains[i] ="TRGC"
     #if(reverse_primer_group !="ISOTYPER"):
     #  if(chains[i] in ["IGHA1","IGHA2"]):chains[i] = "IGHA"
     #  elif(chains[i] in ["IGHG1","IGHG2"]):chains[i] = "IGHG1/2"
@@ -3780,6 +3819,9 @@ locations = Get_locations(ref_locations)
 cd_hit_dir = locations["cd_hit_directory"]
 cd_ref_file = locations["ref_library"]
 IMGT_subdir = "IMGT_SPLIT"
+isotyper_dir = "ISOTYPER/"
+if(id.count("_unproductive")!=0):isotyper_dir = "ISOTYPER_UNPRODUCTIVE/"
+if(id.count("_productive")!=0):isotyper_dir = "ISOTYPER_PRODUCTIVE/"
 ###########################
 id1 = id
 if(id.count("unmutated_")!=0):
@@ -3906,8 +3948,8 @@ if(3 in STAGE):### get clonality and isotype information
   Get_network_parameters_per_sequence_classification(sample, cluster_file, developmental_classification_file, per_sequence_classification_network_parameters,reverse_primer_group)
   Get_unique_CDR3_regions_per_isotype_group(subsample_file,annot_file, per_cluster_developmental_classification_file, unique_CDR3_regions_per_isotype_group_file,annot_file3,sample,CDR3_length_v_genes_file)
   Get_proportion_read_mutiple_subtypes(seq_file,per_cluster_developmental_classification_file, shared_isotype_counts,sample,reverse_primer_group)
-  Get_unexpanded_cluster_proportions(seq_file, sample,unexpanded_cluster_file,cluster_file)
-#######Get_total_network_summary(sample, annot_file, isotype_usages_SUBSAMPLED_clone,reverse_primer_group,IMGT_trimmed_sequence_file)
+  #######Get_unexpanded_cluster_proportions(seq_file, sample,unexpanded_cluster_file,cluster_file)
+  #######Get_total_network_summary(sample, annot_file, isotype_usages_SUBSAMPLED_clone,reverse_primer_group,IMGT_trimmed_sequence_file)
   #Subsample_repertoire(subsample_file, subsample_depth, IMGT_trimmed_sequence_file,sample,cluster_file)
   #Proportion_clusters_isotype_overlapping(sample, reverse_primer_group, subsample_file, clusters_isotype_overlapping_SUBSAMPLED)
   #Get_cluster_properties_per_isotype(cluster_properties_per_isotype_SUBSAMPLED, sample, per_cluster_developmental_classification_file,subsample_file,cluster_size_file)
@@ -3925,13 +3967,12 @@ if(5 in STAGE):### get CDR3 and mutational information
   Get_autoreactive_V4_34_motif_frequency(annot_file4, V4_34_quantification_file, sample,IMGT_trimmed_sequence_file,reverse_primer_group)
   Get_CDR3_lengths(IMGT_trimmed_sequence_file,annot_file,CDR3_length_file,sample,annot_file4,CDR3_charge_file,CDR23_charge_file,reverse_primer_group,CDR3_distribution)
   Mutation_selection_per_chain(seq_file, annot_file2, sample, syn_non_syn_mutations,syn_non_syn_mutations_summary,reverse_primer_group)
-  Get_CDR3_region_composition(sample,seq_file,annot_file, per_cluster_developmental_classification_file,CDR3_region_composition,CDR3_5prime_charge,CDR3_length_file,annot_file4,CDR3_charge_file,CDR23_charge_file,mean_IgD_IgM_ratio,CDR3_5prime_charge_long_short, CDR3_length_vjgenes)
   Get_mutational_frequencies_per_classification_per_cluster(sample, annot_file_internal,per_cluster_developmental_classification_file,per_cluster_developmental_classification_mutational_file, per_cluster_developmental_classification_cluster_size_file,per_cluster_developmental_classification_vj_usage_file,reverse_primer_group)
   Get_mutations_per_expanded_cluster(seq_file, annot_file2, sample,mutations_per_expanded_cluster_file,cluster_file,reverse_primer_group)
   Indel_analysis_per_chain(seq_file, sample, indel_file,annot_file,reverse_primer_group)
     #################################Get_public_CDR3_percentages(subsample_file,annot_file, per_cluster_developmental_classification_file, unique_CDR3_regions_per_isotype_group_file,annot_file3,sample,public_CDR3_file)
-  Get_cluster_mutation_sharing_stats(cluster_file, annot_file, seq_file, cluster_mutation_sharing_probability,sample)
-  #Get_mutational_positions_per_gene(seq_file, developmental_classification_file, mutational_positions_per_gene_file,annot_file7,sample,mutational_positions_per_gene_file_summary)
+  #Get_cluster_mutation_sharing_stats(cluster_file, annot_file, seq_file, cluster_mutation_sharing_probability,sample)
+  #########Get_mutational_positions_per_gene(seq_file, developmental_classification_file, mutational_positions_per_gene_file,annot_file7,sample,mutational_positions_per_gene_file_summary)
 
 if(6 in  STAGE): ### get secondary rearrangement information
   Get_secondary_rearrangement_potential(sample, annot_file,annot_file3, secondary_rearrangement_file,IMGT_trimmed_sequence_file,raw_secondary_rearrangement_file,secondary_rearrangement_V_genes,mapped_secondary_rearrangements,tmp_file1,v_replacement_transition_counts,secondary_rearrangement_file_SAMPLED,cluster_file,reverse_primer_group,cd_ref_file,secondary_rearrangement_clone_sizes_file)

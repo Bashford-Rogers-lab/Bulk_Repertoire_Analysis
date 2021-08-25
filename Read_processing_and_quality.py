@@ -80,16 +80,50 @@ def Intialise_files(dir):
 
 def QC_samples(dir,gene,id,source,length,species,barcode_group,quasr_location,readjoin_location):
   pre = source
-  reads1 = source+"R1_001.fastq"
-  reads2 = source+"R2_001.fastq"
+  #reads1 = source+"R1_001.fastq"
+  #reads2 = source+"R2_001.fastq"
   #reads1 = source
   #reads2 = source.replace("1.fq","2.fq")
-  reads1 = source+"1.fastq"
-  reads2 = source+"2.fastq"
+  #reads1 = source+"1.fastq"
+  #reads2 = source+"2.fastq"
   #reads1 = source.replace("XXXXX","1")
   #reads2 = source.replace("XXXXX","2")
- # os.system("gunzip "+reads1+".gz")
- # os.system("gunzip "+reads2+".gz")
+  #os.system("gunzip "+reads1+".gz")
+  #os.system("gunzip "+reads2+".gz")
+  #Edited by LEO
+  if os.path.isfile(source+"R1_001.fastq"):
+	reads1 = source+"R1_001.fastq"
+	reads2 = source+"R2_001.fastq"
+  elif os.path.isfile(source+"R1_001.fastq.gz"):
+	reads1 = source+"R1_001.fastq"
+	reads2 = source+"R2_001.fastq"
+	os.system("gunzip "+reads1+".gz")
+	os.system("gunzip "+reads2+".gz")
+  elif os.path.isfile(source+"1.fastq"):
+	reads1 = source+"1.fastq"
+	reads2 = source+"2.fastq"
+  elif os.path.isfile(source+"1.fastq.gz"):
+	reads1 = source+"1.fastq"
+	reads2 = source+"2.fastq"
+	os.system("gunzip "+reads1+".gz")
+	os.system("gunzip "+reads2+".gz")
+  elif os.path.isfile(source.replace("XXXXX","1")):
+	reads1 = source.replace("XXXXX","1")
+	reads2 = source.replace("XXXXX","2")
+  elif os.path.isfile(source.replace("XXXXX","1")+".gz"):
+	reads1 = source.replace("XXXXX","1")
+	reads2 = source.replace("XXXXX","2")
+	os.system("gunzip "+source.replace("XXXXX","1")+".gz")
+	os.system("gunzip "+source.replace("XXXXX","2")+".gz")
+  elif os.path.isfile(source):
+	reads1 = source
+	reads2 = source.replace("1.fq","2.fq")
+  elif os.path.isfile(source+".gz"):
+	reads1 = source
+	reads2 = source.replace("1.fq","2.fq")
+	os.system("gunzip "+reads1+".gz")
+	os.system("gunzip "+reads2+".gz")
+    
   if(1==1):
     print reads1
     print reads2
@@ -99,8 +133,10 @@ def QC_samples(dir,gene,id,source,length,species,barcode_group,quasr_location,re
       threshold,length = "30","100"
       command1 = "java -jar "+quasr_location+"qualityControl.jar -f "+dir+"FASTQ_FILES/Joined_"+id+".extendedFrags.fastq -o "+dir+"FASTQ_FILES/Sequences_"+id+"_1 -m "+threshold+" -l "+length
       command2 = "cat "+dir+"FASTQ_FILES/Sequences_"+id+"_1.qc.fq | perl -e '$i=0;while(<>){if(/^\@/&&$i==0){s/^\@/\>/;print;}elsif($i==1){s/\./N/g;print;$i=-3}$i++;}' > "+dir+"FASTQ_FILES/Sequences_"+id+"_1.fasta"
+      command2 = "/usr/bin/sed -n '1~4s/^@/>/p;2~4p' "+dir+"FASTQ_FILES/Sequences_"+id+"_1.qc.fq > "+dir+"FASTQ_FILES/Sequences_"+id+"_1.fasta"
       print command1
       os.system(command1)
+      print command2
       os.system(command2)
   return()
 
@@ -1128,8 +1164,6 @@ def Read_untrimmed_file_double(rc,Tmp_file,Fail_file,Output_trim, gene,paired,sp
   out, ind = '',0
   print "\tTotal sequences:\t"+str(total)+"\tNumber of REV primers found:\t"+str(pass_r)+"\tNumber of FOR primers found:\t"+str(pass_f)+"\tPassed sequences:\t"+str(pass_all)
   return()
-
-
 
 def Non_barcoded_trimming(forward, reverse,  barcoded_j, barcoded_v, rc,Tmp_file,Fail_file,Output_trim,primer_tag_file,tmp_file,gene,paired,species,primer_file,primer_tag_file_count,threshold_BARCODE,ref_const,inside,v_ref):
   for f in [primer_tag_file_count, Output_trim]:
@@ -2651,7 +2685,7 @@ if(method=="Multiplex_FORWARD_BARCODE_GROUPED" or method=="Multiplex_REVERSE_BAR
   Tmp_file = dir+"FASTQ_FILES/Seqs_barcode_split_"+barcode_group+"_"+other.split(",")[0]+".fasta" 
 else: 
   Tmp_file = dir+"FASTQ_FILES/Seqs_barcode_split_"+barcode_group+".fasta"
-  Tmp_file = dir+"FASTQ_FILES/Sequences_"+id+"_1.fasta"
+  #Tmp_file = dir+"FASTQ_FILES/Sequences_"+id+"_1.fasta"
 Trim1=dir+"ORIENTATED_SEQUENCES/TMP/Trimmed_orientated_all_"+id+".fasta"
 Trim2=dir+"ORIENTATED_SEQUENCES/TMP/Filtered_J_"+id+".fasta"
 Trim3=dir+"ORIENTATED_SEQUENCES/TMP/Filtered_reduced_"+id+".fasta"

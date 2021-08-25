@@ -29,7 +29,7 @@ opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trai
 results_outputdir <- opt$o
 runname <- opt$r
 gene <- opt$g
-layouts <- opt$b
+layoutsx <- opt$b
 # Source Auxillary Functions
 my_aux_functions <- c("RFunctions/")           
 source_files <- list.files(my_aux_functions, "*.R$", full.names=TRUE)  # locate all .R files
@@ -40,8 +40,8 @@ for (f in source_files) {
 ## Part Number 1: Invesitgate sample read detection and filtering
 if(gene=="IGH"){
 	if(opt$b != "FALSE" || opt$b != "False" || opt$b != "false"){
-			visualise_filtering_bcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, layouts=layouts)
-			visualise_constant_region_bcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, layouts=layouts)
+			visualise_filtering_bcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
+			visualise_constant_region_bcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
 	} else {
 			visualise_filtering_bcr(path_to_outputdir=results_outputdir, run_name=runname)
 			visualise_constant_region_bcr(results_outputdir, runname)
@@ -54,8 +54,8 @@ if(gene=="IGH"){
 
 if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
 	if(opt$b != "FALSE" || opt$b != "False" || opt$b != "false"){
-			visualise_filtering_tcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, layouts=layouts)
-			visualise_constant_region_tcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, layouts=layouts)
+			visualise_filtering_tcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
+			visualise_constant_region_tcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
 	} else {
 			visualise_filtering_tcr(path_to_outputdir=results_outputdir, run_name=runname)
 			visualise_constant_region_tcr(results_outputdir, runname)
