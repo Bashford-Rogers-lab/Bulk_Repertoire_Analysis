@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #$ -cwd
 
 # If there's an error, fail the whole script
@@ -25,6 +24,13 @@ TASK=$2
 RUNNAME=$3
 BATCH_FILE=$4
 JACCARD_TASK=$5
+
+# "catch exit status 1" grep wrapper
+# exit status 1 when no lines matched  - this is causing the script to fail with set -e hence the catch error
+# exit status 0 when lines matched
+# exit status 2 when error
+c1grep() { grep "$@" || test $? = 1; }
+
 
 ## Set up module environement for R scripts
 if [[ "$TASK" == "RS" || "$TASK" == "JACCARD" ]]; then
@@ -63,6 +69,12 @@ if [[ "$JACCARD_TASK" -eq 1 || "$JACCARD_TASK" -eq 2 ]]; then
 	PRIORTASK=5
 fi
 
+if [ -z "$4" ]
+  then
+    echo "No Batch file Supplied. Defaulting to FALSE"
+	BATCH_FILE="FALSE"
+	
+fi
 
 #------------------------------------------------------------
 ## Determining which sample file (pre/post was used) and file length. 
@@ -109,7 +121,7 @@ IDS=$(awk -F '\t' "{ print \$1 }" $SAMPLES_FILE_POST)
 
 ## Samples and ID files
 SAMPLE_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_SAMPLES.txt
-IDs_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
+IDS_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
 
 
 if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIORTASK" == "CONSENSUS" ]]; then
@@ -118,13 +130,16 @@ if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIO
 		then
 			echo "ID ${ID} PRESENT in Outs file of PRIOR TASK ${PRIORTASK}"
 		else 
+			echo "Warning ${ID} is NOT Present in OUTS file of PRIOR TASK ${PRIORTASK} - check sample naming"
 			FAILED="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
 			eval "${FAILED}" 
 		fi 
 	fi 
 	
 	if [[ "$PRIORTASK" -eq 4 ]]; then
-		grep -v -f $IDS_FILE $FILE > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt
+		echo "Looking for failed samples.." 
+		c1grep -v -f ${IDS_FILE} ${FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt
+		echo "DONE"
 	fi 
 		
 	if [[ "$PRIORTASK" -eq 1 ]]; then 
@@ -133,7 +148,7 @@ if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIO
 			echo "ID ${SAMPLE} PRESENT in Outs file of PRIOR TASK ${PRIORTASK}"
 		else 
 			FAILED="echo ${SAMPLE} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
-			eval "${FAILED}"
+			eval "${FAILED}" 
 		fi 
 	fi 
 		
@@ -247,6 +262,9 @@ echo "RECEPTOR        : ${RECEPTOR}"
 echo "OTHER           : ${OTHER}"
 echo "ORF Filtering   : ${ORF_FILTER}"
 echo "Run Name        : ${RUNNAME}"
+echo "Batch File      : ${BATCH_FILE}"
+echo "Sample File     : ${SAMPLE_FILE}"
+echo "IDs File        : ${IDS_FILE}"
 echo "********************************************************"
 
 
