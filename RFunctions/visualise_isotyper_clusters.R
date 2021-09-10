@@ -63,7 +63,8 @@ visualise_isoptype_cluster_tcr <- function(path_to_outputdir = path_to_outputdir
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
 
-	max_identified <- as.character(Iso_Clustering$Isotype[which.max(Iso_Clustering$N_Reads)])
+	max_identified <- aggregate(Iso_Clustering$N_Reads, by=list(Iso_Clustering$Isotype), FUN=sum)
+	max_identified <- as.character(max_identified$Group.1[which.max(max_identified$x)])
 	
 	if(max_identified =="TRBC2"){
 		max_identified <- c(max_identified, "TRBC1")

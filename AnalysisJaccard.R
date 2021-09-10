@@ -38,7 +38,7 @@ for (f in source_files) {
 }
 
 ## Part Number 1: Invesitgate sample read detection and filtering
-if(opt$b != "FALSE" || opt$b != "False" || opt$b != "false" ){
+if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false" ){
     
 	if(opt$t == "1"){
 	# Basic Jaccard

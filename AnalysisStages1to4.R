@@ -39,7 +39,7 @@ for (f in source_files) {
 
 ## Part Number 1: Invesitgate sample read detection and filtering
 if(gene=="IGH"){
-	if(opt$b != "FALSE" || opt$b != "False" || opt$b != "false"){
+	if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false"){
 			visualise_filtering_bcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
 			visualise_constant_region_bcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
 	} else {
@@ -53,7 +53,7 @@ if(gene=="IGH"){
 } 
 
 if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
-	if(opt$b != "FALSE" || opt$b != "False" || opt$b != "false"){
+	if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false"){
 			visualise_filtering_tcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
 			visualise_constant_region_tcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
 	} else {

@@ -45,7 +45,7 @@ visualise_constant_region_bcr <- function(path_to_outputdir = path_to_outputdir,
 }
 
 
-visualise_constant_region_bcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, cluster_nodes = 5, layouts=path_to_layout){
+visualise_constant_region_bcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, cluster_nodes = 5, path_to_layout=path_to_layout){
 	library(tidyverse)
 	library(ggplot2)
 	library(foreach)
@@ -167,7 +167,7 @@ visualise_constant_region_tcr <- function(path_to_outputdir = path_to_outputdir,
 	write.table(Constant_Results, paste0(path_to_outputdir, "/Summary/Constant_Results_", Run_name, ".txt"), sep="\t")		
 }
 
-visualise_constant_region_tcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, cluster_nodes = 5, layouts=path_to_layout){
+visualise_constant_region_tcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, cluster_nodes = 5, path_to_layout=path_to_layout){
 	library(tidyverse)
 	library(ggplot2)
 	library(foreach)

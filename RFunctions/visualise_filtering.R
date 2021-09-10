@@ -56,7 +56,7 @@ visualise_filtering_bcr <- function(path_to_outputdir = path_to_outputdir, run_n
 
 
 
-visualise_filtering_bcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, layouts = path_to_layout, cluster_nodes = 5){
+visualise_filtering_bcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, path_to_layout = path_to_layout, cluster_nodes = 5){
 	library(tidyverse)
 	library(ggplot2)
 	library(foreach)
@@ -198,7 +198,7 @@ visualise_filtering_tcr <- function(path_to_outputdir = path_to_outputdir, run_n
 
 
 
-visualise_filtering_tcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, cluster_nodes = 5, layouts = path_to_layout){
+visualise_filtering_tcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, cluster_nodes = 5, path_to_layout = path_to_layout){
 	library(tidyverse)
 	library(ggplot2)
 	library(foreach)
