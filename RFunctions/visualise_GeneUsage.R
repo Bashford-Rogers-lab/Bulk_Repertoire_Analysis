@@ -36,7 +36,13 @@ visualise_vj_usage_bcr <- function(path_to_outputdir = path_to_outputdir, run_na
 	if(dir.exists(paste0(path_to_outputdir, "/Plots"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
-	pdf(paste0(path_to_outputdir, '/Plots/V_Gene_Usage_QC_', Run_name, '.pdf'), width=30, height=20)
+	
+	widthx <- 0.2112676 * length(VJ_Results$Sample)
+	if (widthx > 120){
+		widthx <- 120
+	} 
+	
+	pdf(paste0(path_to_outputdir, '/Plots/V_Gene_Usage_QC_', Run_name, '.pdf'), width=widthx, height=20)
 	p1 <- ggplot(frequency_variable_genes_id, aes(x=Sample, y=count, fill=V_Gene)) +geom_col(position = "fill", colour = "black") + scale_y_continuous(labels = scales::percent) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="V gene")
 	p2 <- ggplot(frequency_variable_genes_family, aes(x=Sample, y=count, fill=V_family)) +geom_col(position = "fill", colour = "black") + scale_y_continuous(labels = scales::percent) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="V family")
 	p3 <- ggplot(frequency_variable_genes_J, aes(x=Sample, y=count, fill=J_gene)) +geom_col(position = "fill", colour = "black") + scale_y_continuous(labels = scales::percent) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="J gene")
@@ -87,7 +93,12 @@ visualise_vj_usage_tcr <- function(path_to_outputdir = path_to_outputdir, run_na
 	if(dir.exists(paste0(path_to_outputdir, "/Plots"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
-	pdf(paste0(path_to_outputdir, '/Plots/V_Gene_Usage_QC_', Run_name, '.pdf'), width=30, height=20)
+	
+	widthx <- 0.2112676 * length(VJ_Results$Sample)
+	if (widthx > 120){
+		widthx <- 120
+	} 
+	pdf(paste0(path_to_outputdir, '/Plots/V_Gene_Usage_QC_', Run_name, '.pdf'), width=widthx, height=20)
 	p1 <- ggplot(frequency_variable_genes_id, aes(x=Sample, y=count, fill=V_Gene)) +geom_col(position = "fill", colour = "black") + scale_y_continuous(labels = scales::percent) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="V gene")
 	p2 <- ggplot(frequency_variable_genes_family, aes(x=Sample, y=count, fill=V_family)) +geom_col(position = "fill", colour = "black") + scale_y_continuous(labels = scales::percent) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="V family")
 	p3 <- ggplot(frequency_variable_genes_J, aes(x=Sample, y=count, fill=J_gene)) +geom_col(position = "fill", colour = "black") + scale_y_continuous(labels = scales::percent) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="J gene")

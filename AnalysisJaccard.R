@@ -107,14 +107,17 @@ if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false" ){
 } 
 
 
-## Create Summary Plots and Statistics on Jaccard 
+## Create Summary Plots and Statistics on Jaccard
+## Will only run if a batch file is provided  
 locations_of_jaccard <- paste0(results_outputdir, "Summary")
 path_jaccard <- paste0(results_outputdir, "Summary")
 locations_of_jaccard <- list.files(locations_of_jaccard, full.names=TRUE)
 locations_of_jaccard <- grep("JACCARD", locations_of_jaccard, value=TRUE)
-for(i in locations_of_jaccard){
-		create_jaccard_plots(results_outputdir, i, opt$b)
-	}
+if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false" ){
+	for(i in locations_of_jaccard){
+			create_jaccard_plots(results_outputdir, i, opt$b)		
+		}
+}
 	
 print("Done")
 

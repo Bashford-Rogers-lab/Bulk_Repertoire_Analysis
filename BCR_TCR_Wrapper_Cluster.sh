@@ -138,7 +138,7 @@ if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIO
 	
 	if [[ "$PRIORTASK" -eq 4 ]]; then
 		echo "Looking for failed samples.." 
-		c1grep -v -f ${IDS_FILE} ${FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt
+		c1grep -v -f ${FILE} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt
 		echo "DONE"
 	fi 
 		

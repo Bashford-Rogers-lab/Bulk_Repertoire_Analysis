@@ -92,12 +92,12 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1){
 	}
 	for(s in colNames){
 		print(s)
-		plots <- list()
 		e <- ggplot(JACCARD_MATRIX_2_cohort1, aes_string(x="SharedInternalBarcode", y=s, fill="SharedInternalBarcode")) + geom_boxplot(alpha = 0.50) + geom_point(aes(color = SharedInternalBarcode), position = position_jitterdodge())  + theme_classic() + facet_wrap(~SharedLane) + theme(axis.text.x=element_text(angle = 90, hjust = 0))
 		p <- ggplot(JACCARD_MATRIX_2_cohort1, aes_string(s)) + geom_density(aes(fill=SharedLane), alpha=0.8) + facet_wrap(~SharedInternalBarcode, scales = "free") + theme_classic() 
 		qs <- ggplot(JACCARD_MATRIX_2_cohort1, aes_string(s)) + geom_density(aes(fill=SharedInternalBarcode), alpha=0.8) + facet_wrap(~SharedLane, scales = "free") + theme_classic() +geom_rug()
+		tryCatch({ 
 		plot(ggarrange(ggarrange(e, p, ncol = 2), qs, nrow = 2))
-
+		}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 		}
 	dev.off()
 	
@@ -129,7 +129,9 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1){
 			} 
 			plots[[i]] <- e
 			}
-		multiplot(plotlist = plots, cols = 5)
+		tryCatch({ 
+			multiplot(plotlist = plots, cols = 5)
+		}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 	}
 	dev.off()
 	

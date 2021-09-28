@@ -19,13 +19,13 @@ mkdir COMMANDLOGS/${SAMPLES_FILE_POST}
 IDS=$(awk -F '\t' "{ print \$1 }" $SAMPLES_FILE_POST)
 for item in "$IDS"
 	do  
-		printf "${item}\n" >> COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
+		printf "${item}\n" > COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
 	done 
 # Make a Samples File
 SAMPLE==$(awk -F '\t' "{ print \$2 }" $SAMPLES_FILE_POST)
 for item in "$SAMPLE"
 	do  
-		printf "${item}\n" >> COMMANDLOGS/${SAMPLES_FILE_POST}_SAMPLES.txt
+		printf "${item}\n" > COMMANDLOGS/${SAMPLES_FILE_POST}_SAMPLES.txt
 	done
 
 

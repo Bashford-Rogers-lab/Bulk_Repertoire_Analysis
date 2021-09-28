@@ -31,7 +31,7 @@ runname <- opt$r
 gene <- opt$g
 layoutsx <- opt$b
 # Source Auxillary Functions
-my_aux_functions <- c("RFunctions/")           
+my_aux_functions <- c("RFunctions")           
 source_files <- list.files(my_aux_functions, "*.R$", full.names=TRUE)  # locate all .R files
 for (f in source_files) {
     source(f)

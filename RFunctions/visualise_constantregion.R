@@ -33,11 +33,19 @@ visualise_constant_region_bcr <- function(path_to_outputdir = path_to_outputdir,
 	}
 	Constant_Results_subset <- Constant_Results[Constant_Results$gene != "IGHD/M_mutated" & Constant_Results$gene != "ALL" & Constant_Results$gene != "class_switched" & Constant_Results$gene != "IGHD/M_unmutated",]
 	Constant_Results_mutation <- Constant_Results[Constant_Results$gene == "IGHD/M_mutated"  | Constant_Results$gene == "IGHD/M_unmutated",]
-	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_', Run_name, '.pdf'), width=23, height=14)
+	
+	widthx <- 0.1619718 * length(Constant_Results$totalreads)
+	if (widthx > 120){
+		widthx <- 120
+	}
+	
+	
+	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_', Run_name, '.pdf'), width=widthx, height=14)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Sample, y=percentage, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Isotype")
-	p2 <- ggplot(Constant_Results_mutation, aes(x=Sample, y=percent_IGM, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% IgHM Reads") +labs(fill="Mutation Status") + scale_fill_discrete(labels = c("Mutated", "Unmutated"))
+	p2 <- ggplot(Constant_Results_mutation, aes(x=Sample, y=percent_IGM, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% IgM_D Reads Reads") +labs(fill="Mutation Status") + scale_fill_discrete(labels = c("Mutated", "Unmutated"))
 	plot(plot_grid(p1, p2, ncol=1))
-	dev.off()				
+	dev.off()
+	
 	if(dir.exists(paste0(path_to_outputdir, "/Summary"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Summary"))
 	}				
@@ -87,33 +95,63 @@ visualise_constant_region_bcr_layouts <- function(path_to_outputdir = path_to_ou
 	#Read in layouts file for batch information
 	layouts <- read.delim(path_to_layout, sep="\t", header=TRUE)
 
+	layouts$SampleID <- gsub("TCRA_", "", layouts$SampleID)
+	layouts$SampleID <- gsub("TCRB_", "", layouts$SampleID)
+	layouts$SampleID <- gsub("TCRG_", "", layouts$SampleID)
+	layouts$SampleID <- gsub("TCRD_", "", layouts$SampleID)
+	layouts$SampleID <- gsub("TCR_", "", layouts$SampleID)
+	layouts$SampleID <- gsub("TR_", "", layouts$SampleID)
+	layouts$SampleID <- gsub("BCR_", "", layouts$SampleID)
+	
+	layouts$Barcode <- gsub("TCRA_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCRB_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCRG_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCRD_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCR_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TR_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("BCR_", "", layouts$Barcode)
+	
 	
 	#Merge batch and data 
 	Constant_Results <- merge(Constant_Results, layouts, by.x="SampleBase", by.y="SampleID")
-	Constant_Results$Lane <- as.factor(Constant_Results$Lane)
-	Constant_Results$Library <- as.factor(Constant_Results$Library)
-		
-	days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
-	days <- days$X2
-	Constant_Results <- cbind(Constant_Results, days)
-	Constant_Results$days <- gsub("T", "", Constant_Results$days)
+
+	Constant_Results$Position <- as.character(Constant_Results$Position)
+	Constant_Results$PCRBarcode <- as.character(Constant_Results$PCRBarcode)
+	Constant_Results$Library <- as.character(Constant_Results$Library)
+	Constant_Results$Plate <- as.character(Constant_Results$Plate)
+	Constant_Results$Lane <- as.character(Constant_Results$Lane)
 	
-	Constant_Results$days[Constant_Results$days != 1 & Constant_Results$days != 3 & Constant_Results$days != 5] <- "Control"
+	if(any(!layouts$Barcode==layouts$SampleID)){	
+		days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
+		days <- days$X2
+		Constant_Results <- cbind(Constant_Results, days)
+		Constant_Results$days <- gsub("T", "", Constant_Results$days)
+		Constant_Results$days[Constant_Results$days != 1 & Constant_Results$days != 3 & Constant_Results$days != 5] <- "Control"
+	} else {
+		Constant_Results$days <- "NA"
+	} 
 	
 	Constant_Results_subset <- Constant_Results[Constant_Results$gene != "IGHD/M_mutated" & Constant_Results$gene != "ALL" & Constant_Results$gene != "class_switched" & Constant_Results$gene != "IGHD/M_unmutated",]
 	Constant_Results_mutation <- Constant_Results[Constant_Results$gene == "IGHD/M_mutated"  | Constant_Results$gene == "IGHD/M_unmutated",]
 	
+	widthx <- 0.1619718 * length(Constant_Results$Lane)
+	if (widthx > 120){
+		widthx <- 120
+	}
 	
-	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_', Run_name, '.pdf'), width=23, height=14)
+	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_ISOTYPEUSAGE', Run_name, '.pdf'), width=widthx, height=14)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Sample, y=percentage, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Isotype")
 	p2 <- ggplot(Constant_Results_mutation, aes(x=Sample, y=percent_IGM, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% IgHM Reads") +labs(fill="Mutation Status") + scale_fill_discrete(labels = c("Mutated", "Unmutated"))
 	plot(plot_grid(p1, p2, ncol=1))
+	dev.off()
+	
+	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_ISOTYPEUSAGE_Layouts', Run_name, '.pdf'), width=30, height=14)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Library, y=percentage, fill=Lane)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
-	p2 <- ggplot(Constant_Results_mutation, aes(x=Library, y=percent_IGM, fill=Lane)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
+	p2 <- ggplot(Constant_Results_mutation, aes(x=Library, y=percent_IGM, fill=Lane)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% of IgM_D Reads") +facet_wrap(~gene, scales = "free_x")
 	plot(p1)
 	plot(p2)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
-	p2 <- ggplot(Constant_Results_mutation, aes(x=Lane, y=percent_IGM, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
+	p2 <- ggplot(Constant_Results_mutation, aes(x=Lane, y=percent_IGM, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% of IgM_D Reads") +facet_wrap(~gene, scales = "free_x")
 	plot(p1)
 	plot(p2)
 	dev.off()
@@ -155,9 +193,13 @@ visualise_constant_region_tcr <- function(path_to_outputdir = path_to_outputdir,
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
 	
+	widthx <- 0.1619718 * length(Constant_Results$totalreads)
+	if (widthx > 120){
+		widthx <- 120
+	}
 
 	Constant_Results_subset <- Constant_Results[Constant_Results$gene != "ALL",]
-	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_', Run_name, '.pdf'), width=23, height=14)
+	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_', Run_name, '.pdf'), width=widthx, height=14)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Sample, y=percentage, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Constant Region")
 	plot(plot_grid(p1, ncol=1))
 	dev.off()				
@@ -202,35 +244,60 @@ visualise_constant_region_tcr_layouts <- function(path_to_outputdir = path_to_ou
 	#Read in layouts file for batch information
 	layouts <- read.delim(path_to_layout, sep="\t", header=TRUE)
 
+	layouts$Barcode <- gsub("TCRA_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCRB_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCRG_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCRD_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TCR_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("TR_", "", layouts$Barcode)
+	layouts$Barcode <- gsub("BCR_", "", layouts$Barcode)
 	
+
 	#Merge batch and data 
 	Constant_Results <- merge(Constant_Results, layouts, by.x="SampleBase", by.y="SampleID")
-	Constant_Results$Lane <- as.factor(Constant_Results$Lane)
-	Constant_Results$Library <- as.factor(Constant_Results$Library)
 	
+	Constant_Results$Position <- as.character(Constant_Results$Position)
+	Constant_Results$PCRBarcode <- as.character(Constant_Results$PCRBarcode)
+	Constant_Results$Library <- as.character(Constant_Results$Library)
+	Constant_Results$Plate <- as.character(Constant_Results$Plate)
+	Constant_Results$Lane <- as.character(Constant_Results$Lane)
 	
-	days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
-	days <- days$X2
-	Constant_Results <- cbind(Constant_Results, days)
-	Constant_Results$days <- gsub("T", "", Constant_Results$days)
+	if(any(!layouts$Barcode==layouts$SampleID)){	
+		days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
+		days <- days$X2
+		Constant_Results <- cbind(Constant_Results, days)
+		Constant_Results$days <- gsub("T", "", Constant_Results$days)
+		Constant_Results$days[Constant_Results$days != 1 & Constant_Results$days != 3 & Constant_Results$days != 5] <- "Control"
+	} else {
+		Constant_Results$days <- "NA"
+	} 
 	
-	Constant_Results$days[Constant_Results$days != 1 & Constant_Results$days != 3 & Constant_Results$days != 5] <- "Control"
 	
 	if(dir.exists(paste0(path_to_outputdir, "/Plots"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
 	
+	widthx <- 0.1619718 * length(Constant_Results$totalreads)
+	if (widthx > 120){
+		widthx <- 120
+	}
+
+
 	Constant_Results_subset <- Constant_Results[Constant_Results$gene != "ALL",]
-	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_', Run_name, '.pdf'), width=23, height=14)
+	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_CONSTANTUSAGE', Run_name, '.pdf'), width=widthx, height=14)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Sample, y=percentage, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Constant Region")
 	plot(plot_grid(p1, ncol=1))
+	dev.off()
+	
+	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_CONSTANTUSAGE_Layouts', Run_name, '.pdf'), width=30, height=14)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Library, y=percentage, fill=Lane)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
 	plot(p1)
-	
+		
 	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
 	plot(p1)
+	dev.off()		
+
 	
-	dev.off()				
 	if(dir.exists(paste0(path_to_outputdir, "/Summary"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Summary"))
 	}				

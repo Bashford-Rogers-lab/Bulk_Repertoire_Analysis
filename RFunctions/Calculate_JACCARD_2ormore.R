@@ -34,13 +34,19 @@ calculate_jaccard_matrix_filter <- function(path_to_output, runname){
 	for(i in 1:length(samples)){
 		a <- read.delim(samples[i], header=FALSE)
 		a <- a[a$V2 >= 2,]
-		a_min <- dim(a)[1]
+		a <- a$V2
+		a_min <- length(a)
 		mins <- c(mins, a_min)
 	} 
 	## Ensure that susbample must be at least 200 sequences. 
-	sample_depth <- min(mins[mins>=223]) 
-	subsample_depth <- floor(sample_depth*0.9)
+	if(any(mins>=200)){
+		sample_depth <- min(mins[mins>=223])
+	} else {
+		sample_depth <- 223
+	}
 	
+	subsample_depth <- floor(sample_depth*0.9)
+
 	#Register doParrallel (10 nodes seems to be the maximum you can run on the cluster with 1 slot or it crashes!
 	cl <- 20
 	registerDoParallel(cl)
@@ -205,13 +211,19 @@ calculate_jaccard_matrix_libhopcorrection_filter <- function(path_to_output, run
 	for(i in 1:length(samples)){
 		a <- read.delim(samples[i], header=FALSE)
 		a <- a[a$V2 >= 2,]
-		a_min <- dim(a)[1]
+		a <- a$V2
+		a_min <- length(a)
 		mins <- c(mins, a_min)
 	} 
 	## Ensure that susbample must be at least 200 sequences. 
-	sample_depth <- min(mins[mins>=223]) 
-	subsample_depth <- floor(sample_depth*0.9)
+	if(any(mins>=200)){
+		sample_depth <- min(mins[mins>=223])
+	} else {
+		sample_depth <- 223
+	}
 	
+	subsample_depth <- floor(sample_depth*0.9)
+
 	#Register doParrallel
 	cl <- 20
 	registerDoParallel(cl)
@@ -397,13 +409,19 @@ calculate_jaccard_matrix_libcontam_correction_filter <- function(path_to_output,
 	for(i in 1:length(samples)){
 		a <- read.delim(samples[i], header=FALSE)
 		a <- a[a$V2 >= 2,]
-		a_min <- dim(a)[1]
+		a <- a$V2
+		a_min <- length(a)
 		mins <- c(mins, a_min)
 	} 
 	## Ensure that susbample must be at least 200 sequences. 
-	sample_depth <- min(mins[mins>=223]) 
-	subsample_depth <- floor(sample_depth*0.9)
+	if(any(mins>=200)){
+		sample_depth <- min(mins[mins>=223])
+	} else {
+		sample_depth <- 223
+	}
 	
+	subsample_depth <- floor(sample_depth*0.9)
+
 	#Register doParrallel
 	cl <- 20
 	registerDoParallel(cl)

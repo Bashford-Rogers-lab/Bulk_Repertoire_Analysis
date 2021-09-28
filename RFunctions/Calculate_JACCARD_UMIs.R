@@ -30,13 +30,19 @@ calculate_jaccard_matrix_UMI_RAW <- function(path_to_output, runname){
 	for(i in 1:length(samples)){
 		a <- read.delim(samples[i], header=FALSE)
 		a <- a[a$V2 >= 2,]
-		a_min <- dim(a)[1]
+		a <- a$V2
+		a_min <- length(a)
 		mins <- c(mins, a_min)
 	} 
-		
 	## Ensure that susbample must be at least 200 sequences. 
-	sample_depth <- min(mins[mins>=223]) 
+	if(any(mins>=200)){
+		sample_depth <- min(mins[mins>=223])
+	} else {
+		sample_depth <- 223
+	}
+	
 	subsample_depth <- floor(sample_depth*0.9)
+
 	
 	##Extract the barcodes file
 	path <- paste0(path_to_output, "ORIENTATED_SEQUENCES/TMP/")
@@ -188,11 +194,17 @@ calculate_jaccard_matrix_libhopcorrection_UMI_RAW <- function(path_to_output, ru
 	for(i in 1:length(samples)){
 		a <- read.delim(samples[i], header=FALSE)
 		a <- a[a$V2 >= 2,]
-		a_min <- dim(a)[1]
+		a <- a$V2
+		a_min <- length(a)
 		mins <- c(mins, a_min)
 	} 
 	## Ensure that susbample must be at least 200 sequences. 
-	sample_depth <- min(mins[mins>=223]) 
+	if(any(mins>=200)){
+		sample_depth <- min(mins[mins>=223])
+	} else {
+		sample_depth <- 223
+	}
+	
 	subsample_depth <- floor(sample_depth*0.9)
 
 	## Get the right samples
@@ -410,11 +422,17 @@ calculate_jaccard_matrix_libcontam_correction_UMI_RAW <- function(path_to_output
 	for(i in 1:length(samples)){
 		a <- read.delim(samples[i], header=FALSE)
 		a <- a[a$V2 >= 2,]
-		a_min <- dim(a)[1]
+		a <- a$V2
+		a_min <- length(a)
 		mins <- c(mins, a_min)
 	} 
 	## Ensure that susbample must be at least 200 sequences. 
-	sample_depth <- min(mins[mins>=223]) 
+	if(any(mins>=200)){
+		sample_depth <- min(mins[mins>=223])
+	} else {
+		sample_depth <- 223
+	}
+	
 	subsample_depth <- floor(sample_depth*0.9)
 
 	## Get the right samples

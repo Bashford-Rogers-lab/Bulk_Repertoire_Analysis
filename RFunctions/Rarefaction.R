@@ -77,8 +77,8 @@ calculate_rarefaction <- function(path_to_output){
 
 		# Plot results 
 		pdf(paste0(path_to_output, "Plots/Abundance_curve.pdf"), width=10, height=5)
-		p1 <- ggplot(ABUNDANCE_MATRIX, aes(x=sample_depth, y=mean_unique_seq, group=sample, color=sample)) + geom_point(size=0.5)  + theme_bw() + guides(colour=FALSE) + geom_line(aes(colour=sample))+ xlab("Subsample Depth") + ylab("Mean number of unique VDJ sequences (n=50)") +ggtitle("VDJ Abundance in relation to Read Depth")
-		p2 <- ggplot(ABUNDANCE_MATRIX, aes(x=log(sample_depth), y=log(mean_unique_seq), group=sample, color=sample)) + geom_point(size=0.5)  + theme_bw() + guides(colour=FALSE) + geom_line(aes(colour=sample))+ xlab("log Subsample Depth") + ylab("log Mean number of unique VDJ sequences (n=50)") +ggtitle("VDJ Abundance in relation to Read Depth")
+		p1 <- ggplot(ABUNDANCE_MATRIX, aes(x=sample_depth, y=mean_unique_seq, group=sample, color=sample)) + geom_point(size=0.5)  + theme_bw() + guides(colour=FALSE) + geom_line(aes(colour=sample))+ xlab("Subsample Depth") + ylab("Mean number of unique VDJ sequences (repeat=50)") +ggtitle("VDJ Abundance in relation to Read Depth")
+		p2 <- ggplot(ABUNDANCE_MATRIX, aes(x=log(sample_depth), y=log(mean_unique_seq), group=sample, color=sample)) + geom_point(size=0.5)  + theme_bw() + guides(colour=FALSE) + geom_line(aes(colour=sample))+ xlab("log Subsample Depth") + ylab("log Mean number of unique VDJ sequences (repeat=50)") +ggtitle("VDJ Abundance in relation to Read Depth")
         plot(plot_grid(p1, p2, ncol=2))
 		dev.off()
 		
