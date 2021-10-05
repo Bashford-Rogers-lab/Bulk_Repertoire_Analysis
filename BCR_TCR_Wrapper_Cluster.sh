@@ -18,12 +18,13 @@ echo "Loaded networkx/2.2-foss-2019b-Python-2.7.16 Module"
 # Job Arguments
 # File one containing the libraries
 # File two containing the PCR multiplexed samples 
-SAMPLES_FILE_POST=$1
-TASK=$2
+DEPENDANCIES=$1
+SAMPLES_FILE_POST=$2
+TASK=$3
 ## Runname or in the case of part 2 it will be the samples file pre 
-RUNNAME=$3
-BATCH_FILE=$4
-JACCARD_TASK=$5
+RUNNAME=$4
+BATCH_FILE=$5
+JACCARD_TASK=$6
 
 # "catch exit status 1" grep wrapper
 # exit status 1 when no lines matched  - this is causing the script to fail with set -e hence the catch error
@@ -79,6 +80,7 @@ fi
 #------------------------------------------------------------
 ## Determining which sample file (pre/post was used) and file length. 
 ## Stages using 'post-file' (2 onwards and Consensus)
+if [[ "$DEPENDANCIES" == "YES" || "$DEPENDANCIES" == "Y" || "$DEPENDANCIES" == "y" || "$DEPENDANCIES" == "yes" ]]; then
 if [[ "$PRIORTASK" -ge 2 || "$PRIORTASK" == "-1" || "$PRIORTASK" == "CONSENSUS" ]]; then 
 FILE="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}.txt"
 echo ${FILE}
@@ -107,7 +109,11 @@ LENGTHJOBS=$(cat ${FILE} | wc -l)
 SAMPLES=$(cat ${RUNNAME} | wc -l)
 SAMPLES=$((SAMPLES+1))
 fi 
+fi 
 
+if [[ "$DEPENDANCIES" == "NO" || "$DEPENDANCIES" == "N" || "$DEPENDANCIES" == "n" || "$DEPENDANCIES" == "no" ]]; then 
+echo "CHECK FOR DEPENDANCIES HAD BEEN TURNED OFF BY USER"
+fi  
 #------------------------------------------------------------
 ## Checking whether prior jobs ran sucessfully - if not terminate script. 
 ## Print out Failed Samples to a failure file to easily identify.
@@ -123,7 +129,7 @@ IDS=$(awk -F '\t' "{ print \$1 }" $SAMPLES_FILE_POST)
 SAMPLE_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_SAMPLES.txt
 IDS_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
 
-
+if [[ "$DEPENDANCIES" == "YES" || "$DEPENDANCIES" == "Y" ]]; then 
 if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIORTASK" == "CONSENSUS" ]]; then
 	if [[ "$PRIORTASK" -ge 2 && "$PRIORTASK" -lt 4 ]]; then 
 		if fgrep -qx "$ID" $FILE
@@ -184,7 +190,7 @@ else
 		echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
 	fi
 fi 
-
+fi
 
 
 #------------------------------------
@@ -280,24 +286,21 @@ CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Read_proces
 elif [[ "$TASK" == 4 ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Generate_repertoire_statistics.py ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/ ${ID} ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_${ID}.fasta ${OUTPUTDIR}ORIENTATED_SEQUENCES/Filtered_ORFs_sequences_all_${ID}.fasta ${GENE} ${SPECIES} ${OUTPUTDIR}ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_${ID}.txt ANNOTATE,STATISTICS ${RECEPTOR}"
 elif [[ "$TASK" == 5 ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Get_batch_information.py $1"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Get_batch_information.py $2"
 elif [[ "$TASK" == 6 ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Combine_extract_IMGT_information.py $1 ${OUTPUTDIR}"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Combine_extract_IMGT_information.py $2 ${OUTPUTDIR}"
 elif [[ "$TASK" == "RS" ]]; then
 CMD="Rscript AnalysisStages1to4.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE}"
 elif [[ "$TASK" == "JACCARD" ]]; then
 CMD="Rscript AnalysisJaccard.R -o ${OUTPUTDIR} -r ${RUNNAME} -g ${GENE} -b ${BATCH_FILE} -t ${JACCARD_TASK}"
 elif [[ "$TASK" == "ISO1" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
-CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
-elif [[ "$TASK" == "ISO1" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $2"
 CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
 elif [[ "$TASK" == "ISO1_PRODUCTIVE" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_productive ${ID}_productive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_productive ${ID}_productive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $2"
 CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
 elif [[ "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then
-CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_unproductive ${ID}_unproductive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $1"
+CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_unproductive ${ID}_unproductive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $2"
 elif [[ "$TASK" == "NONISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Non_isotyper_1.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES}"
 elif [[ "$TASK" == "TCRISO1" ]]; then
