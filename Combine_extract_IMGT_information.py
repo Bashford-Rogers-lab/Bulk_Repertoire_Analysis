@@ -84,11 +84,11 @@ def Split_functional_non_function(id,dir):
       fh.close()
       Write_out(out, file)
       ### cluster file
-      file_in = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+sample+".txt"
-      file_out = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+sample+"_"+t+".txt"
-      h=open(file_out, "w")
+      file_in1 = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+sample+".txt"
+      file_out1 = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Cluster_identities_"+sample+"_"+t+".txt"
+      h=open(file_out1, "w")
       fh.close()
-      fh=open(file_in,"r")
+      fh=open(file_in1,"r")
       out, ind = '',0
       for l in fh:
         if(l[0]!='#'):
@@ -98,10 +98,10 @@ def Split_functional_non_function(id,dir):
             out=out+l1
             ind = ind+1
             if(ind>500):
-              Write_out(out, file_out)
+              Write_out(out, file_out1)
               out, ind = '',0
       fh.close()
-      Write_out(out, file)
+      Write_out(out, file_out1)
       out, ind = '',0
       for f in range(len(files)): 
         file_in = dir_IMGT+"IMGT_"+sample+"_"+files[f]

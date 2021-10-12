@@ -330,9 +330,9 @@ def IMGT_sequence_trimming_constant_regions(seq_file, IMGT_trimmed_sequence_file
       if(l[2].count("productive")!=0):
         id,seq = l[1].split("__")[0], l[6].upper()
         seq_tree[seq][id].value = 1
-        #if(len(seq)==0):
-        #  print l
-        #  break
+        if(len(seq)==0):
+          seq = l[7].upper()
+          seq_tree[seq][id].value = 1
   fh.close()
   fh=open(IMGT_trimmed_sequence_file,"w")
   fh.close()
@@ -389,8 +389,9 @@ def Generalised_Get_CDR3_defined_cluster_file(CDR3s, cluster_file,merged_cluster
         ids[id_short] = id
         cluster_ids[cluster][id_short].value = 1
         G.add_node(cluster)
+      #  print "pass"
       #else:
-      #  print "fail",id_short
+      #  print "fail",id_short, id_short in CDR3s, id_short in seqs
   fh.close()
   ### get connected clusters to form hyper clusters
   for cdr3 in clusters:
@@ -1036,7 +1037,7 @@ def Get_network_parameters_per_sequence_classification(sample, cluster_file, dev
           else:
             if("IGHD,IGHM_unmutated" in classification_ids[id_short]):c1 = "IGHD,IGHM_unmutated"
             elif("IGHD,IGHM_mutated" in classification_ids[id_short]):c1 = "IGHD,IGHM_mutated"
-            else:print (c, id, classification_ids[id_short])
+            #else:print (c, id, classification_ids[id_short])
             if(c1 in freqs):freqs[c1] = freqs[c1]+freq[i]
             else:freqs[c1]=freq[i]
         for c in freqs:
@@ -1660,8 +1661,8 @@ def Get_V_gene_isotype_frequency(sample, annot_file, V_gene_isotype_frequency_fi
 
 def Isotype_sharing_subsampled(sample,reverse_primer_group, subsample_file,isotype_sharing_vertices_SUBSAMPLED,cluster_file,annot_file,isotype_sharing_SUBSAMPLED_summary):
   CDR3s,annots = Get_annotations(annot_file)
-  #Isotypes_shared_with_one_other_subsampled(sample,reverse_primer_group, subsample_file,isotype_sharing_vertices_SUBSAMPLED,cluster_file,annots,isotype_sharing_SUBSAMPLED_summary)
-  #Per_cluster_analysis_isotype_sharing_subsampled(sample,reverse_primer_group, subsample_file,isotype_sharing_vertices_SUBSAMPLED,cluster_file,annot_file)
+  Isotypes_shared_with_one_other_subsampled(sample,reverse_primer_group, subsample_file,isotype_sharing_vertices_SUBSAMPLED,cluster_file,annots,isotype_sharing_SUBSAMPLED_summary)
+  Per_cluster_analysis_isotype_sharing_subsampled(sample,reverse_primer_group, subsample_file,isotype_sharing_vertices_SUBSAMPLED,cluster_file,annot_file)
 
 def Isotypes_shared_with_one_other_subsampled(sample,isotype_sharing_SUBSAMPLED,cluster_file,subsample_depth,seq_file):
   depth = subsample_depth['all']
@@ -2840,6 +2841,8 @@ def Get_autoreactive_V4_34_motif_frequency(annot_file4, V4_34_quantification_fil
           nz = [i for i in range(len(freq)) if freq[i]!=0]
           for i in nz:
             c = classes[i].split("*")[0]
+            if(c in ["TRBC1","TRBC2"]):c = "TRBC"
+            if(c in ["TRGC1","TRGC2"]):c = "TRGC"
             #if(reverse_primer_group!="ISOTYPER"):
             #  if(c in ["IGHA1","IGHA2"]):c="IGHA1/2"
             #  if(c in ["IGHG1","IGHG2"]):c="IGHG1/2"
@@ -3024,6 +3027,8 @@ def Get_CDR3_lengths(seq_file,annot_file,CDR3_length_file,sample,annot_file4,CDR
       nz = [i for i in range(len(f)) if f[i]!=0]
       for i in nz:
         c = chains[i].split("*")[0]
+        if(c in ["TRBC1","TRBC2"]):c = "TRBC"
+        if(c in ["TRGC1","TRGC2"]):c = "TRGC"
         #if(reverse_primer_group!="ISOTYPER"):
         #  if(c in ["IGHA1", "IGHA2"]):c = "IGHA1/2"
         #  if(c in ["IGHG1", "IGHG2"]):c = "IGHG1/2"
@@ -3921,8 +3926,7 @@ STAGE = 6 ### get secondary rearrangement information
 STAGE = 7 ### get phylogenetic trees (NOT FULLY DEVELOPED)
 
 STAGE = [1,2,3,4,5,6]
-#STAGE = [3,4,5,6]
-#STAGE = [6]
+#STAGE = [4]
 
 
 IMGT = True
@@ -3964,7 +3968,6 @@ if(4 in STAGE):### get V gene information
 
 if(5 in STAGE):### get CDR3 and mutational information
   Get_CDR3_region_composition(sample,seq_file,annot_file, per_cluster_developmental_classification_file,CDR3_region_composition,CDR3_5prime_charge,CDR3_length_file,annot_file4,CDR3_charge_file,CDR23_charge_file,mean_IgD_IgM_ratio,CDR3_5prime_charge_long_short, CDR3_length_vjgenes)
-  Get_autoreactive_V4_34_motif_frequency(annot_file4, V4_34_quantification_file, sample,IMGT_trimmed_sequence_file,reverse_primer_group)
   Get_CDR3_lengths(IMGT_trimmed_sequence_file,annot_file,CDR3_length_file,sample,annot_file4,CDR3_charge_file,CDR23_charge_file,reverse_primer_group,CDR3_distribution)
   Mutation_selection_per_chain(seq_file, annot_file2, sample, syn_non_syn_mutations,syn_non_syn_mutations_summary,reverse_primer_group)
   Get_mutational_frequencies_per_classification_per_cluster(sample, annot_file_internal,per_cluster_developmental_classification_file,per_cluster_developmental_classification_mutational_file, per_cluster_developmental_classification_cluster_size_file,per_cluster_developmental_classification_vj_usage_file,reverse_primer_group)
@@ -3983,4 +3986,3 @@ if(7 in STAGE): ### get phylogenetic trees
   Make_trees_from_clusters(cluster_annotation_file,cluster_file,seq_file,overall_cluster_large_file,id, output_dir)
 
 
-list

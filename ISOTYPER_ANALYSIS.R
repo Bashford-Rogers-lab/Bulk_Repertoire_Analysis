@@ -25,11 +25,11 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trailingOnly = TRUE)) 
 
 setwd("/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE")
-samplesfilepost <- '/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/LEO_SEPSIS_BCR_FINAL_post.txt'
-path_to_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_JUNE21_UPDATE/BCR/'
+samplesfilepost <- '/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/LEO_SEPSIS_TCRB_ALL_post.txt'
+path_to_outputdir <- "/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/TCRB/"
 productivity="ALL"
 productivity="UNPRODUCTIVE"
-cluster_nodes <- 10
+cluster_nodes <- 6
 path_to_layout <- '/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Batching_LayoutsBCR.txt'
 
 

@@ -8,8 +8,122 @@ set -e -o pipefail
 # read/write what it's created by the script
 umask 002
 
+echo "********************************************************"
+
+# Job Arguments
 # Extracting Outputdir
-OUTPUTDIR=$1
+DEPENDANCIES=$1
+SAMPLES_FILE_POST=$2
+
+## Job arguments 
+OUTPUTDIR=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$8}" $SAMPLES_FILE_POST)
+
+## Location of IDs! 
+SAMPLE_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_SAMPLES.txt
+IDS_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
+
+echo "* Job Details"
+echo "********************************************************"
+echo "SGE job ID       : "$JOB_ID
+echo "SGE task ID      : "$SGE_TASK_ID
+echo "Run on host      : "`hostname`
+echo "Operating system : "`uname -s`
+echo "Username         : "`whoami`
+echo "Started at       : "`date`
+echo
+echo "********************************************************"
+echo "* Job Parameters"
+echo "********************************************************"
+echo "OUTPUTDIR       : ${OUTPUTDIR}"
+echo "Sample File     : ${SAMPLE_FILE}"
+echo "IDs File        : ${IDS_FILE}"
+echo "********************************************************"
+
+# "catch exit status 1" grep wrapper
+# exit status 1 when no lines matched  - this is causing the script to fail with set -e hence the catch error
+# exit status 0 when lines matched
+# exit status 2 when error
+c1grep() { grep "$@" || test $? = 1; }
+
+echo "********************************************************"
+echo "********************************************************"
+echo "* Job Dependancies"
+echo "********************************************************"
+
+## Specifying dependancies
+PRIORTASK1="ISO1"
+PRIORTASK2="ISO1_PRODUCTIVE"
+PRIORTASK3="ISO1_NON_PRODUCTIVE"
+
+SAMPLES=$(cat ${SAMPLES_FILE_POST} | wc -l)
+SAMPLES=$((SAMPLES1+1))
+
+# Testing for sample success!
+if [[ "$DEPENDANCIES" == "YES" || "$DEPENDANCIES" == "Y" || "$DEPENDANCIES" == "y" || "$DEPENDANCIES" == "yes" ]]; then
+######################
+FILE1="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK1}.txt"
+echo ${FILE1}
+	if [ ! -e "$FILE1" ]; then
+		echo "DEPENDANCIES: Final File ${PRIORTASK1} does NOT exist - something has gone wrong and no samples have run!"
+		exit 888
+	else 
+		echo "DEPENDANCIES: Final File ${PRIORTASK1} from previous job exists: ${FILE1}"
+	fi 
+LENGTHJOBS1=$(cat ${FILE1} | wc -l)
+###########################
+FILE2="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK3}.txt"
+echo ${FILE2}
+	if [ ! -e "$FILE2" ]; then
+		echo "DEPENDANCIES: Final File ${PRIORTASK2} NOT exist - something has gone wrong and no samples have run!"
+		exit 888
+	else 
+		echo "DEPENDANCIES: Final File ${PRIORTASK2} from previous job exists: ${FILE2}"
+	fi 
+LENGTHJOBS2=$(cat ${FILE2} | wc -l)
+###########################
+FILE3="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK2}.txt"
+echo ${FILE3}
+	if [ ! -e "$FILE3" ]; then
+		echo "DEPENDANCIES: Final File ${PRIORTASK3} does NOT exist - something has gone wrong and no samples have run!"
+		exit 888
+	else 
+		echo "DEPENDANCIES: Final File ${PRIORTASK3} from previous job exists: ${FILE3}"
+	fi 
+LENGTHJOBS3=$(cat ${FILE3} | wc -l)
+##
+echo "Looking for failed samples.." 
+c1grep -v -f ${FILE1} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK1}_FAILED_SAMPLES.txt
+c1grep -v -f ${FILE2} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK2}_FAILED_SAMPLES.txt
+c1grep -v -f ${FILE3} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK3}_FAILED_SAMPLES.txt
+echo "DONE"
+##
+if [[ $LENGTHJOBS1 -ne $SAMPLES ]]; then 
+	echo "DEPENDANCIES: Final File ${PRIORTASK1}: Not all dependancies ran sucessfully to completion"
+	echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
+	exit 999
+else 
+	echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
+	echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
+fi
+##
+if [[ $LENGTHJOBS2 -ne $SAMPLES ]]; then 
+	echo "DEPENDANCIES: Final File ${PRIORTASK2}: Not all dependancies ran sucessfully to completion"
+	echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
+	exit 999
+else 
+	echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
+	echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
+fi
+##
+if [[ $LENGTHJOBS3 -ne $SAMPLES ]]; then 
+	echo "DEPENDANCIES: Final File ${PRIORTASK2}: Not all dependancies ran sucessfully to completion"
+	echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
+	exit 999
+else 
+	echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
+	echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
+fi	
+fi 
 
 ## Creating Relevant Subdirectories 
 mkdir ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE
@@ -21,7 +135,7 @@ mv *_unproductive* ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE
 mkdir ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL
 mv *.txt ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL
 
-# Moving Sampling deapth file
+# Moving Sampling depth file up one level 
 mv ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL/Sampling_depth_per_isotype_* ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/
 
 #Making into Combined Files
@@ -57,6 +171,8 @@ cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL/V_gene_isotype_frequency_*.txt
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL/V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_*.txt > All_V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_ALL.txt || true
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL/V_gene_summary_cluster_file_*.txt > All_V_gene_summary_cluster_file_ALL.txt || true
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL/Secondary_rearrangements_clone_sizes_* > All_Secondary_rearrangements_clone_sizes_ALL.txt || true 
+cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL/Isotye_normalised_overlap_frequencies_uniq_BCR*_ALL.txt >All_Isotype_normalised_overlap_frequencies_uniq_BCR.txt || true
+cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/ALL/Isotye_normalised_overlap_frequencies_uniq_TCR*_ALL.txt >All_Isotype_normalised_overlap_frequencies_uniq_TCR.txt || true
 
 #PRODUCTIVE 
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE/CDR3_VJ_genes_*_productive.txt > All_CDR3_VJ_genes_PRODUCTIVE.txt || true
@@ -90,6 +206,8 @@ cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE/V_gene_isotype_frequenc
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE/V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_*_productive.txt > All_V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_PRODUCTIVE.txt || true
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE/V_gene_summary_cluster_file_*_productive.txt > All_V_gene_summary_cluster_file_PRODUCTIVE.txt || true
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE/Secondary_rearrangements_clone_sizes_*_productive.txt > All_Secondary_rearrangements_clone_sizes_PRODUCTIVE.txt || true 
+cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE/Isotye_normalised_overlap_frequencies_uniq_BCR*_productive.txt >All_Isotype_normalised_overlap_frequencies_uniq_BCR.txt || true
+cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/PRODUCTIVE/Isotye_normalised_overlap_frequencies_uniq_TCR*_productive.txt >All_Isotype_normalised_overlap_frequencies_uniq_TCR.txt || true
 
 #UNPRODUCTIVE
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE/CDR3_VJ_genes_*_unproductive.txt > All_CDR3_VJ_genes_UNPRODUCTIVE.txt || true
@@ -123,55 +241,16 @@ cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE/V_gene_isotype_freque
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE/V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_*_unproductive.txt > All_V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_UNPRODUCTIVE.txt || true
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE/V_gene_summary_cluster_file_*_unproductive.txt > All_V_gene_summary_cluster_file_UNPRODUCTIVE.txt || true
 cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE/Secondary_rearrangements_clone_sizes_*_unproductive.txt > All_Secondary_rearrangements_clone_sizes_UNPRODUCTIVE.txt || true 
+cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE/Isotye_normalised_overlap_frequencies_uniq_BCR*_unproductive.txt >All_Isotype_normalised_overlap_frequencies_uniq_BCR.txt || true
+cat ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/UNPRODUCTIVE/Isotye_normalised_overlap_frequencies_uniq_TCR*_unproductive.txt >All_Isotype_normalised_overlap_frequencies_uniq_TCR.txt || true
 
-# Loading R module to do summary Plots 
-module purge
-module use -a /apps/eb/dev/ivybridge/modules/all
-module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
-echo "Loaded R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0 Module"
+## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
+NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_CAT.txt"
+eval "${NWCMD}"
 
-
-## Call R script
-
-#ISOTYPER_ANALYSIS
-### TRIAL
-
-
-
-cat PRODUCTIVE/CDR3_VJ_genes_*.txt > All_CDR3_VJ_genes_PRODUCTIVE.txt || true
-cat PRODUCTIVE/CDR3_charge_*.txt > All_CDR3_charge_PRODUCTIVE.txt || true
-cat PRODUCTIVE/CDR3_grouped_length_*.txt > All_CDR3_grouped_length_PRODUCTIVE.txt || true
-cat PRODUCTIVE/CDR3_length_array_*.txt > All_CDR3_length_array_PRODUCTIVE.txt || true
-cat PRODUCTIVE/CDR3_length_distribution_*.txt > All_CDR3_length_distribution_PRODUCTIVE.txt || true
-cat PRODUCTIVE/CDR3_lengths_overall_*.txt > All_CDR3_lengths_overall_PRODUCTIVE.txt || true
-cat PRODUCTIVE/CDR3_n_unique_regions_per_isotype_group_*.txt > All_CDR3_n_unique_regions_per_isotype_group_PRODUCTIVE.txt || true
-cat PRODUCTIVE/CDR_charge_*.txt > All_CDR_charge_PRODUCTIVE.txt || true 
-cat PRODUCTIVE/Cluster_cassification_per_cluster_size_*.txt > All_Cluster_cassification_per_cluster_size_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Cluster_expansion_isotype_*.txt > All_Cluster_expansion_isotype_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Cluster_per_cluster_network_parameters_SUMMARY_SUBSAMPLED_*.txt > All_Cluster_per_cluster_network_parameters_SUMMARY_SUBSAMPLED_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Cluster_per_sequence_network_parameters_*.txt > All_Cluster_per_sequence_network_parameters_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Isotype_counts_shared_*.txt > All_Isotype_counts_shared_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Isotype_overlapping_frequencies_*.txt > All_Isotype_overlapping_frequencies_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Isotype_unexpanded_cluster_*.txt > All_Isotype_unexpanded_cluster_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Isotype_usages_SUBSAMPLED_*.txt > All_Isotype_usages_SUBSAMPLED_PRODUCTIVE.txt || true
-cat PRODUCTIVE/J_gene_grouped_isotype_frequency_*.txt > All_J_gene_grouped_isotype_frequency_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Mutations_VJ_genes_*.txt > All_Mutations_VJ_genes_PRODUCTIVE.txt || true
-cat PRODUCTIVE/SHM_Cluster_mutation_sharing_probability_*.txt > All_SHM_Cluster_mutation_sharing_probability_PRODUCTIVE.txt || true
-cat PRODUCTIVE/SHM_Indel_summary_*.txt > All_SHM_Indel_summary_PRODUCTIVE.txt || true
-cat PRODUCTIVE/SHM_Mutation_summmary_selection_*.txt > All_SHM_Mutation_summmary_selection_PRODUCTIVE.txt || true
-cat PRODUCTIVE/SHM_Mutational_positions_summmary_per_gene_*.txt > All_SHM_Mutational_positions_summmary_per_gene_PRODUCTIVE.txt || true
-cat PRODUCTIVE/SHM_Mutations_per_expanded_cluster_*.txt > All_SHM_Mutations_per_expanded_cluster_PRODUCTIVE.txt || true
-cat PRODUCTIVE/SHM_Unmutated_sequences_*.txt > All_SHM_Unmutated_sequences_PRODUCTIVE.txt || true
-cat PRODUCTIVE/SHM_per_cluster_Mutational_development_classifiation_*.txt > All_SHM_per_cluster_Mutational_development_classifiation_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Secondary_rearrangements_*.txt > All_Secondary_rearrangements_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Secondary_rearrangements_RAW_*.txt > All_Secondary_rearrangements_RAW_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Secondary_rearrangements_V_genes_*.txt > All_Secondary_rearrangements_V_genes_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Secondary_rearrangements_file_SAMPLED_*.txt > All_Secondary_rearrangements_file_SAMPLED_PRODUCTIVE.txt || true
-cat PRODUCTIVE/V_gene_IGHV4_34_quantification_*.txt > All_V_gene_IGHV4_34_quantification_PRODUCTIVE.txt || true
-cat PRODUCTIVE/V_gene_grouped_isotype_frequency_*.txt > All_V_gene_grouped_isotype_frequency_PRODUCTIVE.txt || true
-cat PRODUCTIVE/V_gene_isotype_frequency_*.txt > All_V_gene_isotype_frequency_PRODUCTIVE.txt || true
-cat PRODUCTIVE/V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_*.txt > All_V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_PRODUCTIVE.txt || true
-cat PRODUCTIVE/V_gene_summary_cluster_file_*.txt > All_V_gene_summary_cluster_file_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Isotye_normalised_overlap_frequencies_uniq_BCR_*.txt >All_Isotype_normalised_overlap_frequencies_uniq_BCR_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Isotye_normalised_overlap_frequencies_uniq_TCR_*.txt >All_Isotype_normalised_overlap_frequencies_uniq_TCR_PRODUCTIVE.txt || true
-cat PRODUCTIVE/Secondary_rearrangements_clone_sizes_* > All_Secondary_rearrangements_clone_sizes_PRODUCTIVE.txt || true 
+# Done 
+echo
+echo "********************************************************"
+echo "["`date`"] Done"
+echo "********************************************************"
+exit 0

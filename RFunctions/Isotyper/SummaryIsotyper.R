@@ -9,13 +9,15 @@ library(reshape2)
 library(ggplot2)
 library(Hmisc)
 library(corrplot)
+library(stringr)
 
 ## Function 
 summary_isotyper <- function(outputdir, samplesfilepost, iso_type){
 
 #Getting SampleIDs
-ids <- read.delim(samplesfilepost, sep='\t', header=FALSE)
-ids <- as.character(ids$V1)
+ids1 <- read.delim(samplesfilepost, sep='\t', header=FALSE)
+ids <- as.character(ids1$V1)
+chain_vdj <- unique(as.character(ids1$V4))
 ids_all <- as.character(ids)
 
 if(iso_type == "UNPRODUCTIVE"){
@@ -94,7 +96,7 @@ counts_used <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS")
 all_files <- list.files(counts_used, full.name=TRUE)
 all_files <- grep("depth_per_isotype", all_files, value=TRUE)
 #need to edit out!
-counts_used <- read.delim(all_files[2], sep="\t", header=TRUE)
+counts_used <- read.delim(all_files[1], sep="\t", header=TRUE)
 counts_used <- counts_used[counts_used$type=="UNIQ",]
 subsampled_depth_all <- counts_used$min[counts_used$X.isotype=="all"]
 		
@@ -178,57 +180,58 @@ analysis_matrices1 = q
 ##---------------------------------------------------------------------------------------------------------------------
 
 ## File Number 2: Class Switching Summary : 
+if(chain_vdj=="BCR"){
+	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Cluster_per_sequence_network_parameters_", iso_type, ".txt")
+	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
+	if(length(subsample_identifier)==0){
+		check2 <- FALSE
+	} else {
+		check2 <- TRUE
+	}
+	p <- as.matrix(read.delim(file, head=TRUE, sep="\t"))
+	p=p[which(as.character(p[,"X.Id"]) %in% ids_all),]
+	p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
+	id = as.character(p[,"X.Id"])
+	ids = sort(unique(id))
+	class = as.character(p[,"Isotype"])
+	classes = sort(unique(class))
+	reads_per_isotype = as.numeric(p[,"N.reads"])
+	unique_reads_per_isotype = as.numeric(p[,"N.vertices"])
+	m_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	m_unique_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
 
-file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Cluster_per_sequence_network_parameters_", iso_type, ".txt")
-subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-if(length(subsample_identifier)==0){
-	check2 <- FALSE
-} else {
-	check2 <- TRUE
-}
-p <- as.matrix(read.delim(file, head=TRUE, sep="\t"))
-p=p[which(as.character(p[,"X.Id"]) %in% ids_all),]
-p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
-id = as.character(p[,"X.Id"])
-ids = sort(unique(id))
-class = as.character(p[,"Isotype"])
-classes = sort(unique(class))
-reads_per_isotype = as.numeric(p[,"N.reads"])
-unique_reads_per_isotype = as.numeric(p[,"N.vertices"])
-m_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-m_unique_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-
-for(i in c(1:length(ids))){
-	for (c in c(1:length(classes))){
-		w = intersect(which(id==ids[i]), which(class==classes[c]))
-		if(length(w)>=1){
-			m_reads_per_isotype[i,c] = mean(reads_per_isotype[w])
-			m_unique_reads_per_isotype[i,c] = mean(unique_reads_per_isotype[w])
+	for(i in c(1:length(ids))){
+		for (c in c(1:length(classes))){
+			w = intersect(which(id==ids[i]), which(class==classes[c]))
+			if(length(w)>=1){
+				m_reads_per_isotype[i,c] = mean(reads_per_isotype[w])
+				m_unique_reads_per_isotype[i,c] = mean(unique_reads_per_isotype[w])
+			}
 		}
 	}
-}
-c1 = c("Class_switched","IGHD,IGHM_mutated","IGHD,IGHM_unmutated")
-c2 = c( "IGHA1","IGHA2","IGHD","IGHE","IGHG1","IGHG2","IGHG3","IGHG4","IGHM"  )
-c2 = c2[which(c2 %in% classes)]
-m_reads_per_isotype_group = m_reads_per_isotype[,c(c1)]
-m_unique_reads_per_isotype_group = m_unique_reads_per_isotype[,c1]
-m_reads_per_isotype_single = m_reads_per_isotype[,c2]
-m_unique_reads_per_isotype_single = m_unique_reads_per_isotype[,c2]
-for(i in c(1:length(ids))){
-	m_reads_per_isotype_group[i,] = m_reads_per_isotype_group[i,]*100/sum(m_reads_per_isotype_group[i,])
-	m_unique_reads_per_isotype_group[i,] = m_unique_reads_per_isotype_group[i,]*100/sum(m_unique_reads_per_isotype_group[i,])
-	m_reads_per_isotype_single[i,] = m_reads_per_isotype_single[i,]*100/sum(m_reads_per_isotype_single[i,])
-	m_unique_reads_per_isotype_single[i,] = m_unique_reads_per_isotype_single[i,]*100/sum(m_unique_reads_per_isotype_single[i,])
-}
-analysis_names = c( "Percentage_unique_BCRs_per_isotype", "Percentage_unique_BCRs_per_isotype_group")
-analysis_matrices = list(m_unique_reads_per_isotype_group, m_unique_reads_per_isotype_single)
-names(analysis_matrices) <- analysis_names
+	c1 = c("Class_switched","IGHD,IGHM_mutated","IGHD,IGHM_unmutated")
+	c2 = c( "IGHA1","IGHA2","IGHD","IGHE","IGHG1","IGHG2","IGHG3","IGHG4","IGHM"  )
+	c2 = c2[which(c2 %in% classes)]
+	m_reads_per_isotype_group = m_reads_per_isotype[,c(c1)]
+	m_unique_reads_per_isotype_group = m_unique_reads_per_isotype[,c1]
+	m_reads_per_isotype_single = m_reads_per_isotype[,c2]
+	m_unique_reads_per_isotype_single = m_unique_reads_per_isotype[,c2]
+	for(i in c(1:length(ids))){
+		m_reads_per_isotype_group[i,] = m_reads_per_isotype_group[i,]*100/sum(m_reads_per_isotype_group[i,])
+		m_unique_reads_per_isotype_group[i,] = m_unique_reads_per_isotype_group[i,]*100/sum(m_unique_reads_per_isotype_group[i,])
+		m_reads_per_isotype_single[i,] = m_reads_per_isotype_single[i,]*100/sum(m_reads_per_isotype_single[i,])
+		m_unique_reads_per_isotype_single[i,] = m_unique_reads_per_isotype_single[i,]*100/sum(m_unique_reads_per_isotype_single[i,])
+	}
+	analysis_names = c( "Percentage_unique_VDJs_per_isotype", "Percentage_unique_VDJs_per_isotype_group")
+	analysis_matrices = list(m_unique_reads_per_isotype_group, m_unique_reads_per_isotype_single)
+	names(analysis_matrices) <- analysis_names
 
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-}
-analysis_matrices2 = analysis_matrices
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	}
+	analysis_matrices2 = analysis_matrices
+} 
 
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 3: Class Switching Summary : 
@@ -297,7 +300,7 @@ for(i in c(1:length(id))){
 }
 
 analysis_matrices = list(values, m_perc_unmutated)
-analysis_names = c("Mean_SHM_per_BCR","Percentage_unmutated")
+analysis_names = c("Mean_SHM_per_VDJ","Percentage_unmutated")
 
 names(analysis_matrices) <- analysis_names
 for(i in 1:length(analysis_matrices)){
@@ -305,11 +308,49 @@ for(i in 1:length(analysis_matrices)){
 	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
 } 
 analysis_matrices4 = analysis_matrices
+##----------------------------------------------------------------------
+## File Number 5: ALL SHM : 
+if(chain_vdj=="BCR"){
 
+	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Isotype_normalised_overlap_frequencies_uniq_TCR.txt")
 
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+	# p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso1"]))),]
+	# p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso2"]))),]
+	id = as.character(p[,"X.sample"])
+	ids = sort(unique(id))
+	class1 = as.character(p[,"iso1"])
+	class2 = as.character(p[,"iso2"])
+	classes = sort(unique(class1))
+	mean_overlap_proportion1 = as.numeric(p[,"mean_overlap"])
+	class12 = apply(cbind(class1, class2),1,paste,collapse = "-")
+	class12s = sort(unique(class12))
+
+	overlap = matrix(data = -1, nrow = length(ids_all),ncol = length(class12s), dimnames=c(list(ids_all), list(class12s)))
+	for(i in c(1:length(ids))){
+		w = which(id==ids[i])
+		if(length(w)>0){
+			overlap[ids[i],]=0
+			overlap[ids[i], class12[w]]= mean_overlap_proportion1[w]
+		}
+	}
+
+	analysis_names = "Relative class switching absolute"
+	analysis_matrices = list(overlap)
+	
+	names(analysis_matrices) <- analysis_names
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	} 
+	
+	analysis_matrices5 = analysis_matrices
+}
 
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 6: ALL SHM : 
+
 file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_SHM_Mutation_summmary_selection_", iso_type, ".txt")
 subsample_identifier <- grep("SAMPLED", file, value=TRUE)
 if(length(subsample_identifier)==0){
@@ -336,7 +377,7 @@ for(t in c(1:length(types))){
 	w = which(type== types[t])
 	for(i in c(1:length(w))){
 		values[id[w[i]], class[w[i]]] = value[w[i]]}
-	value_list = c(value_list, list(values))
+		value_list = c(value_list, list(values))
 }
 a = value_list [[which(types=="mean CDR_mm per BCR")]]+ value_list [[which(types=="mean FWR_mm per BCR")]]
 b = value_list [[which(types=="mean nonsilent per BCR" )]]+ value_list [[which(types=="mean silent per BCR")]]
@@ -355,56 +396,57 @@ for(i in 1:length(analysis_matrices)){
 } 
 
 analysis_matrices6 = analysis_matrices
-names(analysis_matrices6) <- c("mean_CDR_FWR_ratio", "Mean_mutations_per_BCR" ,"FWR3_mm", "mean_CDR_mm per BCR","mean_FWR_mm_per_BCR"  )
+names(analysis_matrices6) <- c("mean_CDR_FWR_ratio", "Mean_mutations_per_VDJ" ,"FWR3_mm", "mean_CDR_mm per VDJ","mean_FWR_mm_per_VDJ"  )
+
 
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 7: ALL SHM : 
+if(chain_vdj=="BCR"){
+	file  = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Secondary_rearrangements_", iso_type, ".txt")
+	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
+	if(length(subsample_identifier)==0){
+		check7 <- FALSE
+	} else {
+		check7 <- TRUE
+	}
 
-file  = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Secondary_rearrangements_", iso_type, ".txt")
-subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-if(length(subsample_identifier)==0){
-	check7 <- FALSE
-} else {
-	check7 <- TRUE
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+	p=p[grep("IGH",as.character(p[,"chain"])),]
+	w = setdiff(p[,"chain"], p[,"chain"][grep("IGHV",as.character(p[,"chain"]))])
+	p=p[which(as.character(p[,"chain"]) %in% w),]
+	w = setdiff(p[,"chain"], p[,"chain"][grep("mut",as.character(p[,"chain"]))])
+	p=p[which(as.character(p[,"chain"]) %in% w),]
+
+	id = as.character(p[,"X.sample"])
+	ids = sort(unique(id))
+	class = as.character(p[,"chain"])
+	id_replacement_freq =as.numeric(p[,"percentage"])
+	total_isotype = as.numeric(p[,"total"])
+	w1 = which(total_isotype>50)
+
+	classes = sort(unique(class))
+	types = c(list(id_replacement_freq))
+
+	analysis_name = c("V gene replacement frequency")
+	means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	for(i in c(1:length(ids))){
+		w = intersect(which(id==ids[i]), w1)
+		means[ids[i], class[w]] = id_replacement_freq[w]
+	}
+		
+	analysis_matrices = list(means)
+	analysis_names = c("V gene replacement frequency")
+
+	names(analysis_matrices) <- analysis_names
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	} 
+
+	analysis_matrices7 = analysis_matrices
+	names(analysis_matrices7) <- analysis_names
 }
-
-p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-p=p[grep("IGH",as.character(p[,"chain"])),]
-w = setdiff(p[,"chain"], p[,"chain"][grep("IGHV",as.character(p[,"chain"]))])
-p=p[which(as.character(p[,"chain"]) %in% w),]
-w = setdiff(p[,"chain"], p[,"chain"][grep("mut",as.character(p[,"chain"]))])
-p=p[which(as.character(p[,"chain"]) %in% w),]
-
-id = as.character(p[,"X.sample"])
-ids = sort(unique(id))
-class = as.character(p[,"chain"])
-id_replacement_freq =as.numeric(p[,"percentage"])
-total_isotype = as.numeric(p[,"total"])
-w1 = which(total_isotype>50)
-
-classes = sort(unique(class))
-types = c(list(id_replacement_freq))
-
-analysis_name = c("V gene replacement frequency")
-means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-for(i in c(1:length(ids))){
-	w = intersect(which(id==ids[i]), w1)
-	means[ids[i], class[w]] = id_replacement_freq[w]
-}
-	
-analysis_matrices = list(means)
-analysis_names = c("V gene replacement frequency")
-
-names(analysis_matrices) <- analysis_names
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-} 
-
-analysis_matrices7 = analysis_matrices
-names(analysis_matrices7) <- analysis_names
-
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 8: ALL SHM : 
 
@@ -555,8 +597,11 @@ analysis_matrices10 = analysis_matrices
 
 ##---------------------------------------------------------------------------------------------------------------------
 ## COMPOSING THE OVERALL MATRIX 
-
-print_info = c(analysis_matrices1, analysis_matrices2,  analysis_matrices3, analysis_matrices4, analysis_matrices6, analysis_matrices7, analysis_matrices8, analysis_matrices9, analysis_matrices10)
+if(chain_vdj=="BCR"){
+	print_info = c(analysis_matrices1, analysis_matrices2,  analysis_matrices3, analysis_matrices4,analysis_matrices5, analysis_matrices6, analysis_matrices7, analysis_matrices8, analysis_matrices9, analysis_matrices10)
+} else {
+		print_info = c(analysis_matrices1, analysis_matrices3, analysis_matrices4, analysis_matrices6, analysis_matrices8, analysis_matrices9, analysis_matrices10)
+}
 
 overall_matrix = NULL
 for(i in c(1:length(print_info))){
@@ -577,12 +622,37 @@ overall_matrix$sample <- gsub("TCRD_", "", overall_matrix$sample)
 # Merge with readdepths 
 overall_matrix <- merge(overall_matrix, read_depths_all, by.x="sample", by.y="SampleIDforDepths")
 
+
+if(chain_vdj=="TCR" || chain_vdj=="TR"){
+	counts_try <- counts_used[(counts_used$X.isotype  != "ALL" & counts_used$X.isotype  != "all"),]
+	receptor <- counts_try$X.isotype[counts_try$min==max(counts_try$min)]
+	
+	if(receptor=="TRBC"){
+		receptor <- c("TRBC1", "TRBC2", "TRBC")
+		others_x <- c("TRGC1", "TRGC2", "TRGC")
+	} else if (receptor=="TRGC"){
+		receptor <- c("TRGC1", "TRGC2", "TRGC")
+		others_x <- c("TRBC1", "TRBC2", "TRBC")
+	} 
+	
+	keeping_columns <- c()
+	for(i in 1:length(receptor)){
+		keep <- grep(receptor[i], colnames(overall_matrix), value=TRUE)
+		keeping_columns <- c(keeping_columns, keep)
+	}
+	keeping_columns<- c("sample", keeping_columns, "ReadDepth")
+	keep <- colnames(overall_matrix)[colnames(overall_matrix) %in% keeping_columns]
+	overall_matrix <- overall_matrix[, c(keep)]
+}
+
+
 # save the output for this set of isotyper 
-out_file_table =paste0(outputdir, "Summary/All_raw_values_SEPSIS_BCR1_", subsampled_depth_all, "_", iso_type, ".txt")
+out_file_table =paste0(outputdir, "Summary/All_raw_values_", subsampled_depth_all, "_", iso_type, ".txt")
 write.table(overall_matrix, file = out_file_table, append = FALSE, quote = FALSE, sep = "\t",eol = "\n", na = "NA", dec = ".", row.names = TRUE, col.names = TRUE, qmethod = c("escape", "double"),fileEncoding = "")
 
 ##---------------------------------------------------------------------------------------------
 ##  Calculating the relationship between read depth and the metric 
+
 
 new <- overall_matrix
 
@@ -656,6 +726,7 @@ values$percentage_present <- as.numeric(as.character(values$percentage_present))
 ## Assess columns with high missingness
 bad_columns <- values$Metric[values$percentage_present<50]
 bad_columns2 <- values$Metric[values$percentage_present<25]
+bad_columns3 <- values$Metric[values$percentage_present<75]
 
 ## Save Significance to a txt file 
 write.table(values, paste0(outputdir, "Summary/isotyper_metrics_", subsampled_depth_all,  "_", iso_type, ".txt"), sep="\t")
@@ -689,9 +760,16 @@ bad_columns2 <- unique(c(colswithallmiss, bad_columns2))
 new_cols2 <- colnames(data_1)[!colnames(data_1) %in% bad_columns2]
 data_3 <- data_1[, c(new_cols2)]
 
+bad_columns3 <- unique(c(colswithallmiss, bad_columns3))
+new_cols3 <- colnames(data_1)[!colnames(data_1) %in% bad_columns3]
+data_4 <- data_1[, c(new_cols3)]
+
+
+
 data_1 <- as.matrix(data_1)
 data_2 <- as.matrix(data_2)
 data_3 <- as.matrix(data_3)
+data_4 <- as.matrix(data_4)
 ## Calculate the correlation between matrices 
 ## because we have nas we have to use pairwise complete obs 
 ## then the correlation or covariance between each pair of variables is computed using all complete pairs of observations on those variables. 
@@ -700,28 +778,45 @@ data_3 <- as.matrix(data_3)
 correlation_matrix <- tryCatch(Hmisc::rcorr(data_1),error=function(e) e, warning=function(w) w)
 correlation_matrix2 <- tryCatch(Hmisc::rcorr(data_2),error=function(e) e, warning=function(w) w)
 correlation_matrix3 <- tryCatch(Hmisc::rcorr(data_3),error=function(e) e, warning=function(w) w)
+correlation_matrix4 <- tryCatch(Hmisc::rcorr(data_4),error=function(e) e, warning=function(w) w)
   
-
+  
+if(length(colnames(data_1) <= 50)){
+	width <- 25
+	height <- 25
+} else if (length(colnames(data_1)) > 50 & length(colnames(data_1)) < 100){
+	width <- 45
+	height <- 45
+} else {
+	width <- 60
+	height <- 60
+} 
 
 ## Added in 'trys' to handle errors 
-pdf(paste0(outputdir, "Plots/Correlation_between_measures_", subsampled_depth_all, "_", iso_type,".pdf"), width=60, height=60)
+pdf(paste0(outputdir, "Plots/Correlation_between_measures_", subsampled_depth_all, "_", iso_type,".pdf"), width=width, height=height)
 
 if(!("warning" %in% class(correlation_matrix)) && !("error" %in% class(correlation_matrix))){
-	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="No % Present threshold, p<0.05"))
-	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="No % Present threshold: p<0.01"))
-	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="No % Present threshold: p<0.001"))
+	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="No % Present threshold, p<0.05", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="No % Present threshold: p<0.01", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="No % Present threshold: p<0.001",mar=c(0,0,2,0)))
+} 
+
+if(!("warning" %in% class(correlation_matrix4)) && !("error" %in% class(correlation_matrix))){
+	try(corrplot(correlation_matrix4[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix4[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="75% Present threshold, p<0.05", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix4[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix4[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="75% Present threshold: p<0.01", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix4[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix4[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="75% Present threshold: p<0.001",mar=c(0,0,2,0)))
 } 
 
 if(!("warning" %in% class(correlation_matrix2)) && !("error" %in% class(correlation_matrix2))){
-	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="50% % Present threshold: p<0.05"))
-	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="50% % Present threshold: p<0.01"))
-	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="50% % Present threshold: p<0.001"))
+	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="50% Present threshold: p<0.05", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="50% Present threshold: p<0.01", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="50% Present threshold: p<0.001", mar=c(0,0,2,0)))
 }
 
 if(!("warning" %in% class(correlation_matrix3)) && !("error" %in% class(correlation_matrix3))){
-	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="25% % Present threshold: p<0.05"))
-	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="25% % Present threshold: p<0.01"))
-	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="25% % Present threshold: p<0.001"))
+	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="25% Present threshold: p<0.05", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="25% Present threshold: p<0.01", mar=c(0,0,2,0)))
+	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="25% Present threshold: p<0.001", mar=c(0,0,2,0)))
 }
 dev.off()
 }
