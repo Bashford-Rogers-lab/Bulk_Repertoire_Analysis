@@ -31,7 +31,7 @@ results_outputdir <- opt$o
 runname <- opt$r
 gene <- opt$g
 # Source Auxillary Functions
-my_aux_functions <- c("RFunctions/")           
+my_aux_functions <- c("RFunctions/Stages1_4")           
 source_files <- list.files(my_aux_functions, "*.R$", full.names=TRUE)  # locate all .R files
 for (f in source_files) {
     source(f)

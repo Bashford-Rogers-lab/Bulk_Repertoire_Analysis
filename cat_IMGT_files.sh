@@ -56,7 +56,7 @@ PRIORTASK2="ISO1_PRODUCTIVE"
 PRIORTASK3="ISO1_NON_PRODUCTIVE"
 
 SAMPLES=$(cat ${SAMPLES_FILE_POST} | wc -l)
-SAMPLES=$((SAMPLES1+1))
+SAMPLES=$((SAMPLES+1))
 
 # Testing for sample success!
 if [[ "$DEPENDANCIES" == "YES" || "$DEPENDANCIES" == "Y" || "$DEPENDANCIES" == "y" || "$DEPENDANCIES" == "yes" ]]; then
@@ -71,7 +71,7 @@ echo ${FILE1}
 	fi 
 LENGTHJOBS1=$(cat ${FILE1} | wc -l)
 ###########################
-FILE2="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK3}.txt"
+FILE2="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK2}.txt"
 echo ${FILE2}
 	if [ ! -e "$FILE2" ]; then
 		echo "DEPENDANCIES: Final File ${PRIORTASK2} NOT exist - something has gone wrong and no samples have run!"
@@ -81,7 +81,7 @@ echo ${FILE2}
 	fi 
 LENGTHJOBS2=$(cat ${FILE2} | wc -l)
 ###########################
-FILE3="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK2}.txt"
+FILE3="COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK3}.txt"
 echo ${FILE3}
 	if [ ! -e "$FILE3" ]; then
 		echo "DEPENDANCIES: Final File ${PRIORTASK3} does NOT exist - something has gone wrong and no samples have run!"
@@ -97,9 +97,12 @@ c1grep -v -f ${FILE2} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIOR
 c1grep -v -f ${FILE3} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK3}_FAILED_SAMPLES.txt
 echo "DONE"
 ##
+## Note we will only error the isotyper script if ISO1 (productive+ nonproductive is not successful
+## If ISO1 is successful, then any failures in productive/non productive are most likely due to a sample having 0 reads in either category hence we can still continue with analysis! 
 if [[ $LENGTHJOBS1 -ne $SAMPLES ]]; then 
 	echo "DEPENDANCIES: Final File ${PRIORTASK1}: Not all dependancies ran sucessfully to completion"
 	echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
+	echo "NOTE: This is **most likely due to a sample containing 0 total reads** for isotyoer analysis - investigate further!!"
 	exit 999
 else 
 	echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
@@ -108,8 +111,8 @@ fi
 ##
 if [[ $LENGTHJOBS2 -ne $SAMPLES ]]; then 
 	echo "DEPENDANCIES: Final File ${PRIORTASK2}: Not all dependancies ran sucessfully to completion"
-	echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
-	exit 999
+	echo "WARNING: ANALYSIS STAGE ${TASK} WILL BE PERFORMED ON INCOMPLETE SAMPLE SET"
+	echo "Note: This is **most likely** due to a sample containing 0 PRODUCTIVE READs for isotyper analysis - investigate further!!"
 else 
 	echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
 	echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"
@@ -117,8 +120,8 @@ fi
 ##
 if [[ $LENGTHJOBS3 -ne $SAMPLES ]]; then 
 	echo "DEPENDANCIES: Final File ${PRIORTASK2}: Not all dependancies ran sucessfully to completion"
-	echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
-	exit 999
+	echo "WARNING: ANALYSIS STAGE ${TASK} WILL BE PERFORMED ON INCOMPLETE SAMPLE SET"
+	echo "Note: This is **most likely** due to a sample containing 0 NON-PRODUCTIVE READS for isotyper analysis - investigate further!!"
 else 
 	echo "DEPENDANCIES: All dependancies ran sucessfully to completion"
 	echo "SUCCESS: ANALYSIS STAGE ${TASK} WILL BE PERFORMED"

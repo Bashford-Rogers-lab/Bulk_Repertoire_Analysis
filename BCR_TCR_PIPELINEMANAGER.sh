@@ -13,9 +13,6 @@ STAGE=$4
 RUNNAME=$5
 BATCH_FILE=$6
 
-## Make a directory specific for this sample RUN -> this will be the location of all the LOG Files
-mkdir COMMANDLOGS/${SAMPLES_FILE_POST}
-
 ## Make an IDs File
 IDS=$(awk -F '\t' "{ print \$1 }" $SAMPLES_FILE_POST)
 for item in "$IDS"
@@ -30,19 +27,25 @@ for item in "$SAMPLE"
 	done
 
 
-
-
 ## RUN DEMULTIPLEXING STAGE 1 USING SAMPLES_FILE_PRE
 
 if [[ "$STAGE" -eq 1 ]]; then 
 	echo "RUNNING STAGES 1-5 and RS"
+	## Make a directory specific for this sample RUN -> this will be the location of all the LOG Files
+	rm -r COMMANDLOGS/${SAMPLES_FILE_POST}
+	mkdir COMMANDLOGS/${SAMPLES_FILE_POST}
+	CMD="rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_*"
+	eval "${CMD}"
+	CMD="rm COMMANDLOGS/job_${SAMPLES_FILE_PRE}_*"
+	eval "${CMD}"
+	
 	## Calculate number of samples to run array job on
 	TASKS=$(cat ${SAMPLES_FILE_PRE} | wc -l)
 	TASKS=$((TASKS+1))
 
 	#Run Jobs and capture job submission IDS
 	# Part one uses pre-file
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_1.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_1.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/1/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/1/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} $SAMPLES_FILE_PRE 1 $SAMPLES_FILE_POST)
 	echo "${SAMPLES_FILE_PRE},TASK1,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 	JOB_ID=${JOB_ID%.*}
@@ -51,28 +54,28 @@ if [[ "$STAGE" -eq 1 ]]; then
 	TASKS=$(cat ${SAMPLES_FILE_POST} | wc -l)
 	TASKS=$((TASKS+1))
 	
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_2.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_2.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_2 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK2,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_3.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_3.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_3 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK3,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_4.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_4.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_4 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK4,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_5.txt
+	#m COMMANDLOGS/job_${SAMPLES_FILE_POST}_5.txt
 	#Part five uses only 'one'
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1 -N BCR_TCR_PIPELINE_5 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK5,ARRAYSIZE:1,JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_RS.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_RS.txt
 	#Part five uses only 'one' and runs the R script 
 	JOB_ID=$(qsub -pe shmem 8 -q short.qc -t 1 -N BCR_TCR_PIPELINE_RS -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE})
 	JOB_ID=${JOB_ID%.*}
@@ -86,13 +89,20 @@ fi
 ## running all and the jaccard functions (without consensus)
 if [[ "$STAGE" -eq 2 ]]; then 
 	echo "RUNNING STAGES 1-5 and RS and Jaccard"
+	## Make a directory specific for this sample RUN -> this will be the location of all the LOG Files
+	rm -r COMMANDLOGS/${SAMPLES_FILE_POST}
+	mkdir COMMANDLOGS/${SAMPLES_FILE_POST}
+	CMD="rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_*"
+	eval "${CMD}"
+	CMD="rm COMMANDLOGS/job_${SAMPLES_FILE_PRE}_*"
+	eval "${CMD}"
 	## Calculate number of samples to run array job on
 	TASKS=$(cat ${SAMPLES_FILE_PRE} | wc -l)
 	TASKS=$((TASKS+1))
 
 	#Run Jobs and capture job submission IDS
 	# Part one uses pre-file
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_1.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_1.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/1/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/1/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} $SAMPLES_FILE_PRE 1 $SAMPLES_FILE_POST)
 	echo "${SAMPLES_FILE_PRE},TASK1,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 	JOB_ID=${JOB_ID%.*}
@@ -101,42 +111,39 @@ if [[ "$STAGE" -eq 2 ]]; then
 	TASKS=$(cat ${SAMPLES_FILE_POST} | wc -l)
 	TASKS=$((TASKS+1))
 	
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_2.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_2.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_2 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK2,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_3.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_3.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_3 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK3,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_4.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_4.txt
 	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N BCR_TCR_PIPELINE_4 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK4,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_5.txt
-	#Part five uses only 'one'
-	JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1 -N BCR_TCR_PIPELINE_5 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
-	JOB_ID=${JOB_ID%.*}
+	##Part five uses only 'one'
+	JOB_ID5=$(qsub -pe shmem 1 -q short.qc -t 1 -N BCR_TCR_PIPELINE_5 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
+	JOB_ID5=${JOB_ID5%.*}
 	echo "${SAMPLES_FILE_POST},TASK5,ARRAYSIZE:1,JOBID:${JOB_ID}"
 
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_RS.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_RS.txt
 	#Part five uses only 'one' and runs the R script 
-	JOB_ID=$(qsub -pe shmem 8 -q short.qc -t 1 -N BCR_TCR_PIPELINE_RS -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE})
+	JOB_ID=$(qsub -pe shmem 8 -q short.qc -t 1 -N BCR_TCR_PIPELINE_RS -hold_jid ${JOB_ID5} -e COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE})
 	JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK.RS,ARRAYSIZE:1,JOBID:${JOB_ID},RUNNAME:${RUNNAME},BATCH_FILE:${BATCH_FILE}"
 
-	
 	echo "RUNNING STAGES JACCARD"
 	TASKS=$(cat ${SAMPLES_FILE_POST} | wc -l)
 	TASKS=$((TASKS+1))
 	
-	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_JACCARD.txt
+	#rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_JACCARD.txt
 	JOB_ID1=$(qsub -pe shmem 10 -q long.qc -t 1 -N BCR_TCR_PIPELINE_JACCARD1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
 	JOB_ID2=$(qsub -pe shmem 10 -q long.qc -t 1 -N BCR_TCR_PIPELINE_JACCARD2 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
-	 
 	exit 0
 fi 
 
@@ -144,6 +151,14 @@ fi
 ## running all and the jaccard functions + consensus 
 if [[ "$STAGE" -eq 3 ]]; then 
 	echo "RUNNING STAGES 1-5, RS and CONSENSUS JACCARD"
+	## Make a directory specific for this sample RUN -> this will be the location of all the LOG Files
+	rm -r COMMANDLOGS/${SAMPLES_FILE_POST}
+	mkdir COMMANDLOGS/${SAMPLES_FILE_POST}
+	CMD="rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_*"
+	eval "${CMD}"
+	CMD="rm COMMANDLOGS/job_${SAMPLES_FILE_PRE}_*"
+	eval "${CMD}"
+
 	## Calculate number of samples to run array job on
 	TASKS=$(cat ${SAMPLES_FILE_PRE} | wc -l)
 	TASKS=$((TASKS+1))
