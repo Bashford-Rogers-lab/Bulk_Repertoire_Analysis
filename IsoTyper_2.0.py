@@ -213,10 +213,11 @@ def Get_sequences(seq_file):
   fh=open(seq_file,"r")
   seqs,freqs,alias = {},{},{}
   for header,sequence in fasta_iterator(fh):
-    seqs[header.split("__")[0]]=sequence
-    f = map(int, header.split("__")[1].split("|")[0].split("_"))
-    freqs[header.split("__")[0]] = f
-    alias[header.split("__")[0]] = header
+    if(len(header)!=0):
+      seqs[header.split("__")[0]]=sequence
+      f = map(int, header.split("__")[1].split("|")[0].split("_"))
+      freqs[header.split("__")[0]] = f
+      alias[header.split("__")[0]] = header
   fh.close()
   return(seqs, freqs, alias)
 
@@ -960,6 +961,14 @@ def Get_Renyi(x):
   r = -1*sum(x1*np.log(x1))
   return(r)
 
+def Get_Dclusters(v_sizes,DX):
+  if(len(v_sizes)>=DX):
+    v_sizes.sort(reverse=True)
+    dx = sum(v_sizes[0:DX])*100.0/sum(v_sizes)
+  else:
+    dx = -1
+  return(dx)
+
 def Get_Gini_fast(x, w=None):# w = weight if required
     # The rest of the code requires numpy arrays.
     x = np.asarray(x)
@@ -1204,7 +1213,7 @@ def Summarise_Get_network_parameters_per_classificiation_subsample_clones(sample
       ind = ind+1
   fh.close()
   X = np.array(X)
-  out="#Id\tIsotype\tN repeats\tN reads\tN vertices\tN_clusters\tVertex Gini Index\tCluster Gini Index\tmean_total_cluster_size\tmean_vertex_size\tmax_clust_pop\tmax_vertex_pop\tVertex Reyni\tCluster_Renyi\tThielC1\tThielC2\n"
+  out="#Id\tIsotype\tN repeats\tN reads\tN vertices\tN_clusters\tVertex Gini Index\tCluster Gini Index\tmean_total_cluster_size\tmean_vertex_size\tmax_clust_pop\tmax_vertex_pop\tVertex Reyni\tCluster_Renyi\tThielC1\tThielC2\tD5\tD10\tD50\n"
   for id in ids:
     w = ids[id]
     w = X[w,:]
@@ -1270,9 +1279,9 @@ def Raw_values_Get_network_parameters_per_classificiation_subsample_vertices(sam
   fh=open(per_cluster_developmental_classification_network_parameters_subsampled_CLONE, "w")
   fh.close()
   print (len(clusters), len(seq_types["ALL"]), "length arrays")
-  out="#Id\trepeat\tIsotype\tN reads\tN vertices\tN_clusters\tVertex Gini Index\tCluster Gini Index\tmean_total_cluster_size\tmean_vertex_size\tmax_clust_pop\tmax_vertex_pop\tVertex Reyni\tCluster_Renyi\tThielC1\tThielC2\n"
+  out="#Id\trepeat\tIsotype\tN reads\tN vertices\tN_clusters\tVertex Gini Index\tCluster Gini Index\tmean_total_cluster_size\tmean_vertex_size\tmax_clust_pop\tmax_vertex_pop\tVertex Reyni\tCluster_Renyi\tThielC1\tThielC2\tD5\tD10\tD50\n"
   ind = 0
-  repeats =5000
+  repeats =2000
   for clas in seq_types:
     if(clas in subsample_depth):
       depth=max([5,subsample_depth[clas]])
@@ -1286,8 +1295,7 @@ def Raw_values_Get_network_parameters_per_classificiation_subsample_vertices(sam
             f = freqs[i+"|"+clas_sub]
             ids_sub = ids_sub+[i]*f
             cluster_sub = cluster_sub+[clusters[i]]*f
-          #else:
-          #  print i+"|"+clas_sub, "NOT FOUND"
+          #else:print i+"|"+clas_sub, "NOT FOUND"
         ids_sub = np.array(ids_sub)
         cluster_sub = np.array(cluster_sub)
         sample_indices = np.arange(len(ids_sub)) 
@@ -1296,14 +1304,37 @@ def Raw_values_Get_network_parameters_per_classificiation_subsample_vertices(sam
           sample = np.random.choice(sample_indices,n,replace = False)
           clusters_sampled = np.array([])
           end = depth-1
-          for end in range(depth-1,len(sample)):
-            clusters_sampled = np.unique(ids_sub[sample[0:end]])
-            if(len(clusters_sampled)>=depth):break
+          max_end = n
+          clusters_sampled = np.unique(ids_sub[sample[0:end]])
+          attempts = 0
+          while(abs(len(clusters_sampled)-depth)>2):
+            attempts = attempts+1
+            if(attempts>200):break
+            split_remainder = (max_end - end)/10
+            if(split_remainder<1):break
+            seq = end + np.array(range(0,11))*split_remainder
+            for e in range(len(seq)):
+              end = seq[e]
+              pas = 0
+              if(end<len(sample)):
+                clusters_sampled = np.unique(ids_sub[sample[0:end]])
+                if(len(clusters_sampled)>=depth):
+                  if(e!=0): end = seq[e-1]
+                  else:end = seq[0]
+                  max_end = seq[e]
+                  clusters_sampled = np.unique(ids_sub[sample[0:end]])
+                  break
+          #for end in range(depth-1,len(sample)):
+          #  clusters_sampled = np.unique(ids_sub[sample[0:end]])
+          #  if(len(clusters_sampled)>=depth):break
           clusters_samples = cluster_sub[sample[0:end]]
           vertices_samples = ids_sub[sample[0:depth]]
           c_sizes,v_sizes = [],[]
           unique, c_sizes = Unique(clusters_samples)
           unique, v_sizes = Unique(vertices_samples)
+          D5 = Get_Dclusters(v_sizes,5)
+          D10 = Get_Dclusters(v_sizes,10)
+          D50 = Get_Dclusters(v_sizes,50)
           vgini = Get_Gini_fast(v_sizes)
           cgini = Get_Gini_fast(c_sizes)
           renyi_v = Get_Renyi(v_sizes)
@@ -1312,7 +1343,7 @@ def Raw_values_Get_network_parameters_per_classificiation_subsample_vertices(sam
           mean_total_cluster_size = mean(c_sizes)
           mean_vertex_size = mean(v_sizes)
           max_cpop, max_vpop =max(v_sizes)*100.0/sum(v_sizes), max(c_sizes)*100.0/sum(c_sizes)
-          out=out+"\t".join(map(str,[sample1,"REP"+str(r), clas, sum(v_sizes),len(v_sizes), len(c_sizes), vgini,cgini, mean_total_cluster_size, mean_vertex_size, max_cpop, max_vpop, renyi_v, renyi_c,T0c, T1c ]))+"\n"
+          out=out+"\t".join(map(str,[sample1,"REP"+str(r), clas, sum(v_sizes),len(v_sizes), len(c_sizes), vgini,cgini, mean_total_cluster_size, mean_vertex_size, max_cpop, max_vpop, renyi_v, renyi_c,T0c, T1c,D5,D10,D50]))+"\n"
           ind = ind+1
           if(ind>500):
             Write_out(out, per_cluster_developmental_classification_network_parameters_subsampled_CLONE)
@@ -1678,7 +1709,7 @@ def Isotypes_shared_with_one_other_subsampled(sample,isotype_sharing_SUBSAMPLED,
   fh.close()
   pairs_overall = {}
   if(len(seq_isos)>depth):
-    repeats = 1000
+    repeats = 10000
     seq_isos=np.array(seq_isos)
     for r in range (repeats):
       rand_ids = np.random.choice(seq_isos,depth,replace=True)
@@ -1701,6 +1732,9 @@ def Isotypes_shared_with_one_other_subsampled(sample,isotype_sharing_SUBSAMPLED,
       for p in pairs: 
         if(p in pairs_overall):pairs_overall[p] = pairs_overall[p] + [pairs[p]]
         else:pairs_overall[p] = [pairs[p]]
+      if(len(pairs)==0):
+        p = "all"
+        pairs_overall[p] = [0]
     out="#sample\tdepth\tn_repeats\tiso1\tiso2\tmean_overlap\n"
     for p in pairs_overall:
       out=out+"\t".join(map(str, [sample, depth,repeats, p, sum(pairs_overall[p])*1.0/repeats]))+"\n"
@@ -2023,7 +2057,7 @@ def Get_secondary_rearrangement_potential(sample, annot_file,annot_file3, second
   Get_secondary_rearrangement_sequences(sample, annot_file,annot_file3, secondary_rearrangement_file,seq_file,raw_secondary_rearrangement_file,reverse_primer_group,cd_ref_file)
   sample_depth = 250 ## change if needed
   Subsample_secondary_rearrangments(raw_secondary_rearrangement_file, sample_depth, secondary_rearrangement_file_SAMPLED,cluster_file,seq_file,sample,annot_file)
-  Subsample_per_Vgene(raw_secondary_rearrangement_file, sample_depth, secondary_rearrangement_file_SAMPLED,cluster_file,seq_file,sample,annot_file)
+  Subsample_per_Vgene(raw_secondary_rearrangement_file, sample_depth, secondary_rearrangement_V_genes,cluster_file,seq_file,sample,annot_file)
   ###### Secondary_rearrangement_CDR3_lengths(sample, annot_file,raw_secondary_rearrangement_file,secondary_rearrangement_cdr3_lengths,seq_file,cluster_file) ##### NOT RUN 
   Secondary_rearrangement_clonal_expansions(sample, annot_file,raw_secondary_rearrangement_file,cluster_file,secondary_rearrangement_clone_sizes_file)
   #Secondary_rearrangement_IGHV_genes(sample, annot_file,raw_secondary_rearrangement_file,secondary_rearrangement_V_genes,seq_file,cluster_file)
@@ -2609,22 +2643,24 @@ def Subsample_secondary_rearrangments(raw_secondary_rearrangement_file, sample_d
             c = "IGHD/M_unmutated_unexpanded"
             if(c in classes):classes[c] = classes[c]+freq[i]
             else:classes[c]=freq[i]
-      c = "All"
+      c = "all"
       if(c in classes):classes[c] = classes[c]+sum(freq)
       else:classes[c]=sum(freq)
       array = []
       for c in classes:
         array.append([c,classes[c]])
         classes_all[c][id].value = 1
-      array.append(["All",sum(freq)])
+      array.append(["all",sum(freq)])
       id_annotation[id] = array
       total = total+sum(freq)
   repeats = 5000
+  print secondary_rearrangement_file_SAMPLED
   fh=open(secondary_rearrangement_file_SAMPLED,"w")
   fh.close()
-  out = '#sample\tsample_ID\tisotype\tsample depth\tisotype_total\tid_replacement_freq\tuniq_id_replacement_freq\treplacement_v_gene_incidence\treplacement_incidence\n'
+  out = '#sample\tsample_ID\tisotype\tsample depth\tisotype_total\tid_replacement_freq\tuniq_id_replacement_freq\treplacement_v_gene_incidence\treplacement_incidence\tn_repeats\n'
   for clas in classes_all:
     if(len(classes_all[clas])>sample_depth):
+      print clas, sample_depth, len(classes_all[clas])
       ids_array1 = []
       for id in classes_all[clas]:
         ids_array1.append(id)
@@ -2643,7 +2679,7 @@ def Subsample_secondary_rearrangments(raw_secondary_rearrangement_file, sample_d
               v_gene = annots[id][3].split("\t")[0]
               stems_sample[inv_stem[id]][v_gene][id].value = 1
         stem_count, stem_count_uniq, stem_count_incidence = {},{},{}
-        stem_count_incidence["All"],stem_count_incidence["v"] =0,0
+        stem_count_incidence["all"],stem_count_incidence["v"] =0,0
         for stem in stems_sample:
           if(len(stems_sample[stem])>1):
             for v in stems_sample[stem]:
@@ -2654,14 +2690,14 @@ def Subsample_secondary_rearrangments(raw_secondary_rearrangement_file, sample_d
                 if(c in stem_count_uniq):stem_count_uniq[c] = stem_count_uniq[c]+1
                 else:stem_count_uniq[c] = 1
               stem_count_incidence["v"] = stem_count_incidence["v"]+1
-              stem_count_incidence["All"] = stem_count_incidence["All"]+1
+              stem_count_incidence["all"] = stem_count_incidence["all"]+1
         for c in stem_count:
           array, X = [],[stem_count, stem_count_uniq]
           for i in range(0,len(X)):
             x = X[i]
             if(c in x):array.append(x[c])
             else:array.append(0)
-          out=out+"\t".join(map(str, [sample, rep_id, c, sample_depth, len(classes_all[clas])]+array+[stem_count_incidence["v"],stem_count_incidence["All"]]))+"\n"
+          out=out+"\t".join(map(str, [sample, rep_id, clas, sample_depth, len(classes_all[clas])]+array+[stem_count_incidence["v"],stem_count_incidence["all"],repeats]))+"\n"
     fh=open(secondary_rearrangement_file_SAMPLED,"w")
     fh.write(out)
     fh.close()
@@ -3926,10 +3962,12 @@ STAGE = 6 ### get secondary rearrangement information
 STAGE = 7 ### get phylogenetic trees (NOT FULLY DEVELOPED)
 
 STAGE = [1,2,3,4,5,6]
-#STAGE = [4]
+#STAGE = [6]
 
 
 IMGT = True
+if(IMGT== True):seq_trimmed_file = IMGT_trimmed_sequence_file
+else:seq_trimmed_file = seq_file
 
 if(1 in STAGE):
   command = "mkdir "+output_dir+"ISOTYPER/"
@@ -3952,6 +3990,7 @@ if(3 in STAGE):### get clonality and isotype information
   Get_network_parameters_per_sequence_classification(sample, cluster_file, developmental_classification_file, per_sequence_classification_network_parameters,reverse_primer_group)
   Get_unique_CDR3_regions_per_isotype_group(subsample_file,annot_file, per_cluster_developmental_classification_file, unique_CDR3_regions_per_isotype_group_file,annot_file3,sample,CDR3_length_v_genes_file)
   Get_proportion_read_mutiple_subtypes(seq_file,per_cluster_developmental_classification_file, shared_isotype_counts,sample,reverse_primer_group)
+  Isotypes_shared_with_one_other_subsampled(sample,isotype_sharing_SUBSAMPLED,cluster_file,subsample_depth,seq_trimmed_file)
   #######Get_unexpanded_cluster_proportions(seq_file, sample,unexpanded_cluster_file,cluster_file)
   #######Get_total_network_summary(sample, annot_file, isotype_usages_SUBSAMPLED_clone,reverse_primer_group,IMGT_trimmed_sequence_file)
   #Subsample_repertoire(subsample_file, subsample_depth, IMGT_trimmed_sequence_file,sample,cluster_file)
@@ -3959,7 +3998,6 @@ if(3 in STAGE):### get clonality and isotype information
   #Get_cluster_properties_per_isotype(cluster_properties_per_isotype_SUBSAMPLED, sample, per_cluster_developmental_classification_file,subsample_file,cluster_size_file)
   #Isotype_per_cluster_sharing_probabilities(seq_file,per_cluster_developmental_classification_file, per_cluster_inter_isotype_sharing,sample,reverse_primer_group)
   #Get_network_parameters_per_classificiation_subsample(sample,per_cluster_developmental_classification_file, per_cluster_developmental_classification_network_parameters_subsampled,reverse_primer_group,cluster_file,subsample_depth,developmental_classification_file)
-  #Isotypes_shared_with_one_other_subsampled(sample,isotype_sharing_SUBSAMPLED,cluster_file,subsample_depth,seq_file)
 
 if(4 in STAGE):### get V gene information
   Get_V_gene_isotype_frequency_grouped(sample, annot_file, V_gene_isotype_frequency_file_grouped,per_cluster_developmental_classification_file,CDR3_length_file_grouped,per_V_gene_cluster_file,per_V_gene_cluster_summary_file,n_unmutated_file,isotype_usages_SUBSAMPLED)
@@ -3984,5 +4022,6 @@ if(7 in STAGE): ### get phylogenetic trees
   ### NOT YET FUNCTIONAL
   Annotating_clusters_for_analysis(cluster_file, cluster_annotation_file, annot_file,seq_file)
   Make_trees_from_clusters(cluster_annotation_file,cluster_file,seq_file,overall_cluster_large_file,id, output_dir)
+
 
 

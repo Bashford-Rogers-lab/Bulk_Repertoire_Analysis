@@ -78,7 +78,7 @@ def Get_isotype_depth(id,dir):
         l=l.strip().split()
         iso, umis, uniqs = l[1],int(l[2]), int(l[3])
         if(iso in ["TRBC1","TRBC2"]):iso = "TRBC"
-        if(iso in ["TRGC1","TRGC2"]):iso = "TRCG"
+        if(iso in ["TRGC1","TRGC2"]):iso = "TRGC"
         if(iso in isotypes_uniq):
           isotypes_uniq[iso], isotypes_total[iso] = isotypes_uniq[iso]+[uniqs], isotypes_total[iso] +[umis]
         else:isotypes_uniq[iso], isotypes_total[iso] = [uniqs],[umis]

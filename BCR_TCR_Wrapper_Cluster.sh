@@ -55,7 +55,7 @@ PRIORTASK=$((TASK-1))
 if [[ "$TASK" == "RS" ]]; then 
 	PRIORTASK=5
 fi
-if [[ "$TASK" == "ISO1"  || "$TASK" == "TCRISO1" || "$TASK" == "ISO1_NON_PRODUCTIVE" || "$TASK" == "ISO1_PRODUCTIVE" ]]; then 
+if [[ "$TASK" == "ISO1"  || "$TASK" == "TCRISO1" || "$TASK" == "ISO1_NON_PRODUCTIVE" || "$TASK" == "ISO1_PRODUCTIVE" || "$TASK" == "ISO1_COMPLETE" ]]; then 
 	PRIORTASK=6
 fi
 if [[ "$TASK" == "CONSENSUS" ]]; then 
@@ -301,6 +301,12 @@ CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.
 CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
 elif [[ "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_unproductive ${ID}_unproductive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $2"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
+elif [[ "$TASK" == "ISO1_COMPLETE" ]]; then
+CMDA="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $2"
+CMDB="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_productive ${ID}_productive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $2"
+CMDC="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/IsoTyper_2.0.py ${ID}_unproductive ${ID}_unproductive ${OUTPUTDIR} ${SPECIES} ${RECEPTOR} $2"
+CMD2="cp ${OUTPUTDIR}ORIENTATED_SEQUENCES/ANNOTATIONS/Sampling_depth_per_isotype_${SAMPLES_FILE_POST} ${OUTPUTDIR}ORIENTATED_SEQUENCES/ISOTYPER/"
 elif [[ "$TASK" == "NONISO1" ]]; then
 CMD="python /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/Non_isotyper_1.0.py ${ID} ${ID} ${OUTPUTDIR} ${SPECIES}"
 elif [[ "$TASK" == "TCRISO1" ]]; then
@@ -316,6 +322,8 @@ echo "PARAMETER NOT RECOGNISED."
 fi 
 
  
+## RUN THE JOB 1
+if [[ "$TASK" -ne "ISO1_COMPLETE" ]]; then
 # PRINT JOB TO LOGFILE
 echo "********************************************************"
 echo "["`date`"] Running TCR/BCR"
@@ -323,16 +331,63 @@ echo "********************************************************"
 echo "Command : ${CMD}"
 echo "********************************************************"
 echo
-
-## RUN THE JOB 1
 eval "${CMD}"
+fi
 
+if [[ "$TASK" == "RS" || "$TASK" == "JACCARD" ]]; then
+# PRINT JOB TO LOGFILE
+echo "********************************************************"
+echo "["`date`"] Running TCR/BCR"
+echo "********************************************************"
+echo "Command : ${CMD}"
+echo "********************************************************"
+echo
+eval "${CMD}"
+fi
+
+
+if [[ "$TASK" == "ISO1_COMPLETE" ]]; then
+##ALL
+echo "********************************************************"
+echo "["`date`"] Running TCR/BCR"
+echo "********************************************************"
+echo "Command : ${CMDA}"
+echo "********************************************************"
+eval "${CMDA}" || true
+NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1.txt"
+eval "${NWCMD}"
+eval "${CMD2}"
+echo "********************************************************"
+echo "["`date`"] Done"
+echo "********************************************************"
+echo "********************************************************"
+## PRODUCTIVE
+echo "Command : ${CMDB}"
+echo "********************************************************"
+eval "${CMDB}" || true
+NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_PRODUCTIVE.txt"
+eval "${NWCMD}"
+eval "${CMD2}" 
+echo "********************************************************"
+echo "["`date`"] Done"
+echo "********************************************************"
+## NON_PRODUCTIVE
+echo "********************************************************"
+echo "Command : ${CMDC}"
+echo "********************************************************"
+eval "${CMDC}" || true
+NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_NON_PRODUCTIVE.txt"
+eval "${NWCMD}"
+eval "${CMD2}" 
+echo "********************************************************"
+echo "["`date`"] Done"
+echo "******************************************************"
+fi
 
 # Move the file if running isotyper 
 if [[ "$TASK" == "ISO1" || "$TASK" == "ISO1_PRODUCTIVE" || "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then 
 	eval "${CMD2}"
 fi
-
 
 ## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
 NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"

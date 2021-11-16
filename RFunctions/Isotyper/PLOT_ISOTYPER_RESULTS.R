@@ -1,3 +1,17 @@
+suppressMessages(library(tidyverse))
+suppressMessages(library(data.table))
+suppressMessages(library(ggplot2))
+suppressMessages(library(ggforce))
+suppressMessages(library(Gviz))
+suppressMessages(library(foreach))
+suppressMessages(library(doParallel))
+suppressMessages(library(gridExtra))
+suppressMessages(library(cowplot))
+suppressMessages(library(gtools))
+suppressMessages(library(ggrastr))
+suppressMessages(library(purrr))
+suppressMessages(library(ggpubr))
+
 plot_isotyper_sepsis <- function(analysis_matrices, outputdir, info, iso_type){
 	
 	analysis_matrices <- read.delim(analysis_matrices, sep="\t")
@@ -122,18 +136,36 @@ for(i in 2:(length(analysis_matrices)-1)){
 		
 }
 
-plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type){
+plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type, depth_file){
 	
 	analysis_matrices <- read.delim(analysis_matrices, sep="\t")
 	info <- read.delim(info, sep="\t")
+	depth_file <- read.delim(depth_file, sep="\t")
+	depth_file$SampleIDforDepths <- gsub("_unproductive", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("_productive", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("BCR_", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("TCR_", "", depth_file$SampleIDforDepths)
+	
 
-	for(i in 2:(length(analysis_matrices)-1)){
+	info$Metric <- gsub("__TCR", "", info$Metric)
+	info$Metric <- gsub("__TCRA", "", info$Metric)
+	info$Metric <- gsub("__TCRB", "", info$Metric)
+	info$Metric <- gsub("__TCRG", "", info$Metric)
+	info$Metric <- gsub("__TCRD", "", info$Metric)
+	info$Metric <- gsub("__TRAC", "", info$Metric)
+	info$Metric <- gsub("__TRBC", "", info$Metric)
+	info$Metric <- gsub("__TRGC", "", info$Metric)
+	info$Metric <- gsub("__TRDC", "", info$Metric)
+	
+	dir.create(paste0(outputdir, "Plots/ISOTYPER/", iso_type))
+	
+	for(i in 1:(length(colnames(analysis_matrices)))){
 			metric <- colnames(analysis_matrices[i])
 			name<- metric
 			data <- data.frame(analysis_matrices[, i])
 			colnames(data) <- metric
 			cols_to_plot <- colnames(data)
-			data$sample <- analysis_matrices$sample
+			data$sample <- row.names(analysis_matrices)
 			data$sample <- gsub("BCR_", "", data$sample)
 			data$sample <- gsub("TCRA_", "", data$sample)
 			data$sample <- gsub("TCRB_", "", data$sample)
@@ -141,32 +173,49 @@ plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type){
 			data$sample <- gsub("TCRD_", "", data$sample)
 			data$sample <- gsub("_unproductive", "", data$sample)
 			data$sample <- gsub("_productive", "", data$sample)
-			
 			controls <- grep("HV", data$sample, value=TRUE)
-			
 			metric <- gsub("__",  ": ", metric)
 			metric <- gsub("_",  " ", metric)
 			metric <- gsub("\\.",  " ", metric)
 			
 			## Getting Read Depths 
-			depths <- analysis_matrices$ReadDepth
-			data <- cbind(data, depths)
-
-			info$subsampled_depth <- as.numeric(info$subsampled_depth)
-			subsampled_depth_all <- max(info$subsampled_depth[!is.na(info$subsampled_depth)])
+			data <- merge(data, depth_file, by.x="sample", by.y="SampleIDforDepths")
 			
+			info$subsampled_depth <- as.numeric(info$subsampled_depth)
+			
+			## Getting subsample depths which were used for isotyper script 
+			counts_used <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS")
+			all_files <- list.files(counts_used, full.name=TRUE)
+			all_files <- grep("depth_per_isotype", all_files, value=TRUE)
+			counts_used <- read.delim(all_files[1], sep="\t", header=TRUE)
+			counts_used <- counts_used[counts_used$type=="UNIQ",]
+			subsampled_depth_all <- counts_used$min[counts_used$X.isotype=="all"]			
+				
 			## Setting Up data Structure
-			pdf(paste0(outputdir, "Plots/ISOTYPER/Plotting_", name, "_", subsampled_depth_all, "_", iso_type, ".pdf"), width=12, height=10)
-
+			pdf(paste0(outputdir, "Plots/ISOTYPER/", iso_type, "/Plotting_", name, "_", subsampled_depth_all, "_", iso_type, ".pdf"), width=15, height=13)
 
             ## Beginging the Plotting  
 			for(s in cols_to_plot){
 				#print(s)
+				s1 <- gsub("BCR_", "", s)
+				s1 <- gsub("TCR_", "", s1)
+				s1 <- gsub("TCRA_", "", s1)
+				s1 <- gsub("TCRB_", "", s1)
+				s1 <- gsub("TCRG_", "", s1)
+				s1 <- gsub("TCRD_", "", s1)
+							
+				s1 <- gsub("TRAC_", "", s1)
+				s1 <- gsub("TRBC_", "", s1)
+				s1 <- gsub("TRGC_", "", s1)
+				s1 <- gsub("TRDC_", "", s1)
+				
+				s1 <- gsub("ALL_", "", s1)
+				s1 <- gsub("UNPRODUCTIVE_", "", s1)
+				s1 <- gsub("PRODUCTIVE_", "", s1)
 				
 				# Get subsampled depth
-				subsampled_val <- info$subsampled_depth[info$Metric==s]
-							
-				if(is.na(subsampled_val)){ 
+				subsampled_val <- info$subsampled_depth[info$Metric==s1]			
+				if(length(subsampled_val)==0){ 
 					subsampled_depth <- "Not Performed"
 				} else {
 					subsampled_depth <- subsampled_val
@@ -175,11 +224,11 @@ plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type){
 				metric1 <- metric
 				metric2 <- paste0("Subsampled Depth: ", subsampled_depth)
 				
-				d <- ggplot(data[data[, s] >-1,], aes_string(y=s))   + geom_boxplot()  + theme_bw()  +ylab(metric1) +ggtitle(metric2) +theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
-				e <- ggplot(data[data[, s] >-1,], aes_string(x="depths", y=s, colour="depths")) + geom_point(aes(color=depths))  + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) +stat_summary(fun.data= mean_cl_normal) + geom_smooth(method='lm')+ggtitle(metric2)+ labs(colour="Read Depth")
+				d <- ggplot(data[data[, s] >-1,], aes_string(x=s))  + rasterise(geom_density(), dpi=300)  + theme_bw()  +ggtitle(metric2) + geom_density(color="black", fill="lightblue") + geom_vline(aes(xintercept=mean(data[,s][data[, s] >-1 & !is.na(data[, s])])),color="blue", linetype="dashed", size=1) +xlab(metric1)
+				e <- ggplot(data[data[, s] >-1,], aes_string(x="ReadDepth", y=s, colour="ReadDepth")) + rasterise(geom_point(aes(color=ReadDepth)), dpi=300)  + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) + geom_smooth(method='lm')+ggtitle(metric2)+ labs(colour="Read Depth") + stat_cor(label.x = 0)
 
 				tryCatch({
-				plot(grid.arrange(d, e, ncol=2))
+				plot(grid.arrange(d, e, ncol=1))
 				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
 			dev.off()
 			}
@@ -188,14 +237,79 @@ plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type){
 
 plot_isotyper_comparison <- function(analysis_matrices_list, outputdir, info){
 	
+	dfiles <- list.files(paste0(outputdir, "Summary"), full.names=TRUE)
+	dfiles <- grep("Read_Depths_", dfiles, value=TRUE)
+	dprod <- grep("_PRODUCTIVE", dfiles, value=TRUE)
+	dprod <- read.delim(dprod, sep="\t")
+	duprod <- grep("_UNPRODUCTIVE", dfiles, value=TRUE)
+	duprod <- read.delim(duprod, sep="\t")
+	dall <- grep("_ALL", dfiles, value=TRUE)
+	dall <- read.delim(dall, sep="\t")
+	dprod$SampleIDforDepths <- gsub("_productive", "", dprod$SampleIDforDepths)
+	duprod$SampleIDforDepths <- gsub("_unproductive", "", duprod$SampleIDforDepths)
+	
 	analysis_matrices1 <- read.delim(analysis_matrices_list[1], sep="\t")
 	analysis_matrices1$productivity <- analysis_matrices_list[1]
+	analysis_matrices1$sample <- row.names(analysis_matrices1)
 	analysis_matrices2 <- read.delim(analysis_matrices_list[2], sep="\t")
 	analysis_matrices2$productivity <- analysis_matrices_list[2]
+	analysis_matrices2$sample <- row.names(analysis_matrices2)
 	analysis_matrices3 <- read.delim(analysis_matrices_list[3], sep="\t")
 	analysis_matrices3$productivity <- analysis_matrices_list[3]
+	analysis_matrices3$sample <- row.names(analysis_matrices3)
+	
+	colnames(analysis_matrices1) <- gsub("TCR_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("BCR_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("TCRA_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("TCRB_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("TCRG_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("TCRD_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("UNPRODUCTIVE_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("PRODUCTIVE_", "", colnames(analysis_matrices1))
+	colnames(analysis_matrices1) <- gsub("ALL_", "", colnames(analysis_matrices1))
+	
+	colnames(analysis_matrices2) <- gsub("TCR_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("BCR_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("TCRA_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("TCRB_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("TCRG_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("TCRD_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("UNPRODUCTIVE_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("PRODUCTIVE_", "", colnames(analysis_matrices2))
+	colnames(analysis_matrices2) <- gsub("ALL_", "", colnames(analysis_matrices2))
+	
+	colnames(analysis_matrices3) <- gsub("TCR_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("BCR_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("TCRA_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("TCRB_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("TCRG_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("TCRD_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("UNPRODUCTIVE_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("PRODUCTIVE_", "", colnames(analysis_matrices3))
+	colnames(analysis_matrices3) <- gsub("ALL_", "", colnames(analysis_matrices3))
 	
 	big <- dplyr::bind_rows(analysis_matrices1, analysis_matrices2, analysis_matrices3)
+	depth_file <- read.delim(depth_file, sep="\t")
+	depth_file$SampleIDforDepths <- gsub("_unproductive", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("_productive", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("BCR_", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("TCR_", "", depth_file$SampleIDforDepths)
+	
+	
+	duprod$SampleIDforDepths <- gsub("_unproductive", "", duprod$SampleIDforDepths)
+	duprod$SampleIDforDepths <- gsub("_productive", "", duprod$SampleIDforDepths)
+	duprod$SampleIDforDepths <- gsub("BCR_", "", duprod$SampleIDforDepths)
+	duprod$SampleIDforDepths <- gsub("TCR_", "", duprod$SampleIDforDepths)
+	
+	dall$SampleIDforDepths <- gsub("_unproductive", "", dall$SampleIDforDepths)
+	dall$SampleIDforDepths <- gsub("_productive", "", dall$SampleIDforDepths)
+	dall$SampleIDforDepths <- gsub("BCR_", "", dall$SampleIDforDepths)
+	dall$SampleIDforDepths <- gsub("TCR_", "", dall$SampleIDforDepths)
+	
+	dprod$SampleIDforDepths <- gsub("_unproductive", "", dprod$SampleIDforDepths)
+	dprod$SampleIDforDepths <- gsub("_productive", "", dprod$SampleIDforDepths)
+	dprod$SampleIDforDepths <- gsub("BCR_", "", dprod$SampleIDforDepths)
+	dprod$SampleIDforDepths <- gsub("TCR_", "", dprod$SampleIDforDepths)
 	
 	for(i in 1:length(big$productivity)){ 
 		if(grepl("_UNPRODUCTIVE", big$productivity[i])){
@@ -211,7 +325,18 @@ plot_isotyper_comparison <- function(analysis_matrices_list, outputdir, info){
 	
 	info <- read.delim(info, sep="\t")
 
-	for(i in 2:(length(big)-2)){
+	info$Metric <- gsub("__TCR", "", info$Metric)
+	info$Metric <- gsub("__TCRA", "", info$Metric)
+	info$Metric <- gsub("__TCRB", "", info$Metric)
+	info$Metric <- gsub("__TCRG", "", info$Metric)
+	info$Metric <- gsub("__TCRD", "", info$Metric)
+	info$Metric <- gsub("__TRAC", "", info$Metric)
+	info$Metric <- gsub("__TRBC", "", info$Metric)
+	info$Metric <- gsub("__TRGC", "", info$Metric)
+	info$Metric <- gsub("__TRDC", "", info$Metric)
+	
+	
+	for(i in 1:(length(big)-2)){
 			metric <- colnames(big[i])
 			name<- metric
 			data <- data.frame(big[, i])
@@ -226,45 +351,56 @@ plot_isotyper_comparison <- function(analysis_matrices_list, outputdir, info){
 			data$sample <- gsub("TCRD_", "", data$sample)
 			data$sample <- gsub("_unproductive", "", data$sample)
 			data$sample <- gsub("_productive", "", data$sample)
-			
 			controls <- grep("HV", data$sample, value=TRUE)
-			
 			metric <- gsub("__",  ": ", metric)
 			metric <- gsub("_",  " ", metric)
 			metric <- gsub("\\.",  " ", metric)
-			
-			## Getting Read Depths 
-			depths <- big$ReadDepth
-			data <- cbind(data, depths)
-
+			data$depths <- NA
+			for(i in 1:length(data$sample)){
+				c <- data$sample[i]
+				data$depths[data$productivity=="ALL" & data$sample==c] <- dall$ReadDepth[dall$SampleIDforDepths==c]
+				data$depths[data$productivity=="UNPRODUCTIVE" & data$sample==c] <- duprod$ReadDepth[duprod$SampleIDforDepths==c]
+				data$depths[data$productivity=="PRODUCTIVE" & data$sample==c] <- dprod$ReadDepth[dprod$SampleIDforDepths==c]
+			}
+		
 			info$subsampled_depth <- as.numeric(info$subsampled_depth)
 			subsampled_depth_all <- max(info$subsampled_depth[!is.na(info$subsampled_depth)])
-			
 			## Setting Up data Structure
-			pdf(paste0(outputdir, "Plots/ISOTYPER/Plotting_", name, "_", subsampled_depth_all, "_COMPARISON.pdf"), width=21, height=7)
-
-
-            ## Beginging the Plotting  
+			pdf(paste0(outputdir, "Plots/ISOTYPER/Plotting_", name, "_", subsampled_depth_all, "_COMPARISON.pdf"), width=15, height=10)
+			## Beginging the Plotting  
 			for(s in cols_to_plot){
-				#print(s)
+				s1 <- gsub("BCR_", "", s)
+				s1 <- gsub("TCR_", "", s1)
+				s1 <- gsub("TCRA_", "", s1)
+				s1 <- gsub("TCRB_", "", s1)
+				s1 <- gsub("TCRG_", "", s1)
+				s1 <- gsub("TCRD_", "", s1)
+				s1 <- gsub("ALL_", "", s1)
+						
+				s1 <- gsub("TRAC_", "", s1)
+				s1 <- gsub("TRBC_", "", s1)
+				s1 <- gsub("TRGC_", "", s1)
+				s1 <- gsub("TRDC_", "", s1)
 				
+				
+				s1 <- gsub("UNPRODUCTIVE_", "", s1)
+				s1 <- gsub("PRODUCTIVE_", "", s1)
 				# Get subsampled depth
-				subsampled_val <- info$subsampled_depth[info$Metric==s]
-							
-				if(is.na(subsampled_val)){ 
+				subsampled_val <- info$subsampled_depth[info$Metric==s1]			
+				if(length(subsampled_val)==0){ 
 					subsampled_depth <- "Not Performed"
 				} else {
 					subsampled_depth <- subsampled_val
 				} 
-									
+										
 				metric1 <- metric
 				metric2 <- paste0("Subsampled Depth: ", subsampled_depth)
-				
-				d <- ggplot(data[data[, s] >-1,], aes_string(y=s))   + geom_boxplot()  + theme_bw()  +ylab(metric1) +ggtitle(metric2) +theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) + facet_wrap(~productivity)
-				e <- ggplot(data[data[, s] >-1,], aes_string(x="depths", y=s, colour="depths")) + geom_point(aes(color=depths))  + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) +stat_summary(fun.data= mean_cl_normal) + geom_smooth(method='lm')+ggtitle(metric2)+ labs(colour="Read Depth")+ facet_wrap(~productivity)
-
+				data <- data[data[, s] >-1 & !is.na(data[, s]),]
+				data <- data.frame(data)
+				d <- ggplot(data, aes_string(x=s, fill="productivity")) + rasterise(geom_density(alpha=.4), dpi=300)  + theme_bw()  +xlab(metric1) +ggtitle(metric2) 
+				e <- ggplot(data, aes_string(x="depths", y=s, colour="depths")) + rasterise(geom_point(aes(color=depths)), dpi=300) + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1))+ geom_smooth(method='lm')+ggtitle(metric2)+ labs(colour="Read Depth")+ facet_wrap(~productivity, scales="free_x")+ stat_cor(label.x = 0)
 				tryCatch({
-				plot(grid.arrange(d, e, ncol=2))
+				plot(grid.arrange(d, e, ncol=1))
 				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
 			dev.off()
 			}

@@ -16,7 +16,13 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
     library(cowplot)
     library(gtools)
 	library(ggpubr)
-
+	library(ggrastr)
+	
+	`%notin%` <- Negate(`%in%`)
+	
+	## Makes files considerabley smaller!
+	pdf.options(useDingbats = TRUE) 
+	
 	path <- path_to_outputdir
 	path <- paste0(path_to_outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT")
 	files <- list.files(path, full.name=TRUE)
@@ -33,13 +39,16 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	data_overall <- read.delim(files2, header=TRUE, sep='\t')
 	data_overall$X <- NULL
 	names_data <- colnames(data_overall) 
+	data_overall <- NULL
+	
 	
 	## Extracting the actual mutation counts 
 	if(productivity=="ALL" | productivity=="all"){
 			files_not <- grep('_productive_', files, value=TRUE)
 			files_not2 <- grep('_unproductive', files, value=TRUE)
 			files <- files[!files %in% c(files_not, files_not2)]
-		} 
+	} 
+	
 	if(!is.na(productivity)){	
 		if(productivity=="productive" | productivity=="PRODUCTIVE" ){	
 				files <- grep('_productive_', files, value=TRUE)
@@ -50,31 +59,35 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 			}
 	}
 	
-	## Reading in Mutation Statistics 
-	cl <- cluster_nodes
-	registerDoParallel(cl)
-	IMGT_Mutation <- foreach(i = 1:length(files), .combine=rbind, .packages='tidyverse') %dopar% {
-				filtered_path <- files[i]
-				print(i)
-				sample_id <- unlist(str_split(filtered_path, 'IMGT_SPLIT/'))[2]
-				sample_id <- unlist(str_split(sample_id, '_8_V-REGION-nt-mutation-statistics.txt'))[1]
-				sample_id <- gsub("IMGT_BCR_", "", sample_id)
-				output <- read.delim(filtered_path, sep="\t", header=FALSE, fill=TRUE, col.names=names_data)
-				colnames(output) <- names_data
-				output$Sample <- sample_id
-								
-				`%notin%` <- Negate(`%in%`)
-				cols_notcalc <- c("Sequence.number", "Sequence.ID", "V.DOMAIN.Functionality", "V.GENE.and.allele", "Sample")
-				cols_calc <- names_data[names_data %notin% cols_notcalc]
-				output_1 <- data.frame(apply(output, 2, function(y) gsub("\\s\\(\\d+\\)", "", y)))
-				
-				output_1[,cols_calc] <- sapply(output_1[,cols_calc],as.character)
-				output_1[,cols_calc] <- sapply(output_1[,cols_calc],as.numeric)
-				
-				## Excludes NA valuses 
-				return(output_1)	    
-	}
-				
+	# read in and bind data 
+	filenames <- files
+	#create a list of dataframes 
+	df_list <- lapply(filenames, fread, header = FALSE, sep="\t", fill=TRUE, col.names=names_data, colClasses='character')
+	# identify the sample they came from 
+	d <- str_split(filenames, 'IMGT_SPLIT/') 
+	d <- sapply(d, "[[", 2)  
+	d <- gsub("_8_V-REGION-nt-mutation-statistics.txt", "", d)
+	d <- gsub("IMGT_BCR_", "", d)
+	d <- gsub("BCR_", "", d)
+  
+	# Name each dataframe with the run and filename
+	names(df_list) <- d
+
+	# Create combined dataframe  
+	df <- df_list %>% bind_rows(.id = 'Sample')
+	IMGT_Mutation <- data.frame(df)
+	IMGT_Mutation <- data.frame(apply(IMGT_Mutation, 2, function(y) gsub("\\s\\(\\d+\\)", "", y)))
+	# Assign dataframe to the name of the pattern  
+	
+	cols_notcalc <- c("Sequence.number", "Sequence.ID", "V.DOMAIN.Functionality", "V.GENE.and.allele", "Sample")
+	cols_calc <- colnames(IMGT_Mutation)[colnames(IMGT_Mutation) %notin% cols_notcalc]
+	IMGT_Mutation[,cols_calc] <- sapply(IMGT_Mutation[,cols_calc],as.character)
+	IMGT_Mutation[,cols_calc] <- sapply(IMGT_Mutation[,cols_calc],as.numeric)
+	
+	## Save this!!!
+	write.table(IMGT_Mutation, paste0(path_to_outputdir,'Summary/All_Mutations_', productivity, '.txt'), sep="\t")
+
+##########################	
 	if(dir.exists(paste0(path_to_outputdir, "Plots/IMGT"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "Plots/IMGT"))
 	}
@@ -82,17 +95,15 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	FullData <- IMGT_Mutation
 	FullData <- FullData[!FullData$V.DOMAIN.Functionality=="rearranged sequence (but no junction found)",]
 	FullData <- FullData[!FullData$V.DOMAIN.Functionality=="No rearrangement found",]
-
+	FullData$Sample <- gsub("_unproductive", "", FullData$Sample)
+    FullData$Sample <- gsub("_productive", "", FullData$Sample) 
+	
 	# Columns for analysis 
 	cols_notcalc <- c("Sequence.number", "Sequence.ID", "V.DOMAIN.Functionality", "V.GENE.and.allele", "Sample")
 	cols_calc <- names_data[!names_data %in% cols_notcalc]
 	
-	FullData$Sample <- gsub("_unproductive", "", FullData$Sample)
-    FullData$Sample <- gsub("_productive", "", FullData$Sample) 	
-	
 	# Reading in layouts
 	layouts <- read.delim(path_to_layout, sep="\t", header=TRUE)
-
 	layouts$SampleID <- gsub("TCRA_", "", layouts$SampleID)
 	layouts$SampleID <- gsub("TCRB_", "", layouts$SampleID)
 	layouts$SampleID <- gsub("TCRG_", "", layouts$SampleID)
@@ -100,7 +111,6 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	layouts$SampleID <- gsub("TCR_", "", layouts$SampleID)
 	layouts$SampleID <- gsub("TR_", "", layouts$SampleID)
 	layouts$SampleID <- gsub("BCR_", "", layouts$SampleID)
-	
 	layouts$Barcode <- gsub("TCRA_", "", layouts$Barcode)
 	layouts$Barcode <- gsub("TCRB_", "", layouts$Barcode)
 	layouts$Barcode <- gsub("TCRG_", "", layouts$Barcode)
@@ -109,8 +119,13 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	layouts$Barcode <- gsub("TR_", "", layouts$Barcode)
 	layouts$Barcode <- gsub("BCR_", "", layouts$Barcode)
 	
-	FullData <- merge(FullData, layouts, by.x="Sample", by.y="SampleID")
+	FullData$Sample <- gsub("IMGT_", "", FullData$Sample)
+	FullData$Sample <- gsub("TCR_", "", FullData$Sample)
+	FullData$Sample <- gsub("BCR_", "", FullData$Sample)
+	layouts$SampleID <- gsub("IMGT_", "", layouts$SampleID)
+	layouts$Barcode <- gsub("IMGT_", "", layouts$Barcode)
 	
+	FullData <- merge(FullData, layouts, by.x="Sample", by.y="SampleID")
 	FullData$Position <- as.character(FullData$Position)
 	FullData$PCRBarcode <- as.character(FullData$PCRBarcode)
 	FullData$Library <- as.character(FullData$Library)
@@ -118,7 +133,6 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	FullData$Lane <- as.character(FullData$Lane)
 	
 	## if Day is provided 
-	
 	if(any(!layouts$Barcode==layouts$SampleID)){	
 		days <- data.frame(str_split_fixed(FullData$Sample, "_", 2))
 		days <- days$X2
@@ -129,8 +143,6 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 		FullData$days <- "NA"
 	} 
 	
-	## Generic for all data sets. 
-	
 	## Get Relevant plotting columns 
 	mutations <- grep('mutations', cols_calc, value=TRUE)
 	transitions <- cols_calc[!cols_calc %in% mutations]
@@ -138,28 +150,12 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	ignore <- grep("Nb", transitions, value=TRUE)
 	transitions <- transitions[!transitions %in% ignore]
 	
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_', productivity, '.pdf'), width=23, height=20)
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_', productivity, '.pdf'), width=60, height=20, useDingbats = TRUE)
 	for(i in 1:length(mutations)){
 		column_id <- mutations[i]
 		column_id_neat <- gsub("[[:punct:]]", " ", column_id)		
-		p1 <- ggplot(FullData, aes(x=Sample, y=FullData[,column_id], fill=days)) + geom_violin() +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.7, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, fill="blue", position = position_dodge(width = .75)) + ylab(column_id_neat) +xlab("Sample") + ggtitle(productivity)
-		p2 <- ggplot(FullData, aes(x=FullData[,column_id], fill=days)) + geom_density( alpha = 0.7) +xlab(column_id_neat) + theme_classic()+ ggtitle(productivity) 
-		plot(plot_grid(p1, p2, ncol=1))
-		p1 <- ggplot(FullData, aes(x=FullData[,column_id], fill=days)) + geom_density( alpha = 0.7) +xlab(column_id_neat) + theme_classic() +facet_wrap(~Lane)+ ggtitle(productivity)
-		p2 <- ggplot(FullData, aes(x=FullData[,column_id], fill=days)) + geom_density( alpha = 0.7) +xlab(column_id_neat) + theme_classic()  +facet_wrap(~Library)+ ggtitle(productivity)
-		plot(plot_grid(p1, p2, ncol=1))
-	}
-	dev.off()
-	
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_transitions_', productivity, '.pdf'), width=23, height=20)
-	for(i in 1:length(transitions)){
-		column_id <- transitions[i]
-		column_id_neat <- gsub("[[:punct:]]", " ", column_id)
-		p1 <- ggplot(FullData, aes(x=Sample, y=FullData[,column_id], fill=days)) + geom_violin() +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.7, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, fill="blue", position = position_dodge(width = .75)) + ylab(column_id_neat) +xlab("Sample") + ggtitle(productivity)
-		p2 <- ggplot(FullData, aes(x=FullData[,column_id], fill=days)) + geom_density( alpha = 0.7) +xlab(column_id_neat) + theme_classic() + ggtitle(productivity)
-		plot(plot_grid(p1, p2, ncol=1))
-		p1 <- ggplot(FullData, aes(x=FullData[,column_id], fill=days)) + geom_density( alpha = 0.7) +xlab(column_id_neat) + theme_classic() +facet_wrap(~Lane)+ ggtitle(productivity)
-		p2 <- ggplot(FullData, aes(x=FullData[,column_id], fill=days)) + geom_density( alpha = 0.7) +xlab(column_id_neat) + theme_classic()  +facet_wrap(~Library)+ ggtitle(productivity)
+		p1 <- ggplot(FullData, aes(x=Sample, y=FullData[,column_id], fill=days)) + rasterise(geom_violin(), dpi = 300) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.7, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, fill="blue", position = position_dodge(width = .75)) + ylab(column_id_neat) +xlab("Sample") + ggtitle(productivity) +labs(fill="Timepoint")
+		p2 <- ggplot(FullData, aes(x=FullData[,column_id], fill=days)) + rasterise(geom_density( alpha = 0.7), dpi = 300) +xlab(column_id_neat) + theme_classic()+ ggtitle(productivity) +labs(fill="Timepoint")
 		plot(plot_grid(p1, p2, ncol=1))
 	}
 	dev.off()
@@ -168,11 +164,11 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	data_long <- gather(FullData, Region, Nb.Mutations, all_of(mutations))
 	data_long$days <- as.factor(data_long$days)
 	
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_region_', productivity, '.pdf'), width=14, height=10)
-	p1 <- ggplot(data_long, aes(x=Region, y=Nb.Mutations, fill=days)) + geom_boxplot() +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, aes(fill=days),  position = position_dodge(width = .75)) + ylab("Number of Mutations") +xlab("V Region") + ggtitle(productivity)
-	p2 <- ggplot(data_long, aes(x=Nb.Mutations, fill=days)) + geom_density(, alpha = 0.7) +xlab("Number of Mutations") + theme_classic() +facet_wrap(~Region, scales="free")+ ggtitle(productivity) 
-	p3 <- ggplot(data_long, aes(x=V.DOMAIN.Functionality, y=Nb.Mutations, fill=days)) + geom_boxplot() +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, aes(fill=days),  position = position_dodge(width = .75)) + ylab("Number of Mutations") +xlab("V Region") + ggtitle(productivity)
-	p4 <- ggplot(data_long, aes(x=Nb.Mutations, fill=V.DOMAIN.Functionality)) + geom_density(, alpha = 0.7) +xlab("Number of Mutations") + theme_classic() +facet_wrap(~Region, scales="free") + ggtitle(productivity)
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_region_', productivity, '.pdf'), width=20, height=15)
+	p1 <- ggplot(data_long, aes(x=Region, y=Nb.Mutations, fill=days)) + rasterise(geom_boxplot(), dpi = 300) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, aes(fill=days),  position = position_dodge(width = .75)) + ylab("Number of Mutations") +xlab("V Region") + ggtitle(productivity)+labs(fill="Timepoint")
+	p2 <- ggplot(data_long, aes(x=Nb.Mutations, fill=days)) + rasterise(geom_density(, alpha = 0.7), dpi = 300) +xlab("Number of Mutations") + theme_classic() +facet_wrap(~Region, scales="free")+ ggtitle(productivity) +labs(fill="Timepoint")
+	p3 <- ggplot(data_long, aes(x=V.DOMAIN.Functionality, y=Nb.Mutations, fill=days)) + rasterise(geom_boxplot(), dpi = 300) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, aes(fill=days),  position = position_dodge(width = .75)) + ylab("Number of Mutations") +xlab("V Region") + ggtitle(productivity) +labs(fill="Timepoint")
+	p4 <- ggplot(data_long, aes(x=Nb.Mutations, fill=V.DOMAIN.Functionality)) + rasterise(geom_density(, alpha = 0.7), dpi = 300) +xlab("Number of Mutations") + theme_classic() +facet_wrap(~Region, scales="free") + ggtitle(productivity)
 	plot(plot_grid(p1, ncol=1))
 	plot(plot_grid(p2, ncol=1))
 	plot(plot_grid(p3, ncol=1))
@@ -184,65 +180,6 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	}				
 	write.table(IMGT_Mutation, paste0(path_to_outputdir, "/Summary/IMGT/IMGT_SUMMARY_Mutation_", productivity, ".txt"), sep="\t")
 	
-	## Calculating Read depth 
-	path <- paste0(path_to_outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT")
-	samples <- list.files(path, full.name=TRUE)
-	samples <- grep("_Summary", samples, value=TRUE)
-
-	productive  <- grep("_productive", samples, value=TRUE)
-	noproductive <- grep("_unproductive", samples, value=TRUE)
-
-	if(productivity == "UNPRODUCTIVE" | productivity == "unproductive" ){
-		samples <- grep("_unproductive", samples, value=TRUE)
-	}
-
-	if(productivity=="PRODUCTIVE" | productivity == "productive" ){
-		samples <- grep("_productive", samples, value=TRUE)
-	}
-
-	if(productivity=="ALL"){
-		samples <- samples[!samples %in% c(productive, noproductive)]
-	}
-
-	mins <- c()
-
-	if(productivity == "UNPRODUCTIVE" | productivity=="PRODUCTIVE"| productivity == "unproductive"| productivity == "productive" ){
-		order_samples <- c()
-			for(i in 1:length(samples)){
-				a <- read.delim(samples[i], header=FALSE)
-				a <- a$V2
-				a_min <- length(a)
-				sampleid <- samples[i]
-				order_samples <- c(order_samples, sampleid)
-				mins <- c(mins, a_min)
-			} 
-	}
-		
-	if(productivity=="ALL"){
-		order_samples <- c()
-			for(i in 1:length(samples)){
-				a <- read.delim(samples[i], header=FALSE)
-				a <- a[!(a$V3=="rearranged sequence (but no junction found)" & a$V3=="No rearrangement found"), ]
-				a <- a$V2
-				a_min <- length(a)
-				sampleid <- samples[i]
-				order_samples <- c(order_samples, sampleid)
-				mins <- c(mins, a_min)
-			} 
-		}
-		
-	depths <- data.frame(cbind(order_samples, mins))
-	depths$order_samples <- gsub(paste0(path, "/IMGT_BCR_"), "", depths$order_samples)
-	depths$order_samples <- gsub(paste0(path, "/IMGT_TCRA_"), "", depths$order_samples)
-	depths$order_samples <- gsub(paste0(path, "/IMGT_TCRB_"), "", depths$order_samples)
-	depths$order_samples <- gsub(paste0(path, "/IMGT_TCRG_"), "", depths$order_samples)
-	depths$order_samples <- gsub(paste0(path, "/IMGT_TCRD_"), "", depths$order_samples)
-	depths$order_samples <- gsub(".txt", "", depths$order_samples)
-	depths$order_samples <- gsub("_1_Summary", "", depths$order_samples)		
-	colnames(depths) <- c("SampleIDforDepths", "ReadDepth")
-	depths$ReadDepth <- as.character(depths$ReadDepth)
-	depths$ReadDepth <- as.numeric(depths$ReadDepth)
-		
 	# Calculating average mutations 
 	Means_mutation <- foreach(i = 1:length(mutations), .combine=cbind, .packages='tidyverse') %dopar% {
 		column_id <- mutations[i]
@@ -256,17 +193,11 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 		return(mu1)
 		}
 		
-	depths$SampleIDforDepths <- gsub("_unproductive", "", depths$SampleIDforDepths)
-    depths$SampleIDforDepths <- gsub("_productive", "", depths$SampleIDforDepths) 
-	
 	# Merge Average mutation by read depth 
 	cols_to_plot <- colnames(Means_mutation)
 	Means_mutation$Sample <- rownames(Means_mutation)	
-	Means_mutation <- merge(Means_mutation, depths, by.x="Sample", by.y="SampleIDforDepths")
-	
-	Means_mutation$Region <- NA
+
 	data_longx <- gather(Means_mutation, RegionFull, Mean.Nb.Mutations, all_of(cols_to_plot))
-	
 	
 	# Classifying the region
 	v <- grep("V.REGION", cols_to_plot, value=TRUE)
@@ -295,7 +226,7 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	data_longx$Type[data_longx$RegionFull %in% nonsilent] <- "nonsilent"
 	data_longx$Type[data_longx$RegionFull %in% total] <- "total"
 	
-	
+	## Identify if there are multiple timepoints 
 	if(any(!layouts$Barcode==layouts$SampleID)){	
 		days <- data.frame(str_split_fixed(Means_mutation$Sample, "_", 2))
 		days <- days$X2
@@ -316,25 +247,6 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 		data_longx$days <- "NA"
 	} 
 	
-	
-	# Plotting Each mutation as a function of read depth 
-	## Look a lot are significant!!!
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Readdepth_', productivity,'.pdf'), width=10, height=20)
-	for(s in cols_to_plot){
-				print(s)
-				h <-  gsub("[[:punct:]]", " ", s)
-				metric1 <- h
-				d <- ggplot(Means_mutation[Means_mutation[, s] >-1,], aes_string(x="ReadDepth", y=s, colour="ReadDepth")) + geom_point() + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) + geom_smooth(method='lm') + stat_cor(method = "spearman", label.x = 70000, label.y = 0.01)+ ggtitle(productivity)
-				e <- ggplot(Means_mutation[Means_mutation[, s] >-1,], aes_string(x="ReadDepth", y=s, colour="ReadDepth")) + geom_point() + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1))  + geom_smooth(method='lm') + stat_cor(method = "spearman", label.x = 70000, label.y = 0.01) + facet_wrap(~days)+ ggtitle(productivity)
-				grid.arrange(d, e, ncol=1)
-	} 
-	dev.off()
-	
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Readdepth_Summary_', productivity, '.pdf'), width=20, height=20)
-	d <- ggplot(data_longx, aes(y=Mean.Nb.Mutations, x=ReadDepth, colour=Type)) + geom_point() + theme_bw() +xlab("ReadDepth") +ylab("Mean Number of Mutations") + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1))  + geom_smooth(method='lm') + stat_cor(method = "spearman", label.x = 70000) +facet_wrap(~Region, scales="free") + ggtitle(productivity)
-	plot(d)	
-	dev.off()
-
 	## Looking at troughs and peaks 
 	data_new <- data_long[data_long$Region=="V.REGION.Nb.of.mutations" | data_long$Region=="V.REGION.Nb.of.nonsilent.mutations" | data_long$Region=="V.REGION.Nb.of.silent.mutations",]
 	data_new$V.DOMAIN.Functionality <- as.character(data_new$V.DOMAIN.Functionality)
@@ -343,22 +255,22 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	data_new$Type[data_new$Region== "V.REGION.Nb.of.silent.mutations" ] <- "SILENT"
 	data_new$Type[data_new$Region== "V.REGION.Nb.of.nonsilent.mutations"] <- "NON-SILENT"
 	
-
 	# Identifying distribution peaks and troughs 
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Readdepth_Summary_histo_', productivity, '.pdf'), width=15, height=10)
-	p<-ggplot(data_new, aes(x=Nb.Mutations, fill=Type))  + geom_bar(aes(y = ..prop..) ) +facet_wrap(~days)  + geom_vline(xintercept=7,linetype="solid",  color="red") + geom_vline(xintercept=23,linetype="solid",  color="red")+ geom_vline(xintercept=3,linetype="solid", color="blue")+ geom_vline(xintercept=11,linetype="solid", color="blue")+ geom_vline(xintercept=75,linetype="solid", color="blue") +theme_bw() +xlab("V Region: Total Number of Mutations") + ylab("Proportion")+ ggtitle(productivity)
-	p1<-ggplot(data_new, aes(x=Nb.Mutations))  + geom_bar(aes(y = ..prop..) ) + geom_vline(xintercept=7,linetype="solid", color="red") + geom_vline(xintercept=23,linetype="solid", color="red")+ geom_vline(xintercept=3,linetype="solid", color="blue")+ geom_vline(xintercept=11,linetype="solid", color="blue")+ geom_vline(xintercept=75,linetype="solid", size=0.8, color="blue")+theme_bw()+xlab("V Region: Total Number of Mutations") + ylab("Proportion") + facet_wrap(~Type)+ ggtitle(productivity)
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Summary_histo_', productivity, '.pdf'), width=15, height=5)
+	p<-ggplot(data_new, aes(x=Nb.Mutations, fill=Type))  + rasterise(geom_bar(aes(y = ..prop..) ), dpi = 300) +facet_wrap(~days+Type)  + geom_vline(xintercept=7,linetype="solid",  color="red") + geom_vline(xintercept=23,linetype="solid",  color="red")+ geom_vline(xintercept=3,linetype="solid", color="blue")+ geom_vline(xintercept=11,linetype="solid", color="blue")+ geom_vline(xintercept=75,linetype="solid", color="blue") +theme_bw() +xlab("V Region: Total Number of Mutations") + ylab("Proportion")+ ggtitle(productivity)
+	p1<-ggplot(data_new, aes(x=Nb.Mutations))  + rasterise(geom_bar(aes(y = ..prop..) ), dpi = 300) + geom_vline(xintercept=7,linetype="solid", color="red") + geom_vline(xintercept=23,linetype="solid", color="red")+ geom_vline(xintercept=3,linetype="solid", color="blue")+ geom_vline(xintercept=11,linetype="solid", color="blue")+ geom_vline(xintercept=75,linetype="solid", size=0.8, color="blue")+theme_bw()+xlab("V Region: Total Number of Mutations") + ylab("Proportion") + facet_wrap(~Type)+ ggtitle(productivity)
 	plot(p)
 	plot(p1)
 	dev.off()
 
 	# Asigning class of VDJ sequence
+	data_new <- data_new[data_new$Type=="TOTAL",]
 	data_new$Nb.Mutations <- as.numeric(data_new$Nb.Mutations)
 	data_new$ClassSequence <- NULL
 	data_new$ClassSequence[data_new$Nb.Mutations <= 3] <- "UNMUTATED (naive)"
 	data_new$ClassSequence[data_new$Nb.Mutations <= 11 & data_new$Nb.Mutations > 3] <- "LOW MUTATION (extrafollicular)"
-	data_new$ClassSequence[data_new$Nb.Mutations <= 75 & data_new$Nb.Mutations > 11] <- "HIGH MUTATION(SHM germinal centre)"
-	data_new$ClassSequence[data_new$Nb.Mutations > 75] <- "VERY HIGH MUTATION(SHM germinal centre)"
+	data_new$ClassSequence[data_new$Nb.Mutations <= 75 & data_new$Nb.Mutations > 11] <- "HIGH MUTATION (SHM germinal centre)"
+	data_new$ClassSequence[data_new$Nb.Mutations > 75] <- "VERY HIGH MUTATION (SHM germinal centre)"
 
 	data_new <- data_new[!is.na(data_new$ClassSequence),]
 	
@@ -367,26 +279,27 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	summarise(n = n()) %>%
 	mutate(freq = n / sum(n))
     frequencies_group_t <- data.frame(frequencies_group_t)
-	
-	frequencies_group_s <- data_new[data_new$Type=="SILENT",] %>%
-	group_by(days, ClassSequence) %>%
-	summarise(n = n()) %>%
-	mutate(freq = n / sum(n))
-    frequencies_group_s <- data.frame(frequencies_group_s)
-	
-	frequencies_group_n <- data_new[data_new$Type=="NON-SILENT",] %>%
-	group_by(days, ClassSequence) %>%
-	summarise(n = n()) %>%
-	mutate(freq = n / sum(n))
-    frequencies_group_n <- data.frame(frequencies_group_n)
- 
-	## Plotting change in proportions across time 
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Readdepth_Summary_box_', productivity, '.pdf'), width=20, height=20)
-	q1 <- ggplot(frequencies_group_t, aes(fill=ClassSequence, x=days, y=freq), na.rm = TRUE) +  geom_col(position = "dodge", na.rm = TRUE) +theme_bw() + xlab("RNA Time") + ylab("Frequency") + ggtitle(paste0("Total Mutations ", productivity))
-	q2 <- ggplot(frequencies_group_n, aes(fill=ClassSequence, x=days, y=freq), na.rm = TRUE) +  geom_col(position = "dodge", na.rm = TRUE) +theme_bw() + xlab("RNA Time") + ylab("Frequency") + ggtitle(paste0("Total Non-Silent Mutations ", productivity))
-	q3 <- ggplot(frequencies_group_s, aes(fill=ClassSequence, x=days, y=freq), na.rm = TRUE) +  geom_col(position = "dodge", na.rm = TRUE) +theme_bw() + xlab("RNA Time") + ylab("Frequency") + ggtitle(paste0("Total Silent Mutations ", productivity))
-	grid.arrange(q1, q2, q3, ncol=2)
-	dev.off()
 
+
+	## Plotting change in proportions across time 
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Summary_box_', productivity, '.pdf'), width=8, height=5)
+	q1 <- ggplot(frequencies_group_t, aes(fill=ClassSequence, x=days, y=freq), na.rm = TRUE) +  rasterise(geom_col(position = "dodge", na.rm = TRUE), dpi = 300) +theme_bw() + xlab("Timepoint") + ylab("Frequency") + ggtitle(paste0("Total Mutations ", productivity))+labs(fill="Class of VDJ")
+	grid.arrange(q1)
+	dev.off()
+	
+	
+	w <- with(data_new, table(Sample, ClassSequence))
+	w <- data.frame(prop.table(w, margin = 1))
+	
+	if (length(unique(data_new$Sample)) > 500){
+		widthx <- 100 
+	} else {
+		widthx <- 40
+	} 
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Summary_box_per_sample', productivity, '.pdf'), width=widthx, height=5)
+	q1 <- ggplot(w, aes(fill=ClassSequence, x=Sample, y=Freq), na.rm = TRUE) +  rasterise(geom_col(position = "dodge", na.rm = TRUE), dpi = 300) +theme_bw() + xlab("Timepoint") + ylab("Proportion of Reads") + ggtitle(paste0("Total Mutations ", productivity))+labs(fill="Class of VDJ") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+	grid.arrange(q1)
+	dev.off()
+	
 }
 

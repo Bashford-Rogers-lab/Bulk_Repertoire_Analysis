@@ -418,7 +418,7 @@ def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_reperto
             if(c in ["IGHA1","IGHA2"]):c = "IGHA1/2"
             elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
           if(c in ["TRBC1","TRBC2"]):c = "TRBC"
-          if(c in ["TRGC1","TRGC2"]):c = "TRCG"
+          if(c in ["TRGC1","TRGC2"]):c = "TRGC"
           if(c not in chains_short):chains_short.append(c)
           #if(c in chains_short):chains_index[chains[i].split("*")[0]] = chains_short.index(c)
           #else:
@@ -435,7 +435,7 @@ def Get_network_statistics_per_chain(cluster_file, sample, dir,per_chain_reperto
           if(c in ["IGHA1","IGHA2"]):c = "IGHA"
           elif(c in ["IGHG1","IGHG2"]):c = "IGHG1/2"
         if(c in ["TRBC1","TRBC2"]):c = "TRBC"
-        if(c in ["TRGC1","TRGC2"]):c = "TRCG"
+        if(c in ["TRGC1","TRGC2"]):c = "TRGC"
         cluster[c][l[1]][freq[i]][id_short].value=1
         index = chains_short.index(c)
         total_v[index] = total_v[index]+1
@@ -531,5 +531,4 @@ if("STATISTICS" in command):
   Get_network_statistics(cluster_file, id, dir,network_statistics,gene,species,cluster_size_distribution,vertex_size_distribution)
   Get_cluster_stats(annot_file, cluster_file, id, dir,cluster_statistics,gene,species,seq_file,loc)
   Get_network_statistics_per_chain(cluster_file, id, dir,per_chain_repertoire_statistics_file,isotyper_primer_set,constant_region)
-
 
