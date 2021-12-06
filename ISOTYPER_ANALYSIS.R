@@ -36,13 +36,13 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trailingOnly = TRUE)) 
 
 setwd("/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE")
-samplesfilepost <- "/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/LEO_Samples_IMMUNOAGEING_TCR_INT_post.txt"
-outputdir <- "/well/immune-rep/shared/MISEQ/IMMUNOAGEING/TCR_INT/"
-cluster_nodes <- 10
-path_to_layout <- '/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/BatchingLayouts_TCR_INT.txt'
-path_to_outputdir <- outputdir
-productivity <- "ALL"
-iso_type <- "ALL"
+#samplesfilepost <- "/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/LEO_SEPSIS_BCR_CH12_post.txt"
+#outputdir <- "/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/BCR_CH2/"
+#cluster_nodes <- 10
+#path_to_layout <- '/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Batching_Layouts_SEPSIS_BCR_CH12.txt'
+#path_to_outputdir <- outputdir
+#productivity <- "ALL"
+#iso_type <- "ALL"
 
 ## Location of OUTS directory from BCR/TCR Run
 outputdir <- opt$o
@@ -57,12 +57,43 @@ for (f in source_files) {
     source(f)
 }
 
+## DO IMGT ANALYSIS
+if(gene=="IGH"){
+	if(outputdir %like% "SEPSIS"){
+		imgt_mutation_statistics_sepsis(outputdir, cluster_nodes = 11, "ALL", path_to_layout)
+		print("IMGT Mutation Summary statistics for Sepsis ALL complete")
+		gc()
+		imgt_mutation_statistics_sepsis(outputdir,  cluster_nodes = 11, "UNPRODUCTIVE", path_to_layout)
+		print("IMGT Mutation Summary statistics for Sepsis UNPRODUCTIVE complete")
+		gc()
+		imgt_mutation_statistics_sepsis(outputdir, cluster_nodes = 11,  "PRODUCTIVE", path_to_layout)
+		print("IMGT Mutation Summary statistics for Sepsis PRODUCTIVE complete")
+		gc()
+		} else {
+		imgt_mutation_statistics(outputdir, cluster_nodes = 11, "ALL", path_to_layout)
+		print("IMGT Mutation Summary statistics for ALL complete")
+		gc()
+		imgt_mutation_statistics(outputdir,  cluster_nodes = 11, "UNPRODUCTIVE", path_to_layout)
+		print("IMGT Mutation Summary statistics for UNPRODUCTIVE complete")
+		gc()
+		imgt_mutation_statistics(outputdir, cluster_nodes = 11,  "PRODUCTIVE", path_to_layout)
+		print("IMGT Mutation Summary statistics for Sepsis PRODUCTIVE complete")
+		gc()
+		}
+}
+
 # Create Directory for the Isotyper Plots 
 dir.create(paste0(outputdir, "Plots/ISOTYPER"))
 # Create Summary Matrices 
 summary_isotyper(outputdir, samplesfilepost, "ALL")
+print("ISOTYPER Summary statistics for  ALL complete")
+gc()
 summary_isotyper(outputdir, samplesfilepost, "UNPRODUCTIVE")
+print("ISOTYPER Summary statistics for  UNPRODUCTIVE complete")
+gc()
 summary_isotyper(outputdir, samplesfilepost, "PRODUCTIVE")
+print("ISOTYPER Summary statistics for  PRODUCTIVE complete")
+gc()
 
 # Find all analysis matrices
 # Plot the analysis matrices from isotyper
@@ -80,12 +111,16 @@ for (i in 1:length(files)){
 	file_use <- files[i]
 	info_file <- paste0(outputdir, "Summary/isotyper_metrics_summary_stats", depth, "_", productivity, ".txt")
 	depth_file <- paste0(outputdir, "Summary/Read_Depths_", productivity, ".txt")
+	iso_type <- productivity 
 	if(productivity=="ALL"){
 		info_use <- info_file
 	}
 	print(paste0("Plotting Isotyper Results for: ", info_file))
 	plot_isotyper(file_use, outputdir, info_file, productivity, depth_file)
-	#plot_isotyper_sepsis(file_use, outputdir, info_file, productivity)
+	if(outputdir %like% "SEPSIS"){
+		print("Making Sepsis Specific Plots")
+		plot_isotyper_sepsis(file_use, outputdir, info_file, productivity, depth_file)
+	}
 }
 
 # Plot comparison plots of all vs functional vs non_functional 
@@ -97,11 +132,5 @@ info <- info_use
 # Plot comparison
 plot_isotyper_comparison(analysis_matrices_list, outputdir, info)
 
-# Plot SHM summary from IMGT
-if(gene=="IGH"){
-	imgt_mutation_statistics(outputdir, cluster_nodes = 11, "ALL", path_to_layout)
-	imgt_mutation_statistics(outputdir,  cluster_nodes = 11, "UNPRODUCTIVE", path_to_layout)
-	imgt_mutation_statistics(outputdir, cluster_nodes = 11,  "PRODUCTIVE", path_to_layout)
-}
 
 ####

@@ -735,6 +735,7 @@ def Read_untrimmed_file_single(rc,Tmp_file,Fail_file,Output_trim, gene,paired,sp
   if(gene=="HEAVY" or gene == "IGH"):minl= 120
   if(gene=="KAPPA" or gene=="IGK"):minl= 110 
   if(gene=="LAMBDA" or gene == "IGL"):(minl, maxl)= (90, 150)
+  if(gene=="TCR"):minl= 100
   J_found,v_found,tot,indexing=0,0,0,0
   seqs1,t=Tree(),0
   for header,seq in fasta_iterator(fh):
@@ -859,6 +860,7 @@ def Read_untrimmed_file_single(rc,Tmp_file,Fail_file,Output_trim, gene,paired,sp
      #     passes = 2
     if (passes ==2):
       pass_f = pass_f+1
+      #print len(seq), seq.count("N")
       if(len(seq)>minl and len(seq)<maxl):
         if(seq.count("N")==0):
           #if(type_rev==type_for):
@@ -868,6 +870,7 @@ def Read_untrimmed_file_single(rc,Tmp_file,Fail_file,Output_trim, gene,paired,sp
           if(ind>200):
             Write_out(out, primer_tag_file_count)
             out, ind = '',0
+     # else:print len(seq), seq.count("N")
   fh.close()
   Write_out(out, primer_tag_file_count)
   out, ind = '',0

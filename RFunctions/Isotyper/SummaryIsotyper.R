@@ -199,80 +199,86 @@ if(length(subsample_identifier)==0){
 } else {
 	check1 <- TRUE
 }
-p <- as.matrix(read.delim(file, head=TRUE, sep="\t"))
-p=p[which(as.character(p[,"X.Id"]) %in% ids_all),]
-if(class(p)=="character"){
-	p <- as.matrix(t(p))
-} 
-p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
-if(class(p)=="character"){
-	p <- as.matrix(t(p))
-} 
-id = as.character(p[,"X.Id"])
-ids = sort(unique(id))
-class = as.character(p[,"Isotype"])
-classes = sort(unique(class))
-reads = as.numeric(p[,"N.reads"])
-vgini = as.numeric(p[,"Vertex.Gini.Index"])
-N.reads = as.numeric(p[,"N.reads"])
-vertices = as.numeric(p[,"N.vertices"])
-N_clusters = as.numeric(p[,"N_clusters"])
-cgini =  as.numeric(p[,"Cluster.Gini.Index"])
-mean_vertex_size =  as.numeric(p[,"mean_vertex_size"])
-max_clust_size =  as.numeric(p[,"max_clust_pop"])
-max_vertex_size =  as.numeric(p[,"max_vertex_pop"])
-## Extras due to update
-D.5 <- as.numeric(p[,"D5"])
-D.10 <- as.numeric(p[,"D10"])
-D.50 <- as.numeric(p[,"D50"])
+info = file.info(file)
+if(info$size != 0) {
+	p <- as.matrix(read.delim(file, head=TRUE, sep="\t"))
+	p=p[which(as.character(p[,"X.Id"]) %in% ids_all),]
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	id = as.character(p[,"X.Id"])
+	ids = sort(unique(id))
+	class = as.character(p[,"Isotype"])
+	classes = sort(unique(class))
+	reads = as.numeric(p[,"N.reads"])
+	vgini = as.numeric(p[,"Vertex.Gini.Index"])
+	N.reads = as.numeric(p[,"N.reads"])
+	vertices = as.numeric(p[,"N.vertices"])
+	N_clusters = as.numeric(p[,"N_clusters"])
+	cgini =  as.numeric(p[,"Cluster.Gini.Index"])
+	mean_vertex_size =  as.numeric(p[,"mean_vertex_size"])
+	max_clust_size =  as.numeric(p[,"max_clust_pop"])
+	max_vertex_size =  as.numeric(p[,"max_vertex_pop"])
+	## Extras due to update
+	D.5 <- as.numeric(p[,"D5"])
+	D.10 <- as.numeric(p[,"D10"])
+	D.50 <- as.numeric(p[,"D50"])
 
-#Calculating Normalised V/C Renyi Scores 
-vrenyi = 1-(as.numeric(p[,"Vertex.Reyni"])/log(as.numeric(p[,"N.vertices"])))
-crenyi =  1-(as.numeric(p[,"Cluster_Renyi"])/log(as.numeric(p[,"N_clusters"])))
-vrenyi[which(vrenyi<0)] <- -1
-crenyi[which(crenyi<0)] <- -1
-# Fill Data frame 
-class_reads = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-v_gini = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-c_gini = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-c_renyi = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-v_renyi = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-m_mean_vertex_size = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-m_max_clust_size = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-m_max_vertex_size = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-D5 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-D10 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-D50 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	#Calculating Normalised V/C Renyi Scores 
+	vrenyi = 1-(as.numeric(p[,"Vertex.Reyni"])/log(as.numeric(p[,"N.vertices"])))
+	crenyi =  1-(as.numeric(p[,"Cluster_Renyi"])/log(as.numeric(p[,"N_clusters"])))
+	vrenyi[which(vrenyi<0)] <- -1
+	crenyi[which(crenyi<0)] <- -1
+	# Fill Data frame 
+	class_reads = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	v_gini = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	c_gini = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	c_renyi = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	v_renyi = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	m_mean_vertex_size = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	m_max_clust_size = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	m_max_vertex_size = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	D5 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	D10 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	D50 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
 
 
-#making matrix 
-for(i in c(1:length(ids))){
-	for (c in c(1:length(classes))){
-		w = intersect(which(id==ids[i]), which(class==classes[c]))
-		if(length(w)>=1){
-			class_reads[i,c] = mean(reads[w])
-			v_gini[i,c] = mean(vgini[w])
-			c_gini[i,c] = mean(cgini[w])
-			m_mean_vertex_size[i,c] = mean(mean_vertex_size[w])
-			m_max_clust_size[i,c] = mean(max_clust_size[w])
-			m_max_vertex_size[i,c] = mean(max_vertex_size[w])
-			c_renyi[i,c] = mean(crenyi[w])
-			v_renyi[i,c] = mean(vrenyi[w])
-			D5[i, c] =mean(D.5[w])
-			D10[i, c] =mean(D.10[w])
-			D50[i, c] =mean(D.50[w])
+	#making matrix 
+	for(i in c(1:length(ids))){
+		for (c in c(1:length(classes))){
+			w = intersect(which(id==ids[i]), which(class==classes[c]))
+			if(length(w)>=1){
+				class_reads[i,c] = mean(reads[w])
+				v_gini[i,c] = mean(vgini[w])
+				c_gini[i,c] = mean(cgini[w])
+				m_mean_vertex_size[i,c] = mean(mean_vertex_size[w])
+				m_max_clust_size[i,c] = mean(max_clust_size[w])
+				m_max_vertex_size[i,c] = mean(max_vertex_size[w])
+				c_renyi[i,c] = mean(crenyi[w])
+				v_renyi[i,c] = mean(vrenyi[w])
+				D5[i, c] =mean(D.5[w])
+				D10[i, c] =mean(D.10[w])
+				D50[i, c] =mean(D.50[w])
+			}
 		}
 	}
-}
-q <- list(v_gini, c_gini, m_mean_vertex_size, m_max_clust_size, m_max_vertex_size, c_renyi, v_renyi, D5, D10, D50)
-names(q) <- c("v_gini", "c_gini", "m_mean_vertex_size", "m_max_clust_size", "m_max_vertex_size", "c_renyi_normalised", "v_renyi_normalised", "D5_subsampled", "D10_subsampled", "D50_subsampled")
-#renaming column names 
-for(i in 1:length(q)){
-	names <- names(q[i])
-	colnames(q[[i]]) <- paste0(names, "_Subsampled", "__", colnames(q[[i]]))
-}
-names(q) <- c("Vertex_Gini_Index","Cluster_Gini_Index","Mean_Vertex_Size","Percentage_Max_Cluster_Size","Percentage_Max_Vertex_Size","Cluster_Reyni_Normalised", "Vertex_Reyni_Normalised", "D5_subsampled", "D10_subsampled", "D50_subsampled")
-analysis_matrices1 = q
+	q <- list(v_gini, c_gini, m_mean_vertex_size, m_max_clust_size, m_max_vertex_size, c_renyi, v_renyi, D5, D10, D50)
+	names(q) <- c("v_gini", "c_gini", "m_mean_vertex_size", "m_max_clust_size", "m_max_vertex_size", "c_renyi_normalised", "v_renyi_normalised", "D5_subsampled", "D10_subsampled", "D50_subsampled")
+	#renaming column names 
+	for(i in 1:length(q)){
+		names <- names(q[i])
+		colnames(q[[i]]) <- paste0(names, "_Subsampled", "__", colnames(q[[i]]))
+	}
+	names(q) <- c("Vertex_Gini_Index","Cluster_Gini_Index","Mean_Vertex_Size","Percentage_Max_Cluster_Size","Percentage_Max_Vertex_Size","Cluster_Reyni_Normalised", "Vertex_Reyni_Normalised", "D5_subsampled", "D10_subsampled", "D50_subsampled")
+	analysis_matrices1 = q
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices1 <- vector(mode = "list", length = 0)
+	} 
 
 print("DONE 1")
 ##---------------------------------------------------------------------------------------------------------------------
@@ -290,48 +296,55 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	} else {
 		check2 <- TRUE
 	}
-	p <- as.matrix(read.delim(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.Id"]) %in% ids_all),]
-	p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
-	id = as.character(p[,"X.Id"])
-	ids = sort(unique(id))
-	class = as.character(p[,"Isotype"])
-	classes = sort(unique(class))
-	reads_per_isotype = as.numeric(p[,"N.reads"])
-	unique_reads_per_isotype = as.numeric(p[,"N.vertices"])
-	m_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	m_unique_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	for(i in c(1:length(ids))){
-		for (c in c(1:length(classes))){
-			w = intersect(which(id==ids[i]), which(class==classes[c]))
-			if(length(w)>=1){
-				m_reads_per_isotype[i,c] = mean(reads_per_isotype[w])
-				m_unique_reads_per_isotype[i,c] = mean(unique_reads_per_isotype[w])
+	info = file.info(file)
+	if(info$size != 0) {
+		
+		p <- as.matrix(read.delim(file, head=TRUE, sep="\t"))
+		p=p[which(as.character(p[,"X.Id"]) %in% ids_all),]
+		p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
+		id = as.character(p[,"X.Id"])
+		ids = sort(unique(id))
+		class = as.character(p[,"Isotype"])
+		classes = sort(unique(class))
+		reads_per_isotype = as.numeric(p[,"N.reads"])
+		unique_reads_per_isotype = as.numeric(p[,"N.vertices"])
+		m_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		m_unique_reads_per_isotype = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		for(i in c(1:length(ids))){
+			for (c in c(1:length(classes))){
+				w = intersect(which(id==ids[i]), which(class==classes[c]))
+				if(length(w)>=1){
+					m_reads_per_isotype[i,c] = mean(reads_per_isotype[w])
+					m_unique_reads_per_isotype[i,c] = mean(unique_reads_per_isotype[w])
+				}
 			}
 		}
-	}
-	c1 = c("Class_switched","IGHD,IGHM_mutated","IGHD,IGHM_unmutated")
-	c2 = c( "IGHA1","IGHA2","IGHD","IGHE","IGHG1","IGHG2","IGHG3","IGHG4","IGHM"  )
-	c2 = c2[which(c2 %in% classes)]
-	m_reads_per_isotype_group = m_reads_per_isotype[,c(c1)]
-	m_unique_reads_per_isotype_group = m_unique_reads_per_isotype[,c1]
-	m_reads_per_isotype_single = m_reads_per_isotype[,c2]
-	m_unique_reads_per_isotype_single = m_unique_reads_per_isotype[,c2]
-	for(i in c(1:length(ids))){
-		m_reads_per_isotype_group[i,] = m_reads_per_isotype_group[i,]*100/sum(m_reads_per_isotype_group[i,])
-		m_unique_reads_per_isotype_group[i,] = m_unique_reads_per_isotype_group[i,]*100/sum(m_unique_reads_per_isotype_group[i,])
-		m_reads_per_isotype_single[i,] = m_reads_per_isotype_single[i,]*100/sum(m_reads_per_isotype_single[i,])
-		m_unique_reads_per_isotype_single[i,] = m_unique_reads_per_isotype_single[i,]*100/sum(m_unique_reads_per_isotype_single[i,])
-	}
-	analysis_names = c( "Percentage_Unique_VDJs_per_Isotype", "Percentage_Unique_VDJs_per_Isotype_Group")
-	analysis_matrices = list(m_unique_reads_per_isotype_group, m_unique_reads_per_isotype_single)
-	names(analysis_matrices) <- analysis_names
+		c1 = c("Class_switched","IGHD,IGHM_mutated","IGHD,IGHM_unmutated")
+		c2 = c( "IGHA1","IGHA2","IGHD","IGHE","IGHG1","IGHG2","IGHG3","IGHG4","IGHM"  )
+		c2 = c2[which(c2 %in% classes)]
+		m_reads_per_isotype_group = m_reads_per_isotype[,c(c1)]
+		m_unique_reads_per_isotype_group = m_unique_reads_per_isotype[,c1]
+		m_reads_per_isotype_single = m_reads_per_isotype[,c2]
+		m_unique_reads_per_isotype_single = m_unique_reads_per_isotype[,c2]
+		for(i in c(1:length(ids))){
+			m_reads_per_isotype_group[i,] = m_reads_per_isotype_group[i,]*100/sum(m_reads_per_isotype_group[i,])
+			m_unique_reads_per_isotype_group[i,] = m_unique_reads_per_isotype_group[i,]*100/sum(m_unique_reads_per_isotype_group[i,])
+			m_reads_per_isotype_single[i,] = m_reads_per_isotype_single[i,]*100/sum(m_reads_per_isotype_single[i,])
+			m_unique_reads_per_isotype_single[i,] = m_unique_reads_per_isotype_single[i,]*100/sum(m_unique_reads_per_isotype_single[i,])
+		}
+		analysis_names = c( "Percentage_Unique_VDJs_per_Isotype", "Percentage_Unique_VDJs_per_Isotype_Group")
+		analysis_matrices = list(m_unique_reads_per_isotype_group, m_unique_reads_per_isotype_single)
+		names(analysis_matrices) <- analysis_names
 
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	}
-	analysis_matrices2 = analysis_matrices
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		}
+		analysis_matrices2 = analysis_matrices
+		} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices2 <- vector(mode = "list", length = 0)	
+		} 
 } 
 print("DONE 2")
 ##---------------------------------------------------------------------------------------------------------------------
@@ -345,37 +358,43 @@ if(length(subsample_identifier)==0){
 } else {
 	check3 <- TRUE
 }
-p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-if(class(p)=="character"){
-	p <- as.matrix(t(p))
-} 
-p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"isotype"]))),]
-if(class(p)=="character"){
-	p <- as.matrix(t(p))
-} 
-p=p[which(as.numeric(p[,"Number_of_BCRs"])>10),]
-id = as.character(p[,"X.sample"])
-ids = sort(unique(id))
-class = as.character(p[,"isotype"])
-chains = sort(unique(class))
-value = as.numeric(p[,"mean_CDR3_length"])
-reads = as.numeric(p[,"Number_of_BCRs"])
+info = file.info(file)
+if(info$size != 0) {	
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"isotype"]))),]
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	p=p[which(as.numeric(p[,"Number_of_BCRs"])>10),]
+	id = as.character(p[,"X.sample"])
+	ids = sort(unique(id))
+	class = as.character(p[,"isotype"])
+	chains = sort(unique(class))
+	value = as.numeric(p[,"mean_CDR3_length"])
+	reads = as.numeric(p[,"Number_of_BCRs"])
 
-values = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
-print_info = list()
-for(i in c(1:length(id))){
-	values[id[i], class[i]] = value[i]
-}
-analysis_matrices = list(values)
-analysis_names = c("Mean_CDR3_Lengths")
-names(analysis_matrices) <- analysis_names
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-} 
-analysis_matrices3 = analysis_matrices
-print("DONE 3")
+	values = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
+	print_info = list()
+	for(i in c(1:length(id))){
+		values[id[i], class[i]] = value[i]
+	}
+	analysis_matrices = list(values)
+	analysis_names = c("Mean_CDR3_Lengths")
+	names(analysis_matrices) <- analysis_names
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	} 
+	analysis_matrices3 = analysis_matrices
+	print("DONE 3")
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices3 <- vector(mode = "list", length = 0)	
+	}
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 4: ALL SHM : 
 ## NOT FOR TCR 
@@ -388,36 +407,42 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	} else {
 		check4 <- TRUE
 	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.Sample"]) %in% ids_all),]
-	p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"isotype"]))),]
-	p=p[which(is.na(as.numeric(p[,"mean.mutations"]))==F),]
-	p=p[which(as.numeric(p[,"number.of.unique.sequences"])>10),]
-	id = as.character(p[,"X.Sample"])
-	ids = sort(unique(id))
-	class = as.character(p[,"isotype"])
-	chains = sort(unique(class))
-	value = as.numeric(p[,"mean.mutations"])
-	reads = as.numeric(p[,"number.of.unique.sequences"])
-	perc_unmutated = as.numeric(p[,"perc_unumtated"])
+	info = file.info(file)
+	if(info$size != 0) {
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		p=p[which(as.character(p[,"X.Sample"]) %in% ids_all),]
+		p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"isotype"]))),]
+		p=p[which(is.na(as.numeric(p[,"mean.mutations"]))==F),]
+		p=p[which(as.numeric(p[,"number.of.unique.sequences"])>10),]
+		id = as.character(p[,"X.Sample"])
+		ids = sort(unique(id))
+		class = as.character(p[,"isotype"])
+		chains = sort(unique(class))
+		value = as.numeric(p[,"mean.mutations"])
+		reads = as.numeric(p[,"number.of.unique.sequences"])
+		perc_unmutated = as.numeric(p[,"perc_unumtated"])
 
-	values = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
-	m_perc_unmutated = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
-	print_info = list()
-	for(i in c(1:length(id))){
-		values[id[i], class[i]] = value[i]
-		m_perc_unmutated[id[i], class[i]] = perc_unmutated[i]
-	}
+		values = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
+		m_perc_unmutated = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
+		print_info = list()
+		for(i in c(1:length(id))){
+			values[id[i], class[i]] = value[i]
+			m_perc_unmutated[id[i], class[i]] = perc_unmutated[i]
+		}
 
-	analysis_matrices = list(values, m_perc_unmutated)
-	analysis_names = c("Mean_SHM_per_VDJ","Percentage_Unmutated")
+		analysis_matrices = list(values, m_perc_unmutated)
+		analysis_names = c("Mean_SHM_per_VDJ","Percentage_Unmutated")
 
-	names(analysis_matrices) <- analysis_names
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	} 
-	analysis_matrices4 = analysis_matrices
+		names(analysis_matrices) <- analysis_names
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		analysis_matrices4 = analysis_matrices
+		} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices4 <- vector(mode = "list", length = 0)
+		}
 }
 print("DONE 4")
 ##----------------------------------------------------------------------
@@ -427,67 +452,80 @@ print("DONE 4")
 # raw overlapping frequencies
 if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Isotype_normalised_overlap_frequencies_uniq_", iso_type, ".txt")
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso1"]))),]
-	p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso2"]))),]
-	id = as.character(p[,"X.sample"])
-	ids = sort(unique(id))
-	class1 = as.character(p[,"iso1"])
-	class2 = as.character(p[,"iso2"])
-	classes = sort(unique(class1))
-	mean_overlap_proportion1 = as.numeric(p[,"mean_overlap"])
-	class12 = apply(cbind(class1, class2),1,paste,collapse = "-")
-	class12s = sort(unique(class12))
-	overlap = matrix(data = -1, nrow = length(ids_all),ncol = length(class12s), dimnames=c(list(ids_all), list(class12s)))
-	for(i in c(1:length(ids))){
-		w = which(id==ids[i])
-		if(length(w)>0){
-			overlap[ids[i],]=0
-			overlap[ids[i], class12[w]]= mean_overlap_proportion1[w]
+	info = file.info(file)
+	if(info$size != 0) {
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso1"]))),]
+		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso2"]))),]
+		id = as.character(p[,"X.sample"])
+		ids = sort(unique(id))
+		class1 = as.character(p[,"iso1"])
+		class2 = as.character(p[,"iso2"])
+		classes = sort(unique(class1))
+		mean_overlap_proportion1 = as.numeric(p[,"mean_overlap"])
+		class12 = apply(cbind(class1, class2),1,paste,collapse = "-")
+		class12s = sort(unique(class12))
+		overlap = matrix(data = -1, nrow = length(ids_all),ncol = length(class12s), dimnames=c(list(ids_all), list(class12s)))
+		for(i in c(1:length(ids))){
+			w = which(id==ids[i])
+			if(length(w)>0){
+				overlap[ids[i],]=0
+				overlap[ids[i], class12[w]]= mean_overlap_proportion1[w]
+			}
 		}
-	}
-	analysis_names = "Isotype_normalised_overlap_frequencies"
-	analysis_matrices = list(overlap)
-	names(analysis_matrices) <- analysis_names
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	} 
-	analysis_matrices5 = analysis_matrices
+		analysis_names = "Isotype_normalised_overlap_frequencies"
+		analysis_matrices = list(overlap)
+		names(analysis_matrices) <- analysis_names
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		analysis_matrices5 = analysis_matrices
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices5 <- vector(mode = "list", length = 0)	
+	}  
 }
 
 ###normalised overlapping frequencies
 if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Isotype_overlapping_frequencies_", iso_type, ".txt")
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.ID"]) %in% ids_all),]
-	p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"isotype1"]))),]
-	p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"isotype2"]))),]
-	id = as.character(p[,"X.ID"])
-	ids = sort(unique(id))
-	class1 = as.character(p[,"isotype1"])
-	class2 = as.character(p[,"isotype2"])
-	classes = sort(unique(class1))
-	mean_overlap_proportion1 = as.numeric(p[,"mean_overlap"])
-	class12 = apply(cbind(class1, class2),1,paste,collapse = "-")
-	class12s = sort(unique(class12))
-	overlap = matrix(data = -1, nrow = length(ids_all),ncol = length(class12s), dimnames=c(list(ids_all), list(class12s)))
-	for(i in c(1:length(ids))){
-		w = which(id==ids[i])
-		if(length(w)>0){
-			overlap[ids[i],]=0
-			overlap[ids[i], class12[w]]= mean_overlap_proportion1[w]
+	info = file.info(file)
+	if(info$size != 0) {
+	
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		p=p[which(as.character(p[,"X.ID"]) %in% ids_all),]
+		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"isotype1"]))),]
+		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"isotype2"]))),]
+		id = as.character(p[,"X.ID"])
+		ids = sort(unique(id))
+		class1 = as.character(p[,"isotype1"])
+		class2 = as.character(p[,"isotype2"])
+		classes = sort(unique(class1))
+		mean_overlap_proportion1 = as.numeric(p[,"mean_overlap"])
+		class12 = apply(cbind(class1, class2),1,paste,collapse = "-")
+		class12s = sort(unique(class12))
+		overlap = matrix(data = -1, nrow = length(ids_all),ncol = length(class12s), dimnames=c(list(ids_all), list(class12s)))
+		for(i in c(1:length(ids))){
+			w = which(id==ids[i])
+			if(length(w)>0){
+				overlap[ids[i],]=0
+				overlap[ids[i], class12[w]]= mean_overlap_proportion1[w]
+			}
 		}
-	}
-	analysis_names = "Isotype_overlapping_frequencies"
-	analysis_matrices = list(overlap)
-	names(analysis_matrices) <- analysis_names
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	} 
-	analysis_matrices5b = analysis_matrices
+		analysis_names = "Isotype_overlapping_frequencies"
+		analysis_matrices = list(overlap)
+		names(analysis_matrices) <- analysis_names
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		analysis_matrices5b = analysis_matrices
+		} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices5b <- vector(mode = "list", length = 0)	
+		} 
 }
 
 
@@ -504,40 +542,45 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	} else {
 		check6 <- TRUE
 	}
-
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"chain"]))),]
-	p=p[which(as.numeric(p[,"total_BCRs_counted"])>10),]
-	id = as.character(p[,"X.sample"])
-	ids = sort(unique(id))
-	class = as.character(p[,"chain"])
-	type = as.character(p[,"count_type"])
-	types = sort(unique(type))
-	chains = sort(unique(class))
-	value = as.numeric(p[,"mean.value"])
-	value_list = list()
-	for(t in c(1:length(types))){
-		values = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
-		w = which(type== types[t])
-		for(i in c(1:length(w))){
-			values[id[w[i]], class[w[i]]] = value[w[i]]}
-			value_list = c(value_list, list(values))
-	}
-	a = value_list [[which(types=="mean CDR_mm per BCR")]]+ value_list [[which(types=="mean FWR_mm per BCR")]]
-	b = value_list [[which(types=="mean nonsilent per BCR" )]]+ value_list [[which(types=="mean silent per BCR")]]
-	types = c(types, "Mean mutations per BCR")
-	value_list = c(value_list, list(a))
-	w = which(types %in% c("mean CDR_FWR_ratio", "Mean mutations per BCR" ,"FWR3_mm", "mean CDR_mm per BCR","mean FWR_mm per BCR"  ))
-	analysis_matrices = value_list[w]
-	analysis_names = types[w]
-	analysis_names <-  gsub("_",  " ", types[w])
-	names(analysis_matrices) <- c("mean_CDR_FWR_ratio", "mean_mutations_per_VDJ" ,"FWR3_mm", "mean_CDR_mm_per_VDJ","mean_FWR_mm_per_VDJ"  )
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	} 
-	analysis_matrices6 = analysis_matrices
+	info = file.info(file)
+	if(info$size != 0) {
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+		p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"chain"]))),]
+		p=p[which(as.numeric(p[,"total_BCRs_counted"])>10),]
+		id = as.character(p[,"X.sample"])
+		ids = sort(unique(id))
+		class = as.character(p[,"chain"])
+		type = as.character(p[,"count_type"])
+		types = sort(unique(type))
+		chains = sort(unique(class))
+		value = as.numeric(p[,"mean.value"])
+		value_list = list()
+		for(t in c(1:length(types))){
+			values = matrix(data = -1, nrow = length(ids_all),ncol = length(chains), dimnames=c(list(ids_all), list(chains)))
+			w = which(type== types[t])
+			for(i in c(1:length(w))){
+				values[id[w[i]], class[w[i]]] = value[w[i]]}
+				value_list = c(value_list, list(values))
+		}
+		a = value_list [[which(types=="mean CDR_mm per BCR")]]+ value_list [[which(types=="mean FWR_mm per BCR")]]
+		b = value_list [[which(types=="mean nonsilent per BCR" )]]+ value_list [[which(types=="mean silent per BCR")]]
+		types = c(types, "Mean mutations per BCR")
+		value_list = c(value_list, list(a))
+		w = which(types %in% c("mean CDR_FWR_ratio", "Mean mutations per BCR" ,"FWR3_mm", "mean CDR_mm per BCR","mean FWR_mm per BCR"  ))
+		analysis_matrices = value_list[w]
+		analysis_names = types[w]
+		analysis_names <-  gsub("_",  " ", types[w])
+		names(analysis_matrices) <- c("mean_CDR_FWR_ratio", "mean_mutations_per_VDJ" ,"FWR3_mm", "mean_CDR_mm_per_VDJ","mean_FWR_mm_per_VDJ"  )
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		analysis_matrices6 = analysis_matrices
+		} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices6 <- vector(mode = "list", length = 0)	
+		}
 }
 print("DONE 6")
 ##---------------------------------------------------------------------------------------------------------------------
@@ -553,36 +596,42 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		check7 <- TRUE
 	}
 
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	p=p[grep("IGH",as.character(p[,"chain"])),]
-	w = setdiff(p[,"chain"], p[,"chain"][grep("IGHV",as.character(p[,"chain"]))])
-	p=p[which(as.character(p[,"chain"]) %in% w),]
-	w = setdiff(p[,"chain"], p[,"chain"][grep("mut",as.character(p[,"chain"]))])
-	p=p[which(as.character(p[,"chain"]) %in% w),]
-	id = as.character(p[,"X.sample"])
-	ids = sort(unique(id))
-	class = as.character(p[,"chain"])
-	id_replacement_freq =as.numeric(p[,"percentage"])
-	total_isotype = as.numeric(p[,"total"])
-	w1 = which(total_isotype>50)
-	classes = sort(unique(class))
-	types = c(list(id_replacement_freq))
-	analysis_name = c("V gene replacement frequency")
-	means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	for(i in c(1:length(ids))){
-		w = intersect(which(id==ids[i]), w1)
-		means[ids[i], class[w]] = id_replacement_freq[w]
-	}
-	analysis_matrices = list(means)
-	analysis_names = c("V_gene_replacement_frequency")
-	names(analysis_matrices) <- analysis_names
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	} 
-	analysis_matrices7 = analysis_matrices
-	names(analysis_matrices7) <- analysis_names
+	info = file.info(file)
+	if(info$size != 0) {
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+		p=p[grep("IGH",as.character(p[,"chain"])),]
+		w = setdiff(p[,"chain"], p[,"chain"][grep("IGHV",as.character(p[,"chain"]))])
+		p=p[which(as.character(p[,"chain"]) %in% w),]
+		w = setdiff(p[,"chain"], p[,"chain"][grep("mut",as.character(p[,"chain"]))])
+		p=p[which(as.character(p[,"chain"]) %in% w),]
+		id = as.character(p[,"X.sample"])
+		ids = sort(unique(id))
+		class = as.character(p[,"chain"])
+		id_replacement_freq =as.numeric(p[,"percentage"])
+		total_isotype = as.numeric(p[,"total"])
+		w1 = which(total_isotype>50)
+		classes = sort(unique(class))
+		types = c(list(id_replacement_freq))
+		analysis_name = c("V gene replacement frequency")
+		means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		for(i in c(1:length(ids))){
+			w = intersect(which(id==ids[i]), w1)
+			means[ids[i], class[w]] = id_replacement_freq[w]
+		}
+		analysis_matrices = list(means)
+		analysis_names = c("V_gene_replacement_frequency")
+		names(analysis_matrices) <- analysis_names
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		analysis_matrices7 = analysis_matrices
+		names(analysis_matrices7) <- analysis_names
+		} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices7 <- vector(mode = "list", length = 0)
+		} 
 } 
 
 if(chain_vdj %like% "T"){
@@ -593,38 +642,44 @@ if(chain_vdj %like% "T"){
 	} else {
 		check7 <- TRUE
 	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	if(class(p)=="character"){
-		p <- as.matrix(t(p))
-	} 
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	if(class(p)=="character"){
-		p <- as.matrix(t(p))
-	} 
-	id = as.character(p[,"X.sample"])
-	
-	ids = sort(unique(id))
-	class = as.character(p[,"chain"])
-	id_replacement_freq =as.numeric(p[,"percentage"])
-	total_isotype = as.numeric(p[,"total"])
-	w1 = which(total_isotype>50)
-	classes = sort(unique(class))
-	types = c(list(id_replacement_freq))
-	analysis_name = c("V_gene_replacement_frequency")
-	means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	for(i in c(1:length(ids))){
-		w = intersect(which(id==ids[i]), w1)
-		means[ids[i], class[w]] = id_replacement_freq[w]
-	}
-	analysis_matrices = list(means)
-	analysis_names = c("V gene replacement frequency")
-	names(analysis_matrices) <- analysis_names
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	} 
-	analysis_matrices7 = analysis_matrices
-	names(analysis_matrices7) <- analysis_names
+	info = file.info(file)
+	if(info$size != 0) {
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		id = as.character(p[,"X.sample"])
+		
+		ids = sort(unique(id))
+		class = as.character(p[,"chain"])
+		id_replacement_freq =as.numeric(p[,"percentage"])
+		total_isotype = as.numeric(p[,"total"])
+		w1 = which(total_isotype>50)
+		classes = sort(unique(class))
+		types = c(list(id_replacement_freq))
+		analysis_name = c("V_gene_replacement_frequency")
+		means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		for(i in c(1:length(ids))){
+			w = intersect(which(id==ids[i]), w1)
+			means[ids[i], class[w]] = id_replacement_freq[w]
+		}
+		analysis_matrices = list(means)
+		analysis_names = c("V gene replacement frequency")
+		names(analysis_matrices) <- analysis_names
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		analysis_matrices7 = analysis_matrices
+		names(analysis_matrices7) <- analysis_name
+		} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices7 <- vector(mode = "list", length = 0)
+		} 
 } 
 print("DONE 7")
 ##---------------------------------------------------------------------------------------------------------------------
@@ -638,40 +693,47 @@ if(length(subsample_identifier)==0){
 } else {
 	check8 <- TRUE
 }
-p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-if(class(p)=="character"){
-	p <- as.matrix(t(p))
-} 
-p=p[which(as.numeric(p[,"d5"]) !=-1),]
-if(class(p)=="character"){
-	p <- as.matrix(t(p))
-} 
-id = as.character(p[,"X.sample"])
-ids = sort(unique(id))
-isotype = as.character(p[,"isotype"])
-d5 = as.numeric(p[,"d5"])
-d10 = as.numeric(p[,"d10"])
-d50 = as.numeric(p[,"d50"])
-classes = sort(unique(isotype))
-m_d5 = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-m_d10 = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-m_d50 = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-for(i in c(1:length(ids))){
-	w = which(id==ids[i])
-	m_d5[ids[i],isotype[w]]= d5[w]
-	m_d10[ids[i],isotype[w]]= d10[w]
-	m_d50[ids[i],isotype[w]]= d50[w]
-}
-analysis_matrices = c(list(m_d5),list(m_d10),list(m_d50))
-analysis_names = c("D5","D10","D50")
-names(analysis_matrices) <- analysis_names
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-} 
-analysis_matrices8 = analysis_matrices
-names(analysis_matrices8) <- analysis_names
+info = file.info(file)
+if(info$size != 0) {
+		
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	p=p[which(as.numeric(p[,"d5"]) !=-1),]
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	id = as.character(p[,"X.sample"])
+	ids = sort(unique(id))
+	isotype = as.character(p[,"isotype"])
+	d5 = as.numeric(p[,"d5"])
+	d10 = as.numeric(p[,"d10"])
+	d50 = as.numeric(p[,"d50"])
+	classes = sort(unique(isotype))
+	m_d5 = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	m_d10 = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	m_d50 = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	for(i in c(1:length(ids))){
+		w = which(id==ids[i])
+		m_d5[ids[i],isotype[w]]= d5[w]
+		m_d10[ids[i],isotype[w]]= d10[w]
+		m_d50[ids[i],isotype[w]]= d50[w]
+	}
+	analysis_matrices = c(list(m_d5),list(m_d10),list(m_d50))
+	analysis_names = c("D5","D10","D50")
+	names(analysis_matrices) <- analysis_names
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	} 
+	analysis_matrices8 = analysis_matrices
+	names(analysis_matrices8) <- analysis_names
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices8 <- vector(mode = "list", length = 0)	
+	}
 print("DONE 8")
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 9: ALL V gene IGHV4_34_quantification
@@ -687,54 +749,61 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	} else {
 		check9 <- TRUE
 	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	p=p[which(as.numeric(p[,"total_all"]) >10),]
-	id = as.character(p[,"X.sample"])
-	ids = sort(unique(id))
-	isotype = as.character(p[,"isotype"])
-	V4_34_AVY_total_unmut = as.numeric(p[,"V4_34_AVY_total_unmut"])*100/as.numeric(p[,"total_all"])
-	V4_34_NHS_total_unmut = as.numeric(p[,"V4_34_NHS_total_unmut"])*100/as.numeric(p[,"total_all"])
-	V4_34_AVY_NHS_total_unmut = as.numeric(p[,"V4_34_AVY_NHS_total_unmut"])*100/as.numeric(p[,"total_all"])
-	classes = sort(unique(isotype))
-	V4_34_AVY_NHS_total_unmut_count = as.numeric(p[,"V4_34_AVY_NHS_total_unmut"])
-	all_counts = as.numeric(p[,"total_all"])
+	info = file.info(file)
+	if(info$size != 0) {
+	
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+		p=p[which(as.numeric(p[,"total_all"]) >10),]
+		id = as.character(p[,"X.sample"])
+		ids = sort(unique(id))
+		isotype = as.character(p[,"isotype"])
+		V4_34_AVY_total_unmut = as.numeric(p[,"V4_34_AVY_total_unmut"])*100/as.numeric(p[,"total_all"])
+		V4_34_NHS_total_unmut = as.numeric(p[,"V4_34_NHS_total_unmut"])*100/as.numeric(p[,"total_all"])
+		V4_34_AVY_NHS_total_unmut = as.numeric(p[,"V4_34_AVY_NHS_total_unmut"])*100/as.numeric(p[,"total_all"])
+		classes = sort(unique(isotype))
+		V4_34_AVY_NHS_total_unmut_count = as.numeric(p[,"V4_34_AVY_NHS_total_unmut"])
+		all_counts = as.numeric(p[,"total_all"])
 
-	m_V4_34_AVY_total_unmut = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	m_V4_34_NHS_total_unmut = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	m_V4_34_AVY_NHS_total_unmut = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	m_V4_34_AVY_NHS_total_unmut_count = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-	m_all_count = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		m_V4_34_AVY_total_unmut = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		m_V4_34_NHS_total_unmut = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		m_V4_34_AVY_NHS_total_unmut = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		m_V4_34_AVY_NHS_total_unmut_count = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+		m_all_count = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
 
-	for(i in c(1:length(ids))){
-		w = which(id==ids[i])
-		m_V4_34_AVY_total_unmut[ids[i],isotype[w]]= V4_34_AVY_total_unmut[w]
-		m_V4_34_NHS_total_unmut[ids[i],isotype[w]]= V4_34_NHS_total_unmut[w]
-		m_V4_34_AVY_NHS_total_unmut[ids[i],isotype[w]]= V4_34_AVY_NHS_total_unmut[w]
-		m_V4_34_AVY_NHS_total_unmut_count[ids[i],isotype[w]]= V4_34_AVY_NHS_total_unmut_count[w]
-		m_all_count[ids[i],isotype[w]]= all_counts[w]
-	}
-	IGHDM = rep(-1, length(ids_all))
-	names(IGHDM)= ids_all
-	class_switched = IGHDM
-	for(i in c(1:length(ids))){
-		w1 = which(classes %in% c("IGHA1", "IGHA2" , "IGHE",  "IGHG1" ,"IGHG2" ,"IGHG3" ,"IGHG4"))
-		w2 = which(classes %in% c("IGHD", "IGHM"))
-		w = which(m_V4_34_AVY_NHS_total_unmut[ids[i],]!=-1)
-		IGHDM[ids[i]] = sum(m_V4_34_AVY_NHS_total_unmut_count[ids[i],intersect(w,w2)])*100/sum(m_all_count[ids[i],intersect(w,w2)])
-		class_switched[ids[i]] = sum(m_V4_34_AVY_NHS_total_unmut_count[ids[i],intersect(w,w1)])*100/sum(m_all_count[ids[i],intersect(w,w1)])
+		for(i in c(1:length(ids))){
+			w = which(id==ids[i])
+			m_V4_34_AVY_total_unmut[ids[i],isotype[w]]= V4_34_AVY_total_unmut[w]
+			m_V4_34_NHS_total_unmut[ids[i],isotype[w]]= V4_34_NHS_total_unmut[w]
+			m_V4_34_AVY_NHS_total_unmut[ids[i],isotype[w]]= V4_34_AVY_NHS_total_unmut[w]
+			m_V4_34_AVY_NHS_total_unmut_count[ids[i],isotype[w]]= V4_34_AVY_NHS_total_unmut_count[w]
+			m_all_count[ids[i],isotype[w]]= all_counts[w]
+		}
+		IGHDM = rep(-1, length(ids_all))
+		names(IGHDM)= ids_all
+		class_switched = IGHDM
+		for(i in c(1:length(ids))){
+			w1 = which(classes %in% c("IGHA1", "IGHA2" , "IGHE",  "IGHG1" ,"IGHG2" ,"IGHG3" ,"IGHG4"))
+			w2 = which(classes %in% c("IGHD", "IGHM"))
+			w = which(m_V4_34_AVY_NHS_total_unmut[ids[i],]!=-1)
+			IGHDM[ids[i]] = sum(m_V4_34_AVY_NHS_total_unmut_count[ids[i],intersect(w,w2)])*100/sum(m_all_count[ids[i],intersect(w,w2)])
+			class_switched[ids[i]] = sum(m_V4_34_AVY_NHS_total_unmut_count[ids[i],intersect(w,w1)])*100/sum(m_all_count[ids[i],intersect(w,w1)])
 
-	}
-	m_V4_34_AVY_NHS_total_unmut = cbind(m_V4_34_AVY_NHS_total_unmut, IGHDM, class_switched)
-	analysis_matrices = c(list(m_V4_34_AVY_total_unmut),list(m_V4_34_NHS_total_unmut),list(m_V4_34_AVY_NHS_total_unmut))
-	analysis_names = c("V4_34_AVY_unmut","V4_34_NHS_unmut","V4_34_AVY_NHS_unmut")
-	names(analysis_matrices) <- analysis_names
-	for(i in 1:length(analysis_matrices)){
-		names <- names(analysis_matrices[i])
-		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-	} 
-	names(analysis_matrices) <- analysis_names
-	analysis_matrices9 = analysis_matrices
+		}
+		m_V4_34_AVY_NHS_total_unmut = cbind(m_V4_34_AVY_NHS_total_unmut, IGHDM, class_switched)
+		analysis_matrices = c(list(m_V4_34_AVY_total_unmut),list(m_V4_34_NHS_total_unmut),list(m_V4_34_AVY_NHS_total_unmut))
+		analysis_names = c("V4_34_AVY_unmut","V4_34_NHS_unmut","V4_34_AVY_NHS_unmut")
+		names(analysis_matrices) <- analysis_names
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		names(analysis_matrices) <- analysis_names
+		analysis_matrices9 = analysis_matrices	
+		} else { 
+				print(paste0("File: ", file, " IS EMPTY"))
+				analysis_matrices9 <- vector(mode = "list", length = 0)	
+		} 
 }
 print("DONE 9")
 ##---------------------------------------------------------------------------------------------------------------------
@@ -747,33 +816,40 @@ if(length(subsample_identifier)==0){
 } else {
 	check10 <- TRUE
 }
-p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-if(class(p)=="character"){
-		p <- as.matrix(t(p))
-} 
-id = as.character(p[,"X.sample"])
-ids = sort(unique(id))
-d5_norm =as.numeric(p[,"d5_norm"])
-d5_secondary =as.numeric(p[,"d5_secondary"])
-mean_clone_size_norm =as.numeric(p[,"mean_clone_size_norm"])
-mean_clone_size_secondary =as.numeric(p[,"X_mean_clone_size_secondary"])
-w1 = which(as.numeric(p[,"n_secondary"])>5)
-groups = c(list(mean_clone_size_norm[w1]), list(mean_clone_size_secondary[w1] ))
-groups = c(list(d5_norm[w1]), list(d5_secondary[w1] ))
-headers = c("d5.norm","d5.secondary","mean.clone.size.norm", "mean.clone.size.secondary")
-m_all_count = matrix(data = -1, nrow = length(ids_all),ncol = length(headers), dimnames=c(list(ids_all), list(headers)))
-x=  cbind(d5_norm,d5_secondary,mean_clone_size_norm,mean_clone_size_secondary)
-m_all_count[id,] = x
-analysis_matrices = list(m_all_count)
-analysis_names = c("V_gene_replacement_clonal_expansion")
-names(analysis_matrices) <- analysis_names
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-} 
-names(analysis_matrices) <- analysis_names
-analysis_matrices10 = analysis_matrices
+info = file.info(file)
+if(info$size != 0) {
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+	if(class(p)=="character"){
+			p <- as.matrix(t(p))
+	} 
+	id = as.character(p[,"X.sample"])
+	ids = sort(unique(id))
+	d5_norm =as.numeric(p[,"d5_norm"])
+	d5_secondary =as.numeric(p[,"d5_secondary"])
+	mean_clone_size_norm =as.numeric(p[,"mean_clone_size_norm"])
+	mean_clone_size_secondary =as.numeric(p[,"X_mean_clone_size_secondary"])
+	w1 = which(as.numeric(p[,"n_secondary"])>5)
+	groups = c(list(mean_clone_size_norm[w1]), list(mean_clone_size_secondary[w1] ))
+	groups = c(list(d5_norm[w1]), list(d5_secondary[w1] ))
+	headers = c("d5.norm","d5.secondary","mean.clone.size.norm", "mean.clone.size.secondary")
+	m_all_count = matrix(data = -1, nrow = length(ids_all),ncol = length(headers), dimnames=c(list(ids_all), list(headers)))
+	x=  cbind(d5_norm,d5_secondary,mean_clone_size_norm,mean_clone_size_secondary)
+	m_all_count[id,] = x
+	analysis_matrices = list(m_all_count)
+	analysis_names = c("V_gene_replacement_clonal_expansion")
+	names(analysis_matrices) <- analysis_names
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	} 
+	names(analysis_matrices) <- analysis_names
+	analysis_matrices10 = analysis_matrices
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices10 <- vector(mode = "list", length = 0)	
+	}
+
 print("DONE 10")
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 11: Sampled Secondary rearangement estimates per V gene
@@ -786,33 +862,44 @@ if(length(subsample_identifier)==0){
 } else {
 	check7 <- TRUE
 }
-p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-p=p[which(p[,1]!="#sample"),]
-if(class(p)=="character"){
-		p <- as.matrix(t(p))
-} 
-id = as.character(p[,"X.sample"])
-ids = sort(unique(id))
-class = as.character(p[,"isotype"])
-classes = sort(unique(class))
-id_replacement_freq_norm =as.numeric(p[,"uniq_id_replacement_freq"])/as.numeric(p[,"n_repeats"])
-m = matrix(data = 0, nrow = length(ids),ncol = length(classes), dimnames=c(list(ids), list(classes)))
-for(c in c(1:length(classes))){
-	for(i in c(1:length(ids))){
-		w = intersect(which(class== classes[c]), which(id== ids[i]))
-		m[ids[i],classes[c]] = sum(id_replacement_freq_norm[w])
-    }
-}
-analysis_matrices = list(m)
-analysis_names = c("Secondary_Rearrangements_SAMPLED")
-names(analysis_matrices) <- analysis_names
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-} 
-analysis_matrices11 = analysis_matrices
-names(analysis_matrices11) <- analysis_names
-
+info = file.info(file)
+if(info$size != 0) {
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	p=p[which(p[,1]!="#sample"),]
+	if(dim(p)[1]!=0){
+		if(class(p)=="character"){
+				p <- as.matrix(t(p))
+		} 
+		id = as.character(p[,"X.sample"])
+		ids = sort(unique(id))
+		class = as.character(p[,"isotype"])
+		classes = sort(unique(class))
+		id_replacement_freq_norm =as.numeric(p[,"uniq_id_replacement_freq"])/as.numeric(p[,"n_repeats"])
+		m = matrix(data = 0, nrow = length(ids),ncol = length(classes), dimnames=c(list(ids), list(classes)))
+		for(c in c(1:length(classes))){
+			for(i in c(1:length(ids))){
+				w = intersect(which(class== classes[c]), which(id== ids[i]))
+				m[ids[i],classes[c]] = sum(id_replacement_freq_norm[w])
+			}
+		}
+		analysis_matrices = list(m)
+		analysis_names = c("Secondary_Rearrangements_SAMPLED")
+		names(analysis_matrices) <- analysis_names
+		for(i in 1:length(analysis_matrices)){
+			names <- names(analysis_matrices[i])
+			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		} 
+		analysis_matrices11 = analysis_matrices
+		names(analysis_matrices11) <- analysis_name
+		} else {
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices11 <- vector(mode = "list", length = 0)
+		}
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices11 <- vector(mode = "list", length = 0)	
+	} 
+	
 print("DONE 11")
 ## File Number 12 CDR Charge 
 ## Checked BCR
@@ -825,38 +912,44 @@ if(length(subsample_identifier)==0){
 } else {
 	check7 <- TRUE
 }
-p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-if(class(p)=="character"){
-		p <- as.matrix(t(p))
-} 
-p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-if(class(p)=="character"){
-		p <- as.matrix(t(p))
-} 
-id = as.character(p[,"X.sample"])
-ids = sort(unique(id))
-class = as.character(p[,"isotype"])
-id_replacement_freq =as.numeric(p[,"mean_CDR2.3_R_K_residues"])
-total_isotype = as.numeric(p[,"Number_of_BCRs"])
-w1 = which(total_isotype>0)
-classes = sort(unique(class))
-types = c(list(id_replacement_freq))
-analysis_name = c("CDR_Charge")
-means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-for(i in c(1:length(ids))){
-	w = intersect(which(id==ids[i]), w1)
-	means[ids[i], class[w]] = id_replacement_freq[w]
-}
-analysis_matrices = list(means)
-analysis_names = c("CDR_Charge")
-names(analysis_matrices) <- analysis_names
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-} 
-analysis_matrices12 = analysis_matrices
-names(analysis_matrices12) <- analysis_names
-
+info = file.info(file)
+if(info$size != 0) {
+		
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	if(class(p)=="character"){
+			p <- as.matrix(t(p))
+	} 
+	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+	if(class(p)=="character"){
+			p <- as.matrix(t(p))
+	} 
+	id = as.character(p[,"X.sample"])
+	ids = sort(unique(id))
+	class = as.character(p[,"isotype"])
+	id_replacement_freq =as.numeric(p[,"mean_CDR2.3_R_K_residues"])
+	total_isotype = as.numeric(p[,"Number_of_BCRs"])
+	w1 = which(total_isotype>0)
+	classes = sort(unique(class))
+	types = c(list(id_replacement_freq))
+	analysis_name = c("CDR_Charge")
+	means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	for(i in c(1:length(ids))){
+		w = intersect(which(id==ids[i]), w1)
+		means[ids[i], class[w]] = id_replacement_freq[w]
+	}
+	analysis_matrices = list(means)
+	analysis_names = c("CDR_Charge")
+	names(analysis_matrices) <- analysis_names
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	} 
+	analysis_matrices12 = analysis_matrices
+	names(analysis_matrices12) <- analysis_names
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices12 <- vector(mode = "list", length = 0)	
+	} 	
 print("DONE 12")
 ## File Number 13 CDR3 Charge 
 ## NEED TO CHECK FOR BCR!!!!!!!!!!!!!!!!!!!!!!!!
@@ -868,37 +961,43 @@ if(length(subsample_identifier)==0){
 } else {
 	check7 <- TRUE
 }
-p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-if(class(p)=="character"){
-	p <- as.matrix(t(p))
-} 
-p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-if(class(p)=="character"){
+info = file.info(file)
+if(info$size != 0) {
+	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+	if(class(p)=="character"){
 		p <- as.matrix(t(p))
-} 
-id = as.character(p[,"X.sample"])
-ids = sort(unique(id))
-class = as.character(p[,"isotype"])
-id_replacement_freq =as.numeric(p[,"mean_CDR3_R_K_residues"])
-total_isotype = as.numeric(p[,"Number_of_BCRs"])
-w1 = which(total_isotype>0)
-classes = sort(unique(class))
-types = c(list(id_replacement_freq))
-analysis_name = c("CDR3_Charge")
-means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-for(i in c(1:length(ids))){
-	w = intersect(which(id==ids[i]), w1)
-	means[ids[i], class[w]] = id_replacement_freq[w]
-}
-analysis_matrices = list(means)
-analysis_names = c("CDR3_Charge")
-names(analysis_matrices) <- analysis_names
-for(i in 1:length(analysis_matrices)){
-	names <- names(analysis_matrices[i])
-	colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
-} 
-analysis_matrices13 = analysis_matrices
-names(analysis_matrices13) <- analysis_names
+	} 
+	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+	if(class(p)=="character"){
+			p <- as.matrix(t(p))
+	} 
+	id = as.character(p[,"X.sample"])
+	ids = sort(unique(id))
+	class = as.character(p[,"isotype"])
+	id_replacement_freq =as.numeric(p[,"mean_CDR3_R_K_residues"])
+	total_isotype = as.numeric(p[,"Number_of_BCRs"])
+	w1 = which(total_isotype>0)
+	classes = sort(unique(class))
+	types = c(list(id_replacement_freq))
+	analysis_name = c("CDR3_Charge")
+	means = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
+	for(i in c(1:length(ids))){
+		w = intersect(which(id==ids[i]), w1)
+		means[ids[i], class[w]] = id_replacement_freq[w]
+	}
+	analysis_matrices = list(means)
+	analysis_names = c("CDR3_Charge")
+	names(analysis_matrices) <- analysis_names
+	for(i in 1:length(analysis_matrices)){
+		names <- names(analysis_matrices[i])
+		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+	} 
+	analysis_matrices13 = analysis_matrices
+	names(analysis_matrices13) <- analysis_names
+	} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices13 <- vector(mode = "list", length = 0)	
+	}	
 print("DONE 13")
 ##---------------------------------------------------------------------------------------------------------------------
 ##---------------------------------------------------------------------------------------------------------------------
@@ -940,6 +1039,14 @@ overall_matrix <- merge(overall_matrix, read_depths_all, by.x="sample", by.y="Sa
 ###############################################################################################
 ## GOING TO REMOVE SAMPLES FROM WHICH THE READ DEPTH IS LOWER THAN SPECIFIED
 overall_matrix <- overall_matrix[overall_matrix$ReadDepth >=  subsampled_depth_allx, ]
+print("###############################################################################################")
+print("###############################################################################################")
+print("ATTENTION!")
+print(paste0("REMOVED Samples with read depth less than: ", subsampled_depth_allx))
+print(paste0("REMOVED ", length(samples_to_low_all), " Samples"))
+
+print("###############################################################################################")
+print("###############################################################################################")
 ###############################################################################################
 
 
@@ -971,7 +1078,33 @@ if(chain_vdj %like% "T"){
 }
 
 ##---------------------------------------------------------------------------------------------------------------------
+## Add in the proportions of different isotypes across groups!
+## Only relevant for BCRs
+if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
+		file <- paste0(outputdir, "/Summary/IMGT/IMGT_Prop_SHM_", iso_type, ".txt")
+		proportions_file <- read.delim(file, sep="\t", header=TRUE)
+		colnames(proportions_file) <- gsub("\\.", "_", colnames(proportions_file))
+		oo <- data.frame(str_split_fixed(colnames(proportions_file), "__", 2))
+		oo <- oo$X1
+		oo <- paste0(oo, "__", "ALL")
+		colnames(proportions_file) <- oo
+		if(iso_type=="UNPRODUCTIVE"){
+			proportions_file$Sample <- paste0(proportions_file$Sample, "_unproductive")
+		}
+		if(iso_type=="PRODUCTIVE"){
+			proportions_file$Sample <- paste0(proportions_file$Sample, "_productive")
+		}	
+		overall_matrix <- merge(overall_matrix, proportions_file, by.x="sample", by.y="Sample")
+		overall_matrix$Sample__ALL <- NULL
+} 
+
+
+overall_matrix <- overall_matrix %>% select(ReadDepth, everything())
+
+  
+		
 ## REPLACE ANY INSTANCES OF '-1' (meaning to small sample size so not calculated with NA!" 
+################We want to add in percentage each group  (SHM - relevant for BCRS) 	
 overall_matrix[overall_matrix=="-1"] <- "NA"
 ## Remove any columns which are empty (e.g. nothing was calculated) 
 empty <- apply(overall_matrix, 2, function(x){length(which(x==0 | x=="NA"))})
@@ -987,7 +1120,7 @@ overall_matrix<- overall_matrix[, c(!colnames(overall_matrix) %in% names(empty_c
 ################################
 out_file_table=paste0(outputdir, "Summary/All_raw_values_unfiltered_", subsampled_depth_all, "_", iso_type, ".txt")
 write.table(overall_matrix, file = out_file_table, append = FALSE, quote = FALSE, sep = "\t",eol = "\n", na = "NA", dec = ".", row.names = TRUE, col.names = TRUE, qmethod = c("escape", "double"),fileEncoding = "")
-
+#################################################
 ##---------------------------------------------------------------------------------------------------------------------
 ##---------------------------------------------------------------------------------------------------------------------
 ##---------------------------------------------------------------------------------------------------------------------
@@ -998,11 +1131,12 @@ write.table(overall_matrix, file = out_file_table, append = FALSE, quote = FALSE
 
 new <- overall_matrix
 
+
 ## ***** Default of corelation test will be to omit na values *****
 ## Calculate correlation and missingness 
 # note that missingness is really percentage of samples which are not na! (so high is good!)
 values <- c("Metric", "percentage_present", "pval", "correlation")
-for(i in 2:(length(colnames(new))-1)){
+for(i in 3:(length(colnames(new)))){
 	variable <- new[,i]
 	id <- colnames(new)[i]
 	depths <- new$ReadDepth
@@ -1154,15 +1288,21 @@ dev.off()
 ## Removing repetitive annotations 
 ## Keeping those that are biologically informative 
 ## Removing those with high misingness! 
+if(iso_type=="UNPRODUCTIVE"){
+	threshold_new <- 90 
+} else {
+	threshold_new <- 60
+}
+
 
 if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
  annotated_metrics_to_keep <- read.delim('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/Isotyper/inclusion_metrics.txt', header=TRUE)
  annotated_metrics_to_keep_colnames <- annotated_metrics_to_keep$Metric[annotated_metrics_to_keep$Include_Metric=="1"]
- keep <- values$Metric[values$percentage_present > 60]
+ keep <- values$Metric[values$percentage_present > threshold_new]
  keep <- keep[!keep %like% "IGHV"]
  keep <- unique(c(keep, annotated_metrics_to_keep_colnames))
  keep <- keep[!keep %in% annotated_metrics_to_keep$Metric[annotated_metrics_to_keep$Include_Metric=="0"]]
- keep <- keep[keep %in% values$Metric[values$percentage_present > 60]]
+ keep <- keep[keep %in% values$Metric[values$percentage_present > threshold_new]]
  keep <- keep[keep %in% colnames(mat)]
  mat_filtered = mat[,c(keep)]
 } 
@@ -1218,6 +1358,7 @@ data_4 <- apply(as.matrix(data_4),2,as.numeric)
 
 ## Final matrix!!
 data_mat <- as.matrix(mat_filtered)
+data_mat <- apply(as.matrix(data_mat),2,as.numeric)
 
 ## Calculate the correlation between matrices 
 ## because we have nas we have to use pairwise complete obs 
@@ -2003,6 +2144,8 @@ if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
 	}
 	dev.off()
 	print("DONE J GENE COMPARISON")
+	
+	
 	###############################################################################
 	### VJ gene usage 
 	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_", iso_type, ".txt")

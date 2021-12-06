@@ -12,21 +12,47 @@ suppressMessages(library(ggrastr))
 suppressMessages(library(purrr))
 suppressMessages(library(ggpubr))
 
-plot_isotyper_sepsis <- function(analysis_matrices, outputdir, info, iso_type){
+#analysis_matrices <- 
+#outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/TCRB_CH2/' 
+#files <- list.files(paste0(outputdir, "Summary"), full.names=TRUE)
+#files <- grep("isotyper_metrics_filtered_FINAL_METRICS_", files, value=TRUE)
+#analysis_matrices <- files[1]
+#file_use <-analysis_matrices 
+#info <- paste0(outputdir, "Summary/isotyper_metrics_summary_stats400_ALL.txt")
+#iso_type <- "ALL" 
+#depth_file <- paste0(outputdir, "Summary/Read_Depths_ALL.txt")
+#plot_isotyper_sepsis(file_use, outputdir, info_file, productivity, depth_file)
+
+plot_isotyper_sepsis <- function(analysis_matrices, outputdir, info, iso_type, depth_file){
 	
 	analysis_matrices <- read.delim(analysis_matrices, sep="\t")
 	info <- read.delim(info, sep="\t")
 	
-	meta_data <- read.delim('/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_cohort_1.txt', sep='\t', header=TRUE)
-	LDL <- read.delim('/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/LDL_sample1.txt', sep='\t', header=TRUE)
+	depth_file <- read.delim(depth_file, sep="\t")
+	depth_file$SampleIDforDepths <- gsub("_unproductive", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("_productive", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("BCR_", "", depth_file$SampleIDforDepths)
+	depth_file$SampleIDforDepths <- gsub("TCR_", "", depth_file$SampleIDforDepths)
+	info$Metric <- gsub("__TCR", "", info$Metric)
+	info$Metric <- gsub("__TCRA", "", info$Metric)
+	info$Metric <- gsub("__TCRB", "", info$Metric)
+	info$Metric <- gsub("__TCRG", "", info$Metric)
+	info$Metric <- gsub("__TCRD", "", info$Metric)
+	info$Metric <- gsub("__TRAC", "", info$Metric)
+	info$Metric <- gsub("__TRBC", "", info$Metric)
+	info$Metric <- gsub("__TRGC", "", info$Metric)
+	info$Metric <- gsub("__TRDC", "", info$Metric)
 	
-for(i in 2:(length(analysis_matrices)-1)){
+	meta_data <- read.delim('/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt', sep='\t', header=TRUE)
+	#LDL <- read.delim('/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/LDL_sample1.txt', sep='\t', header=TRUE)
+	
+for(i in 1:(length(colnames(analysis_matrices)))){
 			metric <- colnames(analysis_matrices[i])
 			name<- metric
 			data <- data.frame(analysis_matrices[, i])
 			colnames(data) <- metric
 			cols_to_plot <- colnames(data)
-			data$sample <- analysis_matrices$sample
+			data$sample <- row.names(analysis_matrices)
 			data$sample <- gsub("BCR_", "", data$sample)
 			data$sample <- gsub("TCRA_", "", data$sample)
 			data$sample <- gsub("TCRB_", "", data$sample)
@@ -44,16 +70,22 @@ for(i in 2:(length(analysis_matrices)-1)){
 			data$timepoint[grep("T5", data$sample)] <- "Day5"
 			data$timepoint[grep("_P", data$sample)] <- "Control"
 			data$timepoint[grep("T0", data$sample)] <- "Control"
+			data$timepoint[grep("HV", data$sample)] <- "Control"
 			
 			## Getting Read Depths 
-			depths <- analysis_matrices$ReadDepth
-			data <- cbind(data, depths)
+			data <- merge(data, depth_file, by.x="sample", by.y="SampleIDforDepths")
 			
-			
+		    ## Identifying Controls
 			controls <- grep("HV", data$sample, value=TRUE)
-			samplesx <- c(controls, as.character(meta_data$SampleID))
+			controlsx <- grep("HD", data$sample, value=TRUE)
+			
+			samplesx <- c(controls,controlsx, as.character(meta_data$SampleID))
+			
+			## Subset for those samples we have data for!
 			data <- data[data$sample %in% samplesx,]
 			data <- merge(data, meta_data, by.x="sample", by.y="SampleID", all.x=TRUE)
+			
+			## Editing the Variables for plotting 
 			data$SRS <- as.character(data$SRS)
 			data$SRS[data$timepoint == "Control"] <- "Not Applicable"	
 			data$outcome <- NA 
@@ -61,35 +93,53 @@ for(i in 2:(length(analysis_matrices)-1)){
 			data$outcome[data$Days_death_from_ICU=="Alive"] <- "ALIVE"
 			data$outcome[data$Days_death_from_ICU!="Alive"] <- "DEAD"
 			data$outcome[data$timepoint=="Control"] <- "CONTROL"
+			data$X7DAY_MORTALITY[is.na(data$X7DAY_MORTALITY)] <- "Control"
+			data$X7DAY_MORTALITY[data$X7DAY_MORTALITY==0] <- "7 Day Mortality"
+			data$X7DAY_MORTALITY[data$X7DAY_MORTALITY==1] <- "Post 7 Day Mortality"
+			data$X7DAY_MORTALITY[data$X7DAY_MORTALITY==2] <- "Alive"
 			
 			## Setting Up data Structure
 			data$SOFA_total <- as.numeric(data$SOFA_total)
 			data$Age <- as.numeric(as.character(data$Age))
 			data$Sex[is.na(data$Sex)] <- "Unknown"
-			data <- merge(data, LDL, by.x="SampleID_alternative", by.y="SampleID", all.x=TRUE)
+			#data <- merge(data, LDL, by.x="SampleID_alternative", by.y="SampleID", all.x=TRUE)
 			
 			## Getting Read Depths 
 			metric <- gsub("__",  ": ", metric)
 			metric <- gsub("_",  " ", metric)
 			metric <- gsub("\\.",  " ", metric)
 			
-
-			
+			#Extract the subsampling depth!
 			info$subsampled_depth <- as.numeric(info$subsampled_depth)
 			subsampled_depth_all <- max(info$subsampled_depth[!is.na(info$subsampled_depth)])
 			
 			## Setting Up data Structure
-			pdf(paste0(outputdir, "Plots/ISOTYPER/Plotting_", name, "_", subsampled_depth_all, "_", iso_type, "_sepsis.pdf"), width=12, height=10)
+			pdf(paste0(outputdir, "Plots/ISOTYPER/", iso_type, "/Plotting_SEPSIS_", name, "_", subsampled_depth_all, "_", iso_type, "_sepsis.pdf"), width=15, height=10)
 
-			
-            ## Beginging the Plotting  
+			## Beginging the Plotting  
 			for(s in cols_to_plot){
 				#print(s)
 				
-				# Get subsampled depth
-				subsampled_val <- info$subsampled_depth[info$Metric==s]
+				#For title of plots
+				s1 <- gsub("BCR_", "", s)
+				s1 <- gsub("TCR_", "", s1)
+				s1 <- gsub("TCRA_", "", s1)
+				s1 <- gsub("TCRB_", "", s1)
+				s1 <- gsub("TCRG_", "", s1)
+				s1 <- gsub("TCRD_", "", s1)
 							
-				if(is.na(subsampled_val)){ 
+				s1 <- gsub("TRAC_", "", s1)
+				s1 <- gsub("TRBC_", "", s1)
+				s1 <- gsub("TRGC_", "", s1)
+				s1 <- gsub("TRDC_", "", s1)
+				
+				s1 <- gsub("ALL_", "", s1)
+				s1 <- gsub("UNPRODUCTIVE_", "", s1)
+				s1 <- gsub("PRODUCTIVE_", "", s1)
+				
+				# Get subsampled depth
+				subsampled_val <- info$subsampled_depth[info$Metric==s1]			
+				if(length(subsampled_val)==0){ 
 					subsampled_depth <- "Not Performed"
 				} else {
 					subsampled_depth <- subsampled_val
@@ -98,38 +148,66 @@ for(i in 2:(length(analysis_matrices)-1)){
 				metric1 <- metric
 				metric2 <- paste0("Subsampled Depth: ", subsampled_depth)
 				
-				d <- ggplot(data[data[, s] >-1,], aes_string(x="timepoint", y=s))   + geom_boxplot( aes(fill=timepoint))  + theme_bw() +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
-				e <- ggplot(data[data[, s] >-1,], aes_string(x="timepoint", y=s))   + geom_boxplot(aes(fill=timepoint))  + theme_bw() +facet_wrap(~outcome, scales = "free_x") +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
-				f <- ggplot(data[data[, s] >-1,], aes_string(x="timepoint", y=s))  +geom_point(aes(color=SRS, shape=Sex), size=3) + theme_classic() + geom_line(aes(group = Barcode), color='grey') +xlab("Timepoint") +ylab(metric1)+ggtitle(metric2)
-				g <- ggplot(data[data[, s] >-1,], aes_string(x="timepoint", y=s))  +geom_point(aes(color=SRS, shape=Sex), size=3) + theme_classic() + geom_line(aes(group = Barcode), color='grey') +facet_wrap(~outcome, scales = "free_x") +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
+				##Start plotting
+				d <- ggplot(data, aes_string(x="timepoint", y=s))   + geom_boxplot( aes(fill=timepoint))  + theme_bw() +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
+				e <- ggplot(data, aes_string(x="timepoint", y=s))   + geom_boxplot(aes(fill=timepoint))  + theme_bw() +facet_wrap(~X7DAY_MORTALITY, scales = "free") +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
+				e2 <- ggplot(data, aes_string(x="timepoint", y=s))   + geom_boxplot(aes(fill=timepoint))  + theme_bw() +facet_wrap(~X7DAY_MORTALITY, scales = "free_x") +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
+				f <- ggplot(data, aes_string(x="timepoint", y=s))  +geom_point(aes(color=SRS, shape=Sex), size=3) + theme_bw() + geom_line(aes(group = Barcode), color='black') +xlab("Timepoint") +ylab(metric1)+ggtitle(metric2)
+				g <- ggplot(data, aes_string(x="timepoint", y=s))  +geom_point(aes(color=SRS, shape=Sex), size=3) + theme_bw() + geom_line(aes(group = Barcode), color='black') +facet_wrap(~X7DAY_MORTALITY, scales = "free") +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
+				g2 <- ggplot(data, aes_string(x="timepoint", y=s))  +geom_point(aes(color=SRS, shape=Sex), size=3) + theme_bw() + geom_line(aes(group = Barcode), color='black') +facet_wrap(~X7DAY_MORTALITY, scales = "free_x") +xlab("Timepoint") +ylab(metric1) +ggtitle(metric2)
+
+				tryCatch({
+				plot(grid.arrange(d, e, e2, f, g, g2, ncol=3))
+				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
+
+				d <- ggplot(data, aes_string(x="ReadDepth", y=s, colour="ReadDepth")) + geom_point() + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) + geom_smooth(method='lm') +ggtitle(metric2)+ stat_cor(label.x = 0)
+				e <- ggplot(data, aes_string(x="ReadDepth", y=s, colour="ReadDepth")) + geom_point(aes(color=ReadDepth))  + theme_bw() +facet_wrap(~X7DAY_MORTALITY) +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) + geom_smooth(method='lm')+ggtitle(metric2) + stat_cor(label.x = 0)
+				f <- ggplot(data, aes_string(x="timepoint", y=s))+ geom_point(aes(color=ReadDepth, shape=Sex), size=3) + theme_bw() + geom_line(aes(group = Barcode), color='black') +xlab("Timepoint") +ylab(metric1)+ scale_color_gradient(high = "yellow", low = "darkblue")+ggtitle(metric2) + labs(colour="Read Depth")+ stat_cor(label.x = 0)
+				g <- ggplot(data, aes_string(x="timepoint", y=s)) + geom_point(aes(color=ReadDepth, shape=Sex), size=3) + theme_bw() + geom_line(aes(group = Barcode), color='black') +facet_wrap(~X7DAY_MORTALITY) +xlab("Timepoint") +ylab(metric1)+scale_color_gradient(high = "yellow", low = "darkblue")+ggtitle(metric2)+ labs(colour="Read Depth")+ stat_cor(label.x = 0)
 				tryCatch({
 				plot(grid.arrange(d, e, f, g, ncol=2))
 				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
 
-				d <- ggplot(data[data[, s] >-1,], aes_string(x="depths", y=s, colour="depths")) + geom_point() + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) + stat_summary(fun.data= mean_cl_normal) + geom_smooth(method='lm') +ggtitle(metric2)
-				e <- ggplot(data[data[, s] >-1,], aes_string(x="depths", y=s, colour="depths")) + geom_point(aes(color=depths))  + theme_bw() +facet_wrap(~outcome, scales = "free_x") +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) +stat_summary(fun.data= mean_cl_normal) + geom_smooth(method='lm')+ggtitle(metric2)
-				f <- ggplot(data[data[, s] >-1,], aes_string(x="timepoint", y=s))+ geom_point(aes(color=depths, shape=Sex), size=3) + theme_classic() + geom_line(aes(group = Barcode), color='grey') +xlab("Timepoint") +ylab(metric1)+ scale_color_gradient(high = "yellow", low = "darkblue")+ggtitle(metric2) + labs(colour="Read Depth")
-				g <- ggplot(data[data[, s] >-1,], aes_string(x="timepoint", y=s)) + geom_point(aes(color=depths, shape=Sex), size=3) + theme_classic() + geom_line(aes(group = Barcode), color='grey') +facet_wrap(~outcome, scales = "free_x") +xlab("Timepoint") +ylab(metric1)+scale_color_gradient(high = "yellow", low = "darkblue")+ggtitle(metric2)+ labs(colour="Read Depth")
-				tryCatch({
-				plot(grid.arrange(d, e, f, g, ncol=2))
-				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
-
-				e <- ggplot(data[data[, s] >-1,], aes_string(x="Age", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic() +facet_wrap(~outcome, scales = "free_x") +xlab("Age") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
-				f <- ggplot(data[data[, s] >-1,], aes_string(x="SOFA_total", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic() + geom_line(aes(group = Barcode), color='grey') +facet_wrap(~outcome, scales = "free_x") +xlab("Sofa Organ Score") +ylab(metric1)+ggtitle(metric2)
-				g <- ggplot(data[data[, s] >-1,], aes_string(x="Age", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic()  +xlab("Age") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
-				h <- ggplot(data[data[, s] >-1,], aes_string(x="SOFA_total", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic() + geom_line(aes(group = Barcode), color='grey') +xlab("Sofa Organ Score") +ylab(metric1)+ggtitle(metric2)
+				e <- ggplot(data, aes_string(x="Age", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_bw() +facet_wrap(~X7DAY_MORTALITY) +xlab("Age") +ylab(metric1) + geom_line(aes(group = Barcode), color='black')+ggtitle(metric2)
+				f <- ggplot(data, aes_string(x="SOFA_total", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_bw() + geom_line(aes(group = Barcode), color='black') +facet_wrap(~X7DAY_MORTALITY) +xlab("Sofa Organ Score") +ylab(metric1)+ggtitle(metric2)
+				g <- ggplot(data, aes_string(x="Age", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_bw()  +xlab("Age") +ylab(metric1) + geom_line(aes(group = Barcode), color='black')+ggtitle(metric2)
+				h <- ggplot(data, aes_string(x="SOFA_total", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_bw() + geom_line(aes(group = Barcode), color='black') +xlab("Sofa Organ Score") +ylab(metric1)+ggtitle(metric2)
 				tryCatch({
 				plot(grid.arrange(e, f, g, h, ncol=2))
 				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
-				e <- ggplot(data[data[, s] >-1,], aes_string(x="LV", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic() +facet_wrap(~outcome, scales = "free_x") +xlab("LV") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
-				f <- ggplot(data[data[, s] >-1,], aes_string(x="MLV", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic() +facet_wrap(~outcome, scales = "free_x") +xlab("MLV") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
-				g <- ggplot(data[data[, s] >-1,], aes_string(x="PLV", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic() +facet_wrap(~outcome, scales = "free_x") +xlab("PLV") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
-				e1 <- ggplot(data[data[, s] >-1,], aes_string(x="LV", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic()  +xlab("LV") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
-				f1 <- ggplot(data[data[, s] >-1,], aes_string(x="MLV", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic()  +xlab("MLV") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
-				g1 <- ggplot(data[data[, s] >-1,], aes_string(x="PLV", y=s))  +geom_point(aes(color=timepoint, shape=Sex), size=3) + theme_classic() +xlab("PLV") +ylab(metric1) + geom_line(aes(group = Barcode), color='grey')+ggtitle(metric2)
+				
+				e <- ggplot(data, aes_string(x="SRS", y=s))  + geom_boxplot(aes(fill=timepoint))+ theme_bw() +facet_wrap(~X7DAY_MORTALITY, scales = "free_x") +xlab("SRS Asignment") +ylab(metric1) +ggtitle(metric2)
+				e1 <- ggplot(data, aes_string(x="SRS", y=s)) + geom_boxplot(aes(fill=timepoint)) + theme_bw()  +xlab("SRS Asignment") +ylab(metric1)+ggtitle(metric2)
 				tryCatch({
-				plot(grid.arrange(e, f, g, e1, f1, g1, ncol=3))	
+				plot(grid.arrange(e, e1, ncol=2))	
 				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
+				
+				e <- ggplot(data, aes_string(x="EBV_positive_ddpcr", y=s))  + geom_boxplot(aes(fill=timepoint))+ theme_bw() +facet_wrap(~X7DAY_MORTALITY, scales = "free_x") +xlab("EBV Status: ddPCR") +ylab(metric1) +ggtitle(metric2)
+				e1 <- ggplot(data, aes_string(x="EBV_positive_ddpcr", y=s)) + geom_boxplot(aes(fill=timepoint)) + theme_bw()  +xlab("EBV Status: ddPCR") +ylab(metric1)+ggtitle(metric2)
+				tryCatch({
+				plot(grid.arrange(e, e1, ncol=2))	
+				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
+				
+				e <- ggplot(data, aes_string(x="EBV_positive_metagenomics", y=s))  + geom_boxplot(aes(fill=timepoint))+ theme_bw() +facet_wrap(~X7DAY_MORTALITY, scales = "free_x") +xlab("EBV Status: Metagenomics") +ylab(metric1) +ggtitle(metric2)
+				e1 <- ggplot(data, aes_string(x="EBV_positive_metagenomics", y=s)) + geom_boxplot(aes(fill=timepoint)) + theme_bw()  +xlab("EBV Status: Metagenomics") +ylab(metric1)+ggtitle(metric2)
+				tryCatch({
+				plot(grid.arrange(e, e1, ncol=2))	
+				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
+				
+				e <- ggplot(data, aes_string(x="Shock_sepsis2", y=s))  + geom_boxplot(aes(fill=timepoint))+ theme_bw() +facet_wrap(~X7DAY_MORTALITY, scales = "free_x") +xlab("Shock Sepsis2") +ylab(metric1) +ggtitle(metric2)
+				e1 <- ggplot(data, aes_string(x="Shock_sepsis2", y=s)) + geom_boxplot(aes(fill=timepoint)) + theme_bw()  +xlab("Shock Sepsis2") +ylab(metric1)+ggtitle(metric2)
+				tryCatch({
+				plot(grid.arrange(e, e1, ncol=2))	
+				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
+				
+				e <- ggplot(data, aes_string(x="Sex", y=s))  + geom_boxplot(aes(fill=timepoint))+ theme_bw() +facet_wrap(~X7DAY_MORTALITY, scales = "free_x") +xlab("Sex") +ylab(metric1) +ggtitle(metric2)
+				e1 <- ggplot(data, aes_string(x="Sex", y=s)) + geom_boxplot(aes(fill=timepoint)) + theme_bw()  +xlab("Sex") +ylab(metric1)+ggtitle(metric2)
+				tryCatch({
+				plot(grid.arrange(e, e1, ncol=2))	
+				}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})	
+				
+				
+				
 				}
 			dev.off()
 		}
@@ -145,8 +223,6 @@ plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type, depth_fi
 	depth_file$SampleIDforDepths <- gsub("_productive", "", depth_file$SampleIDforDepths)
 	depth_file$SampleIDforDepths <- gsub("BCR_", "", depth_file$SampleIDforDepths)
 	depth_file$SampleIDforDepths <- gsub("TCR_", "", depth_file$SampleIDforDepths)
-	
-
 	info$Metric <- gsub("__TCR", "", info$Metric)
 	info$Metric <- gsub("__TCRA", "", info$Metric)
 	info$Metric <- gsub("__TCRB", "", info$Metric)
@@ -180,7 +256,6 @@ plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type, depth_fi
 			
 			## Getting Read Depths 
 			data <- merge(data, depth_file, by.x="sample", by.y="SampleIDforDepths")
-			
 			info$subsampled_depth <- as.numeric(info$subsampled_depth)
 			
 			## Getting subsample depths which were used for isotyper script 
@@ -224,8 +299,8 @@ plot_isotyper <- function(analysis_matrices, outputdir, info, iso_type, depth_fi
 				metric1 <- metric
 				metric2 <- paste0("Subsampled Depth: ", subsampled_depth)
 				
-				d <- ggplot(data[data[, s] >-1,], aes_string(x=s))  + rasterise(geom_density(), dpi=300)  + theme_bw()  +ggtitle(metric2) + geom_density(color="black", fill="lightblue") + geom_vline(aes(xintercept=mean(data[,s][data[, s] >-1 & !is.na(data[, s])])),color="blue", linetype="dashed", size=1) +xlab(metric1)
-				e <- ggplot(data[data[, s] >-1,], aes_string(x="ReadDepth", y=s, colour="ReadDepth")) + rasterise(geom_point(aes(color=ReadDepth)), dpi=300)  + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) + geom_smooth(method='lm')+ggtitle(metric2)+ labs(colour="Read Depth") + stat_cor(label.x = 0)
+				d <- ggplot(data, aes_string(x=s))  + rasterise(geom_density(), dpi=300)  + theme_bw()  +ggtitle(metric2) + geom_density(color="black", fill="lightblue") + geom_vline(aes(xintercept=mean(data[,s][data[, s] >-1 & !is.na(data[, s])])),color="blue", linetype="dashed", size=1) +xlab(metric1)
+				e <- ggplot(data, aes_string(x="ReadDepth", y=s, colour="ReadDepth")) + rasterise(geom_point(aes(color=ReadDepth)), dpi=300)  + theme_bw() +xlab("ReadDepth") +ylab(metric1) + theme(axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=1)) + geom_smooth(method='lm')+ggtitle(metric2)+ labs(colour="Read Depth") + stat_cor(label.x = 0)
 
 				tryCatch({
 				plot(grid.arrange(d, e, ncol=1))
