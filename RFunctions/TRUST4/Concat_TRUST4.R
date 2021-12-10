@@ -13,7 +13,7 @@
 #sampleid<- 'gains8033985'
 
 ##############################################################################################
-convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
+convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id, v_threshold=v_threshold, j_threshold=j_threshold) {
 
 	# load Recquired packages
 	# all availible on rescomp Bioconductor 
@@ -220,25 +220,25 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	## Coorected V gene start location 
 	## Caclulate new Vstart so its the same for all of them
 	new1$VEnds <- as.numeric(new1$VEnds)
-	new1$CorrectedVstart <- new1$VEnds-40
+	new1$CorrectedVstart <- new1$VEnds-v_threshold
 	#############################################
 	## Coorected CDR3 END location gene start location 
 	## Caclulate new Vstart so its the same for all of them
 	new1$CDR3Ends <- as.numeric(new1$CDR3Ends)
-	new1$CorrectedCDR3Ends <- new1$CDR3Ends+20
-	new1$CorrectedEnds <- new1$JStart+30
+	new1$CorrectedCDR3Ends <- new1$CDR3Ends+j_threshold
+	new1$CorrectedEnds <- new1$JStart+j_threshold
 	
 
-	## What if we have a really long CDR3?? We will instead take 20bp after the end of this. 	
+	## What if we have a really long CDR3??	
 	new1$CorrectedEnds[new1$CDR3Ends > new1$CorrectedEnds] <- new1$CDR3Ends[new1$CDR3Ends > new1$CorrectedEnds]
 	
 	
 	## Filter out those which don't have 50bp of V gene length
-	new2 <- new1[new1$CorrectedVstart >=0,]
+	new2 <- new1[new1$CorrectedVstart >=0 & new1$VStart <= new1$CorrectedVstart,]
 	
 	## Not sure do we want to filter for CDR3 further than J gene end? Loses a lot of reads when might be relevant....
 	## Filter those where the CDR3 corrected end is further than end of sequence length 
-	new2 <- new2[new2$CorrectedEnds <= new2$JEnds | new2$Jgenetrimmedlength >= 30,]
+	new2 <- new2[new2$CorrectedEnds <= new2$JEnds | new2$Jgenetrimmedlength >= j_threshold,]
 	new2 <- new2[new2$CorrectedEnds <= new2$FullLength,]
 	
 	# also remove any sequences where the corrected V start is now less than the annotated V start e.g. we are picking up upstream sequence
@@ -258,30 +258,35 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	new2$CDRtrim <- substr(new2$sequence, new2$CDR3Start, new2$CDR3Ends)
 	new2$CDRtrimlength <- (nchar(new2$CDRtrim)*1)
 	
-
+	##############################################
+	##Filter out any reads where the trimmed length is 0 
+	new2 <- new2[!new2$Finaltrimmedlength==0,]
+	################################################
+	
+	
 	## Set up directory to output fasta files to 
-	if (!dir.exists(paste0(outputdir, "TCRA"))){
-	dir.create(paste0(outputdir, "TCRA"))
+	if (!dir.exists(paste0(outputdir, "TCRA_V", v_threshold, "_J", j_threshold))){
+	dir.create(paste0(outputdir, "TCRA_V", v_threshold, "_J", j_threshold))
 	} else {
 		print("Dir already exists!")
 	}
-	if (!dir.exists(paste0(outputdir, "TCRB"))){
-	dir.create(paste0(outputdir, "TCRB"))
+	if (!dir.exists(paste0(outputdir, "TCRB_V", v_threshold, "_J", j_threshold))){
+	dir.create(paste0(outputdir, "TCRB_V", v_threshold, "_J", j_threshold))
 	} else {
 		print("Dir already exists!")
 	}
-	if (!dir.exists(paste0(outputdir, "TCRG"))){
-	dir.create(paste0(outputdir, "TCRG"))
+	if (!dir.exists(paste0(outputdir, "TCRG_V", v_threshold, "_J", j_threshold))){
+	dir.create(paste0(outputdir, "TCRG_V", v_threshold, "_J", j_threshold))
 	} else {
 		print("Dir already exists!")
 	}
-	if (!dir.exists(paste0(outputdir, "TCRD"))){
-	dir.create(paste0(outputdir, "TCRD"))
+	if (!dir.exists(paste0(outputdir, "TCRD_V", v_threshold, "_J", j_threshold))){
+	dir.create(paste0(outputdir, "TCRD_V", v_threshold, "_J", j_threshold))
 	} else {
 		print("Dir already exists!")
 	}
-	if (!dir.exists(paste0(outputdir, "BCR"))){
-	dir.create(paste0(outputdir, "BCR"))
+	if (!dir.exists(paste0(outputdir, "BCR_V", v_threshold, "_J", j_threshold))){
+	dir.create(paste0(outputdir, "BCR_V", v_threshold, "_J", j_threshold))
 	} else {
 		print("Dir already exists!")
 	}
@@ -292,7 +297,7 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	final_data_bcr <- bcr_only[, c("BCRID", "TCRID", "Finaltrimmed")]
 	final_data_bcr <- as.list(c(bcr_only$Finaltrimmed))
 	names(final_data_bcr) <- bcr_only$BCRID
-	outfile_name <- paste0(outputdir, "BCR/", sampleid, "_BCR.fa")
+	outfile_name <- paste0(outputdir, "BCR_V", v_threshold, "_J", j_threshold, "/", sampleid, "_BCR.fa")
 	write.fasta(final_data_bcr, names(final_data_bcr), outfile_name, open = "w", nbchar = 100, as.string = FALSE)
 
 	## Final dataset 
@@ -302,7 +307,7 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	final_data_tcra <- tcra_only[, c("BCRID", "TCRID", "Finaltrimmed")]
 	final_data_tcra <- as.list(c(tcra_only$Finaltrimmed))
 	names(final_data_tcra) <- tcra_only$TCRID
-	outfile_name <- paste0(outputdir, "TCRA/", sampleid, "_TCRA.fa")
+	outfile_name <- paste0(outputdir, "TCRA_V", v_threshold, "_J", j_threshold, "/", sampleid, "_TCRA.fa")
 	write.fasta(final_data_tcra, names(final_data_tcra), outfile_name, open = "w", nbchar = 100, as.string = FALSE)
 	
 	##TCRB
@@ -310,7 +315,7 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	final_data_tcrb <- tcrb_only[, c("BCRID", "TCRID", "Finaltrimmed")]
 	final_data_tcrb <- as.list(c(tcrb_only$Finaltrimmed))
 	names(final_data_tcrb) <- tcrb_only$TCRID
-	outfile_name <- paste0(outputdir, "TCRB/", sampleid, "_TCRB.fa")
+	outfile_name <- paste0(outputdir, "TCRB_V", v_threshold, "_J", j_threshold, "/", sampleid, "_TCRB.fa")
 	write.fasta(final_data_tcrb, names(final_data_tcrb), outfile_name, open = "w", nbchar = 100, as.string = FALSE)
 	
 	##TCRG
@@ -318,7 +323,7 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	final_data_tcrg <- tcrg_only[, c("BCRID", "TCRID", "Finaltrimmed")]
 	final_data_tcrg <- as.list(c(tcrg_only$Finaltrimmed))
 	names(final_data_tcrg) <- tcrg_only$TCRID
-	outfile_name <- paste0(outputdir, "TCRG/", sampleid, "_TCRG.fa")
+	outfile_name <- paste0(outputdir, "TCRG_V", v_threshold, "_J", j_threshold, "/", sampleid, "_TCRG.fa")
 	write.fasta(final_data_tcrg, names(final_data_tcrg), outfile_name, open = "w", nbchar = 100, as.string = FALSE)
 	
 	##TCRG
@@ -326,7 +331,7 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	final_data_tcrd <- tcrd_only[, c("BCRID", "TCRID", "Finaltrimmed")]
 	final_data_tcrd <- as.list(c(tcrd_only$Finaltrimmed))
 	names(final_data_tcrd) <- tcrd_only$TCRID
-	outfile_name <- paste0(outputdir, "TCRD/", sampleid, "_TCRD.fa")
+	outfile_name <- paste0(outputdir, "TCRD_V", v_threshold, "_J", j_threshold, "/", sampleid, "_TCRD.fa")
 	write.fasta(final_data_tcrd, names(final_data_tcrd), outfile_name, open = "w", nbchar = 100, as.string = FALSE)
 	
 	## extract tcr for plotting
@@ -335,27 +340,27 @@ convert_trust4 <- function(outputdir=outputdir, sampleid=sample_id) {
 	
 	
 	# Final Plot comparing TCR and BCR 
-	pdf(paste0(outputdir, "Plots/TRUST4_Trimming_", sampleid, ".pdf"))
+	pdf(paste0(outputdir, "Plots/TRUST4_Trimming_", sampleid,"_V", v_threshold, "_J", j_threshold, ".pdf"))
 	# V gene
 	c <- ggplot(data=new1, aes(VtoCDR3trimmedlength)) + geom_histogram(binwidth=10)+ xlab("V-End to CDR3-End Length") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid)) +facet_wrap(~chain) +xlim(NA, 0)
 	grid.arrange(c,  ncol=1)
-	c <- ggplot(data=new1, aes(Vgenetrimmedlength)) + geom_histogram(binwidth=10)+ xlab("V-Start to V-End") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid))+facet_wrap(~chain) +geom_vline(xintercept=-40, col="red")+xlim(NA, 0)
+	c <- ggplot(data=new1, aes(Vgenetrimmedlength)) + geom_histogram(binwidth=10)+ xlab("V-Start to V-End") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid))+facet_wrap(~chain) +geom_vline(xintercept=(-1*v_threshold), col="red")+xlim(NA, 0)
 	grid.arrange(c,  ncol=1)
-	c <- ggplot(new1,aes(Vgenetrimmedlength))+stat_bin(aes(y=cumsum(..count..)),geom="step",bins=50)+ xlab("V-Start to V-End") +ylab("Cumulative Frequency") +theme_bw()+ggtitle(paste0(sampleid))+facet_wrap(~chain, scales="free_y") +geom_vline(xintercept=-40, col="red")+xlim(NA, 0)
+	c <- ggplot(new1,aes(Vgenetrimmedlength))+stat_bin(aes(y=cumsum(..count..)),geom="step",bins=50)+ xlab("V-Start to V-End") +ylab("Cumulative Frequency") +theme_bw()+ggtitle(paste0(sampleid))+facet_wrap(~chain, scales="free_y") +geom_vline(xintercept=(-1*v_threshold), col="red")+xlim(NA, 0)
 	grid.arrange(c,  ncol=1)
 	
 	# J gene
-	c <- ggplot(data=new1, aes(Jgenetrimmedlength)) + geom_histogram(binwidth=2)+ xlab("J-Start to J-End") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid)) +facet_wrap(~chain) +xlim(0, NA)+geom_vline(xintercept=30, col="green")
+	c <- ggplot(data=new1, aes(Jgenetrimmedlength)) + geom_histogram(binwidth=2)+ xlab("J-Start to J-End") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid)) +facet_wrap(~chain) +xlim(0, NA)+geom_vline(xintercept=j_threshold, col="green")
 	grid.arrange(c,  ncol=1)
-	c <- ggplot(new1,aes(Jgenetrimmedlength))+stat_bin(aes(y=cumsum(..count..)),geom="step",bins=50)+ xlab("J-Start to J-End") +ylab("Cumulative Frequency") +theme_bw()+ggtitle(paste0(sampleid))+facet_wrap(~chain, scales="free_y") +xlim(0, NA)+geom_vline(xintercept=30, col="green")
+	c <- ggplot(new1,aes(Jgenetrimmedlength))+stat_bin(aes(y=cumsum(..count..)),geom="step",bins=50)+ xlab("J-Start to J-End") +ylab("Cumulative Frequency") +theme_bw()+ggtitle(paste0(sampleid))+facet_wrap(~chain, scales="free_y") +xlim(0, NA)+geom_vline(xintercept=j_threshold, col="green")
 	grid.arrange(c,  ncol=1)
 	c <- ggplot(data=new1, aes(CDR3toJtrimmedlength)) + geom_histogram(binwidth=2)+ xlab("CDR3-End to J-End") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid))+facet_wrap(~chain) 
 	grid.arrange(c,  ncol=1)
 	c <- ggplot(new1,aes(CDR3toJtrimmedlength))+stat_bin(aes(y=cumsum(..count..)),geom="step",bins=50)+ xlab("CDR3-End to J-End") +ylab("Cumulative Frequency") +theme_bw()+ggtitle(paste0(sampleid))+facet_wrap(~chain, scales="free_y")
 	grid.arrange(c,  ncol=1)
-	c <- ggplot(data=new1, aes(JtoCDR3trimmedlength)) + geom_histogram(binwidth=2)+ xlab("J-Start to CDR3-End") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid))+facet_wrap(~chain)+xlim(0, NA)+geom_vline(xintercept=30, col="blue")
+	c <- ggplot(data=new1, aes(JtoCDR3trimmedlength)) + geom_histogram(binwidth=2)+ xlab("J-Start to CDR3-End") +theme_bw() +ylab("Count") +ggtitle(paste0(sampleid))+facet_wrap(~chain)+xlim(0, NA)+geom_vline(xintercept=j_threshold, col="blue")
 	grid.arrange(c,  ncol=1)
-	c <- ggplot(new1,aes(JtoCDR3trimmedlength))+stat_bin(aes(y=cumsum(..count..)),geom="step",bins=50)+ xlab("J-Start to CDR3-End") +ylab("Cumulative Frequency") +theme_bw()+ggtitle(paste0(sampleid))+facet_wrap(~chain, scales="free_y") +xlim(0, NA)+geom_vline(xintercept=30, col="blue")
+	c <- ggplot(new1,aes(JtoCDR3trimmedlength))+stat_bin(aes(y=cumsum(..count..)),geom="step",bins=50)+ xlab("J-Start to CDR3-End") +ylab("Cumulative Frequency") +theme_bw()+ggtitle(paste0(sampleid))+facet_wrap(~chain, scales="free_y") +xlim(0, NA)+geom_vline(xintercept=j_threshold, col="blue")
 	grid.arrange(c,  ncol=1)
 
 	#Starting length

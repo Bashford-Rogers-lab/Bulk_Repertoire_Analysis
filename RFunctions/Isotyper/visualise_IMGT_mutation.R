@@ -7,6 +7,7 @@
 #productivity <- "UNPRODUCTIVE"
 #iso_type <- "UNPRODUCTIVE"
 
+suppressMessages(library(plot3D))
 
 scatter3D_fancy <- function(x, y, z,..., colvar = z)
   {
@@ -413,6 +414,7 @@ imgt_mutation_statistics_sepsis <- function(path_to_outputdir = path_to_outputdi
 	suppressMessages(library(ggpubr))
 	suppressMessages(library(ggrastr))
 	suppressMessages(library(ggpubr))
+	suppressMessages(library(plot3D))
 	
 	`%notin%` <- Negate(`%in%`)
 	

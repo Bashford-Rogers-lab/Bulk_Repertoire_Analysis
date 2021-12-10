@@ -41,8 +41,8 @@ setwd("/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE")
 #cluster_nodes <- 10
 #path_to_layout <- '/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Batching_Layouts_SEPSIS_BCR_CH12.txt'
 #path_to_outputdir <- outputdir
-#productivity <- "ALL"
-#iso_type <- "ALL"
+#productivity <- "UNPRODUCTIVE"
+#iso_type <- "UNPRODUCTIVE"
 
 ## Location of OUTS directory from BCR/TCR Run
 outputdir <- opt$o

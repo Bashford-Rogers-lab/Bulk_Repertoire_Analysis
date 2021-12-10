@@ -18,7 +18,7 @@ library(data.table)
 library(foreach)
 library(doParallel) 
 library(ggforce)
-
+library(plot3D)
 
 ## Function 
 summary_isotyper <- function(outputdir, samplesfilepost, iso_type){
@@ -1089,12 +1089,12 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		oo <- paste0(oo, "__", "ALL")
 		colnames(proportions_file) <- oo
 		if(iso_type=="UNPRODUCTIVE"){
-			proportions_file$Sample <- paste0(proportions_file$Sample, "_unproductive")
+			proportions_file$Sample__ALL <- paste0(proportions_file$Sample__ALL, "_unproductive")
 		}
 		if(iso_type=="PRODUCTIVE"){
-			proportions_file$Sample <- paste0(proportions_file$Sample, "_productive")
+			proportions_file$Sample__ALL <- paste0(proportions_file$Sample__ALL, "_productive")
 		}	
-		overall_matrix <- merge(overall_matrix, proportions_file, by.x="sample", by.y="Sample")
+		overall_matrix <- merge(overall_matrix, proportions_file, by.x="sample", by.y=paste0("Sample__ALL"))
 		overall_matrix$Sample__ALL <- NULL
 } 
 
