@@ -38,6 +38,9 @@ visualise_constant_region_bcr <- function(path_to_outputdir = path_to_outputdir,
 	if (widthx > 120){
 		widthx <- 120
 	}
+	if(widthx < 5){
+		widthx <- 5
+	}
 	
 	
 	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_', Run_name, '.pdf'), width=widthx, height=14)
@@ -138,6 +141,9 @@ visualise_constant_region_bcr_layouts <- function(path_to_outputdir = path_to_ou
 	if (widthx > 120){
 		widthx <- 120
 	}
+	if(widthx < 5){
+		widthx <- 5
+	}
 	
 	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_ISOTYPEUSAGE', Run_name, '.pdf'), width=widthx, height=14)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Sample, y=percentage, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Isotype")
@@ -196,6 +202,9 @@ visualise_constant_region_tcr <- function(path_to_outputdir = path_to_outputdir,
 	widthx <- 0.1619718 * length(Constant_Results$totalreads)
 	if (widthx > 120){
 		widthx <- 120
+	}
+	if(widthx < 5){
+		widthx <- 5
 	}
 
 	Constant_Results_subset <- Constant_Results[Constant_Results$gene != "ALL",]
@@ -288,6 +297,9 @@ visualise_constant_region_tcr_layouts <- function(path_to_outputdir = path_to_ou
 	widthx <- 0.1619718 * length(Constant_Results$totalreads)
 	if (widthx > 120){
 		widthx <- 120
+	}
+	if(widthx < 5){
+		widthx <- 5
 	}
 
 

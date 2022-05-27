@@ -19,6 +19,10 @@ library(foreach)
 library(doParallel) 
 library(ggforce)
 library(plot3D)
+library(Peptides)
+library(plyr)
+library(moments)
+library(mousetrap)
 
 ## Function 
 summary_isotyper <- function(outputdir, samplesfilepost, iso_type){
@@ -34,6 +38,8 @@ if(iso_type == "UNPRODUCTIVE"){
 if(iso_type=="PRODUCTIVE"){
 	ids_all <- paste0(ids_all, "_productive")
 }
+
+
 ## Getting Read Depths for Each Sample based on RBR pipeline: 
 path <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT")
 samples <- list.files(path, full.name=TRUE)
@@ -77,7 +83,6 @@ if(iso_type=="ALL"){
 	}
 } 
 
-	
 ## Renaming Read Depths to fit with sample names 	
 depths <- data.frame(order_samples)
 colnames(depths) <- c("order_samples", "ReadDepth")
@@ -206,10 +211,23 @@ if(info$size != 0) {
 	if(class(p)=="character"){
 		p <- as.matrix(t(p))
 	} 
+	#######################
+	p <- data.frame(p)
+	## Want to make the relevant columns numeric
+	p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	## Convert '-1' to NA 
+	if(any(p[!is.na(p)]==-1)){
+		p[p==-1] <- NA
+	}
+	######################
 	p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
 	if(class(p)=="character"){
 		p <- as.matrix(t(p))
 	} 
+	## Can't have different datatypes in dataframe
+	p <- data.frame(p)
+	p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+
 	id = as.character(p[,"X.Id"])
 	ids = sort(unique(id))
 	class = as.character(p[,"Isotype"])
@@ -227,12 +245,16 @@ if(info$size != 0) {
 	D.5 <- as.numeric(p[,"D5"])
 	D.10 <- as.numeric(p[,"D10"])
 	D.50 <- as.numeric(p[,"D50"])
-
 	#Calculating Normalised V/C Renyi Scores 
 	vrenyi = 1-(as.numeric(p[,"Vertex.Reyni"])/log(as.numeric(p[,"N.vertices"])))
 	crenyi =  1-(as.numeric(p[,"Cluster_Renyi"])/log(as.numeric(p[,"N_clusters"])))
-	vrenyi[which(vrenyi<0)] <- -1
-	crenyi[which(crenyi<0)] <- -1
+	### #### I THINK THIS SHOULD BE 1 AND NOT -1 
+	a <- -0.001
+	vrenyi[which(vrenyi<0 & vrenyi >=a)] <- 0
+	crenyi[which(crenyi<0 & crenyi >=a)] <- 0
+	vrenyi[which(vrenyi< a)] <- NA
+	crenyi[which(crenyi<a)] <- NA
+	
 	# Fill Data frame 
 	class_reads = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
 	v_gini = matrix(data = -1, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
@@ -245,8 +267,6 @@ if(info$size != 0) {
 	D5 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
 	D10 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
 	D50 = matrix(data = 0, nrow = length(ids_all),ncol = length(classes), dimnames=c(list(ids_all), list(classes)))
-
-
 	#making matrix 
 	for(i in c(1:length(ids))){
 		for (c in c(1:length(classes))){
@@ -272,6 +292,7 @@ if(info$size != 0) {
 	for(i in 1:length(q)){
 		names <- names(q[i])
 		colnames(q[[i]]) <- paste0(names, "_Subsampled", "__", colnames(q[[i]]))
+		q[[i]][q[[i]]==-1 | q[[i]]=="-1" | q[[i]]=="-1.0" | q[[i]]==-1.0] <- NA
 	}
 	names(q) <- c("Vertex_Gini_Index","Cluster_Gini_Index","Mean_Vertex_Size","Percentage_Max_Cluster_Size","Percentage_Max_Vertex_Size","Cluster_Reyni_Normalised", "Vertex_Reyni_Normalised", "D5_subsampled", "D10_subsampled", "D50_subsampled")
 	analysis_matrices1 = q
@@ -298,10 +319,28 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	}
 	info = file.info(file)
 	if(info$size != 0) {
-		
 		p <- as.matrix(read.delim(file, head=TRUE, sep="\t"))
 		p=p[which(as.character(p[,"X.Id"]) %in% ids_all),]
 		p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
+			
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"Isotype"]))),]
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	
+		###		
 		id = as.character(p[,"X.Id"])
 		ids = sort(unique(id))
 		class = as.character(p[,"Isotype"])
@@ -339,6 +378,7 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
 		}
 		analysis_matrices2 = analysis_matrices
 		} else { 
@@ -370,6 +410,24 @@ if(info$size != 0) {
 		p <- as.matrix(t(p))
 	} 
 	p=p[which(as.numeric(p[,"Number_of_BCRs"])>10),]
+	
+	#######################
+	p <- data.frame(p)
+	## Want to make the relevant columns numeric
+	p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	## Convert '-1' to NA 
+	if(any(p[!is.na(p)]==-1)){
+		p[p==-1] <- NA
+	}
+	######################
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	## Can't have different datatypes in dataframe
+	p <- data.frame(p)
+	p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	############################
+
 	id = as.character(p[,"X.sample"])
 	ids = sort(unique(id))
 	class = as.character(p[,"isotype"])
@@ -388,6 +446,8 @@ if(info$size != 0) {
 	for(i in 1:length(analysis_matrices)){
 		names <- names(analysis_matrices[i])
 		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 	} 
 	analysis_matrices3 = analysis_matrices
 	print("DONE 3")
@@ -414,6 +474,24 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"isotype"]))),]
 		p=p[which(is.na(as.numeric(p[,"mean.mutations"]))==F),]
 		p=p[which(as.numeric(p[,"number.of.unique.sequences"])>10),]
+		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+		############################
+			
 		id = as.character(p[,"X.Sample"])
 		ids = sort(unique(id))
 		class = as.character(p[,"isotype"])
@@ -437,6 +515,8 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 		} 
 		analysis_matrices4 = analysis_matrices
 		} else { 
@@ -458,6 +538,24 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
 		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso1"]))),]
 		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso2"]))),]
+
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1, -4, -5)] <- apply(p[ , c(-1, -4, -5)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[, c(-1, -4, -5)] <- apply(p[ , c(-1, -4, -5)], 2, as.numeric)
+		############################
+			
 		id = as.character(p[,"X.sample"])
 		ids = sort(unique(id))
 		class1 = as.character(p[,"iso1"])
@@ -480,6 +578,8 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 		} 
 		analysis_matrices5 = analysis_matrices
 	} else { 
@@ -498,6 +598,24 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		p=p[which(as.character(p[,"X.ID"]) %in% ids_all),]
 		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"isotype1"]))),]
 		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"isotype2"]))),]
+		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1,-3, -5, -6)] <- apply(p[ , c(-1,-3, -5, -6)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[, c(-1,-3, -5, -6)] <- apply(p[ ,c(-1,-3, -5, -6)], 2, as.numeric)
+		############################
+		
 		id = as.character(p[,"X.ID"])
 		ids = sort(unique(id))
 		class1 = as.character(p[,"isotype1"])
@@ -520,6 +638,8 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 		} 
 		analysis_matrices5b = analysis_matrices
 		} else { 
@@ -548,6 +668,24 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
 		p=p[setdiff(c(1:length(p[,1])), grep("P", as.character(p[,"chain"]))),]
 		p=p[which(as.numeric(p[,"total_BCRs_counted"])>10),]
+		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1,-2, -3)] <- apply(p[ , c(-1,-2, -3)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[,  c(-1,-2, -3)] <- apply(p[ , c(-1,-2, -3)], 2, as.numeric)
+		############################
+		
 		id = as.character(p[,"X.sample"])
 		ids = sort(unique(id))
 		class = as.character(p[,"chain"])
@@ -575,6 +713,8 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 		} 
 		analysis_matrices6 = analysis_matrices
 		} else { 
@@ -605,6 +745,24 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		p=p[which(as.character(p[,"chain"]) %in% w),]
 		w = setdiff(p[,"chain"], p[,"chain"][grep("mut",as.character(p[,"chain"]))])
 		p=p[which(as.character(p[,"chain"]) %in% w),]
+		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[,  c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		############################
+		
 		id = as.character(p[,"X.sample"])
 		ids = sort(unique(id))
 		class = as.character(p[,"chain"])
@@ -625,6 +783,7 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
 		} 
 		analysis_matrices7 = analysis_matrices
 		names(analysis_matrices7) <- analysis_names
@@ -654,6 +813,23 @@ if(chain_vdj %like% "T"){
 		} 
 		id = as.character(p[,"X.sample"])
 		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[,  c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		############################
+		
 		ids = sort(unique(id))
 		class = as.character(p[,"chain"])
 		id_replacement_freq =as.numeric(p[,"percentage"])
@@ -673,6 +849,7 @@ if(chain_vdj %like% "T"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
 		} 
 		analysis_matrices7 = analysis_matrices
 		names(analysis_matrices7) <- analysis_name
@@ -705,6 +882,24 @@ if(info$size != 0) {
 	if(class(p)=="character"){
 		p <- as.matrix(t(p))
 	} 
+	
+	#######################
+	p <- data.frame(p)
+	## Want to make the relevant columns numeric
+	p[, c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+	## Convert '-1' to NA 
+	if(any(p[!is.na(p)]==-1)){
+		p[p==-1] <- NA
+	}
+	######################
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	## Can't have different datatypes in dataframe
+	p <- data.frame(p)
+	p[,  c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+	############################
+		
 	id = as.character(p[,"X.sample"])
 	ids = sort(unique(id))
 	isotype = as.character(p[,"isotype"])
@@ -727,6 +922,8 @@ if(info$size != 0) {
 	for(i in 1:length(analysis_matrices)){
 		names <- names(analysis_matrices[i])
 		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 	} 
 	analysis_matrices8 = analysis_matrices
 	names(analysis_matrices8) <- analysis_names
@@ -755,6 +952,25 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
 		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
 		p=p[which(as.numeric(p[,"total_all"]) >10),]
+		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[,  c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		############################
+	
+	
 		id = as.character(p[,"X.sample"])
 		ids = sort(unique(id))
 		isotype = as.character(p[,"isotype"])
@@ -797,6 +1013,8 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 		} 
 		names(analysis_matrices) <- analysis_names
 		analysis_matrices9 = analysis_matrices	
@@ -808,6 +1026,7 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 print("DONE 9")
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 10: Secondary Rearangments on clone size 
+## Something about this is not right!
 
 file  = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Secondary_rearrangements_clone_sizes_", iso_type, ".txt")
 subsample_identifier <- grep("SAMPLED", file, value=TRUE)
@@ -823,6 +1042,24 @@ if(info$size != 0) {
 	if(class(p)=="character"){
 			p <- as.matrix(t(p))
 	} 
+	
+	#######################
+	p <- data.frame(p)
+	## Want to make the relevant columns numeric
+	p[, c(-1)] <- apply(p[ , c(-1)], 2, as.numeric)
+	## Convert '-1' to NA 
+	if(any(p[!is.na(p)]==-1)){
+		p[p==-1] <- NA
+	}
+	######################
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	## Can't have different datatypes in dataframe
+	p <- data.frame(p)
+	p[,  c(-1)] <- apply(p[ , c(-1)], 2, as.numeric)
+	############################
+		
 	id = as.character(p[,"X.sample"])
 	ids = sort(unique(id))
 	d5_norm =as.numeric(p[,"d5_norm"])
@@ -842,6 +1079,8 @@ if(info$size != 0) {
 	for(i in 1:length(analysis_matrices)){
 		names <- names(analysis_matrices[i])
 		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 	} 
 	names(analysis_matrices) <- analysis_names
 	analysis_matrices10 = analysis_matrices
@@ -872,6 +1111,24 @@ if(info$size != 0) {
 		} 
 		id = as.character(p[,"X.sample"])
 		ids = sort(unique(id))
+		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1, -2, -3)] <- apply(p[ , c(-1, -2, -3)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[,  c(-1, -2, -3)] <- apply(p[ , c(-1, -2, -3)], 2, as.numeric)
+		############################
+	
 		class = as.character(p[,"isotype"])
 		classes = sort(unique(class))
 		id_replacement_freq_norm =as.numeric(p[,"uniq_id_replacement_freq"])/as.numeric(p[,"n_repeats"])
@@ -888,6 +1145,8 @@ if(info$size != 0) {
 		for(i in 1:length(analysis_matrices)){
 			names <- names(analysis_matrices[i])
 			colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+			analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 		} 
 		analysis_matrices11 = analysis_matrices
 		names(analysis_matrices11) <- analysis_name
@@ -901,6 +1160,7 @@ if(info$size != 0) {
 	} 
 	
 print("DONE 11")
+##---------------------------------------------------------------------------------------------------------------------
 ## File Number 12 CDR Charge 
 ## Checked BCR
 ## Checked TCR 
@@ -923,6 +1183,25 @@ if(info$size != 0) {
 	if(class(p)=="character"){
 			p <- as.matrix(t(p))
 	} 
+	
+	#######################
+	p <- data.frame(p)
+	## Want to make the relevant columns numeric
+	p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	## Convert '-1' to NA 
+	if(any(p[!is.na(p)]==-1)){
+		p[p==-1] <- NA
+	}
+	######################
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	## Can't have different datatypes in dataframe
+	p <- data.frame(p)
+	p[,  c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	############################
+		
+		
 	id = as.character(p[,"X.sample"])
 	ids = sort(unique(id))
 	class = as.character(p[,"isotype"])
@@ -943,6 +1222,8 @@ if(info$size != 0) {
 	for(i in 1:length(analysis_matrices)){
 		names <- names(analysis_matrices[i])
 		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 	} 
 	analysis_matrices12 = analysis_matrices
 	names(analysis_matrices12) <- analysis_names
@@ -951,6 +1232,7 @@ if(info$size != 0) {
 			analysis_matrices12 <- vector(mode = "list", length = 0)	
 	} 	
 print("DONE 12")
+##---------------------------------------------------------------------------------------------------------------------
 ## File Number 13 CDR3 Charge 
 ## NEED TO CHECK FOR BCR!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -972,6 +1254,24 @@ if(info$size != 0) {
 			p <- as.matrix(t(p))
 	} 
 	id = as.character(p[,"X.sample"])
+		
+	#######################
+	p <- data.frame(p)
+	## Want to make the relevant columns numeric
+	p[, c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	## Convert '-1' to NA 
+	if(any(p[!is.na(p)]==-1)){
+		p[p==-1] <- NA
+	}
+	######################
+	if(class(p)=="character"){
+		p <- as.matrix(t(p))
+	} 
+	## Can't have different datatypes in dataframe
+	p <- data.frame(p)
+	p[,  c(-1, -2)] <- apply(p[ , c(-1, -2)], 2, as.numeric)
+	############################
+		
 	ids = sort(unique(id))
 	class = as.character(p[,"isotype"])
 	id_replacement_freq =as.numeric(p[,"mean_CDR3_R_K_residues"])
@@ -991,6 +1291,8 @@ if(info$size != 0) {
 	for(i in 1:length(analysis_matrices)){
 		names <- names(analysis_matrices[i])
 		colnames(analysis_matrices[[i]]) <- paste0(names, "__", colnames(analysis_matrices[[i]]))
+		analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+
 	} 
 	analysis_matrices13 = analysis_matrices
 	names(analysis_matrices13) <- analysis_names
@@ -999,6 +1301,212 @@ if(info$size != 0) {
 			analysis_matrices13 <- vector(mode = "list", length = 0)	
 	}	
 print("DONE 13")
+
+##---------------------------------------------------------------------------------------------------------------------
+## File Number 14 V gene Usages  
+## NEED TO CHECK FOR BCR!!!!!!!!!!!!!!!!!!!!!!!!
+file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_grouped_isotype_frequency_", iso_type, ".txt")
+p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+p <- data.frame(p)
+p$uniq_read_freq <- as.numeric(p$uniq_read_freq)
+		
+	
+#####
+isotypes <- c("IGHM", "IGHD", "IGHA1", "IGHA2", "IGHG1", "IGHG2", "IGHG3", "IGHG4", "IGHEP2", "IGHGP", "IGHE")
+other_class <- c("Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "IGHD,IGHM_unmutated_singleton")
+expansion_class <- c("unexpanded", "expanded")
+		
+if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
+	all_class <- c("ALL")
+} else {
+receptor_type <- counts_try$X.isotype[counts_try$min==max(counts_try$min)]
+all_class <- receptor_type
+}
+		
+#####
+p_all <- p[p$class %in% all_class,]
+p_iso <-p[p$class %in% isotypes,] 
+		
+## Calculate a percentage of repertoire which is each read 
+p_all$percent_repertoire <- NA
+for(i in unique(p_all[, "X.sample"])){
+	sample_id <- i 
+	sum_frequency <- sum(p_all$uniq_read_freq[p_all$X.sample==sample_id])
+	p_all$percent_repertoire[p_all$X.sample==sample_id] <- ((p_all$uniq_read_freq[p_all$X.sample==sample_id])/sum_frequency)*100
+} 
+p_allx <- p_all[, c("X.sample", "percent_repertoire", "V.gene")]
+
+## We fill in any missing combinations with 0 as 0 percent of repertoire 
+a <- spread(p_allx, key = V.gene, value = percent_repertoire, fill=0)
+rownames(a) <- a$X.sample
+a$X.sample <- NULL
+colnames(a) <- gsub("-", "_", colnames(a))
+colnames(a) <- paste0(colnames(a), "__", all_class)
+a <- as.matrix(a)
+analysis_matrices14 = list(a)
+names(analysis_matrices14) <- "V_GENE_USAGE"
+## Save the dataframe!
+write.table(a, paste0(outputdir, "Summary/V_Gene_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
+print("DONE 14: V GENE Usages")
+		
+################################
+## Get Hydrophobicity
+## These will be generated at this stage!! 
+print("Calculating Hydrophobicity")
+all_files <- list.files(paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/", iso_type, '/Classification_per_sequence'), full.name=TRUE)
+
+mean_charges <- data.frame()
+for(c in 1:length(all_files)){
+	file_use <- read.delim(all_files[c])
+	file_use$Hydrophobicity <- hydrophobicity(file_use$CDR3, scale = "KyteDoolittle")
+	if(any(file_use$all_classes %like% ',')){
+		#print(paste0("Double Assignment Present in ", all_files[c], " - will duplicate bad row"))
+		bad_rows <- file_use[file_use$all_classes %like% ',',]
+		bad_rows1 <- bad_rows
+		bad_rows2 <- bad_rows
+		two_classes <- str_split_fixed(bad_rows$all_classes, ",", 2)
+		bad_rows1$all_classes <- two_classes[,1]
+		bad_rows2$all_classes <- two_classes[,2]
+		rownames(bad_rows2) <- paste0(rownames(bad_rows1), "_duplicate")
+		all_bad_rows <- rbind(bad_rows1, bad_rows2)
+		## Remove the bad row 
+		file_use <- file_use[-c(as.numeric(rownames(bad_rows))),]
+		## add in the dubplication row 
+		file_use <- rbind(file_use, all_bad_rows)
+	}
+	mean_hydrophobicity <- file_use %>%group_by(all_classes) %>%summarise_at(vars(Hydrophobicity), list(CDR3_hydrophobicity = mean, CDR3_kurtosis=kurtosis, CDR3_skewness=skewness, CDR3_bimodality=bimodality_coefficient))
+	all_mean <- mean(file_use$Hydrophobicity)
+	all_skew <- skewness(file_use$Hydrophobicity)
+	all_kurtosis <- kurtosis(file_use$Hydrophobicity)
+	all_bimodality <- bimodality_coefficient(file_use$Hydrophobicity)
+	new_row <- c("ALL", all_mean, all_kurtosis, all_skew, all_bimodality)
+	## ALSO need to do for all!
+	mean_hydrophobicity <- data.frame(mean_hydrophobicity)
+	mean_hydrophobicity <- rbind(mean_hydrophobicity, new_row)
+	mean_hydrophobicity$sample <- unique(file_use$X.ID)
+	mean_hydrophobicity <- reshape(mean_hydrophobicity, idvar = "sample", timevar = "all_classes", direction = "wide")
+	mean_hydrophobicity[mean_hydrophobicity=="NaN"] <- NA
+	mean_charges <- suppressMessages(plyr::join(mean_hydrophobicity, mean_charges, type="full"))
+} 
+rownames(mean_charges) <- mean_charges$sample
+mean_charges$sample <- NULL
+mean_charges <- as.matrix(mean_charges)
+mean_charges <- mean_charges[rownames(mean_charges) %in% ids_all,]	
+colnames(mean_charges) <- gsub("\\.", "__", colnames(mean_charges))
+storage.mode(mean_charges) <- "numeric"
+analysis_matrices15 = list(mean_charges)
+names(analysis_matrices15) <- "CDR3_Hydrophobicity"
+#return(mean_charges)
+print("DONE 15: CDR3 Hydrophobicity")	
+
+################################
+##Skewness and kurtosis (statistics describing the CDR3 lengths)
+
+print("Calculating Kurtosis and Skewness of CDR3 Lengths")
+all_files <- list.files(paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/", iso_type, '/CDR3_length_distribution'), full.name=TRUE)
+
+cdr3_summary <- data.frame()
+for(c in 1:length(all_files)){
+	file_use <- read.delim(all_files[c])
+	cdr3_stats <- data.frame()
+	for(i in 1:length(unique(file_use$isotype))){
+		subset_data <- file_use[file_use$isotype==unique(file_use$isotype)[i],]
+		length_dist <- rep(subset_data$CDR3_length, times=subset_data$Number_of_BCRs)
+		# calculate kurotis per isotype
+		## Kurtosis 3 - roughly normal, >3 it has a sharp peak, less than 3 it is very wide 
+		kurtosis_new <- kurtosis(length_dist)
+		if(kurtosis_new=="NaN"){
+			kurtosis_new <- NA
+		} 
+		## Skewness 0 - symetric normally distributed, > 0 positively skewed, <0 negatively skewed (values >/< mean)
+		skewness_new <- skewness(length_dist)
+		if(skewness_new=="NaN"){
+			skewness_new <- NA
+		} 
+		bimodality_new <- bimodality_coefficient(length_dist)
+		row_stats <- c(unique(file_use$isotype)[i], kurtosis_new, skewness_new, bimodality_new)
+		cdr3_stats <- rbind(cdr3_stats, row_stats)
+	}
+	colnames(cdr3_stats) <- c("class", "CDR3_Length_kurtosis", "CDR3_Length_skewness", "CDR3_Length_bimodality")
+	## Need to do for all 
+	all_use <- rep(file_use$CDR3_length, times=file_use$Number_of_BCRs)
+	kurtosis_all <- kurtosis(all_use)
+	skewness_all <- skewness(all_use)
+	bimodality_all <- bimodality_coefficient(all_use)
+	row_all <- c("ALL", kurtosis_all, skewness_all,bimodality_all)
+	cdr3_stats <- rbind(cdr3_stats, row_all)
+	cdr3_stats$sample <- unique(file_use$X.sample)
+	kurtosis_df <- reshape(cdr3_stats, idvar = "sample", timevar = "class", direction = "wide")
+	kurtosis_df[is.na(kurtosis_df)] <- NA
+	cdr3_summary <- suppressMessages(plyr::join(kurtosis_df, cdr3_summary, type="full"))
+}
+
+rownames(cdr3_summary) <- cdr3_summary$sample
+cdr3_summary$sample <- NULL
+#cdr3_summary <- as.numeric(cdr3_summary)
+cdr3_summary <- as.matrix(cdr3_summary)
+cdr3_summary <- cdr3_summary[rownames(cdr3_summary) %in% ids_all,]	
+colnames(cdr3_summary) <- gsub("\\.", "__", colnames(cdr3_summary))
+storage.mode(cdr3_summary) <- "numeric"
+analysis_matrices15.b = list(cdr3_summary)
+names(analysis_matrices15.b) <- "CDR3_Summary"
+#return(mean_charges)
+print("DONE 15b: CDR3 Kurtosis and Skewness")	
+
+
+################################
+## Get proportion productive
+
+print("Calculating Proportion of Reads Productive")
+path <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT")
+files <- list.files(path, full.name=TRUE)
+files <- grep("_1_Summary", files, value=TRUE)
+files <- grep("productive", files, value=TRUE, invert=TRUE)	
+df_list <- lapply(files, fread, header = FALSE, sep="\t", fill=TRUE, colClasses='character')
+# identify the sample they came from 
+d <- str_split(files, 'IMGT_SPLIT/') 
+d <- sapply(d, "[[", 2)  
+d <- gsub("_1_Summary.txt", "", d)
+d <- gsub("IMGT_", "", d)
+d <- gsub("BCR_", "", d)
+ 
+# Name each dataframe with the run and filename
+names(df_list) <- d
+# Create combined dataframe  
+df <- df_list %>% bind_rows(.id = 'Sample')
+df <- data.frame(df)
+		
+FullData <- df[!df[,4]=="rearranged sequence (but no junction found) (see comment)",]
+FullData <- FullData[!FullData[,4]=="No rearrangement found",]
+FullData <- FullData[!FullData[,4]=="No results",]		
+FullData[,4][FullData[,4]=="unproductive (see comment)"] <- "unproductive"
+FullData[,4][FullData[,4]=="productive (see comment)"] <- "productive"
+functionality <- unique(FullData[,4])
+functionality <- prop.table(table(FullData$Sample, FullData[,4]),1)
+
+## We must add on the chain info!
+if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
+	all_class <- c("ALL")
+} else {
+receptor_type <- counts_try$X.isotype[counts_try$min==max(counts_try$min)]
+all_class <- receptor_type
+}
+colnames(functionality) <- paste0("prop_", colnames(functionality), "__", all_class)
+functionality <- as.data.frame.matrix(functionality)
+if(iso_type == "UNPRODUCTIVE"){
+	rownames(functionality) <- paste0(rownames(functionality), "_unproductive")
+}
+if(iso_type=="PRODUCTIVE"){
+	rownames(functionality) <- paste0(rownames(functionality), "_productive")
+}
+functionality <- functionality[rownames(functionality) %in% ids_all,]	
+functionality <- as.matrix(functionality)
+analysis_matrices16 = list(functionality)
+names(analysis_matrices16) <- "VDJ_Functionality"
+print("DONE 16: VDJ Functionality")	
+
+
 ##---------------------------------------------------------------------------------------------------------------------
 ##---------------------------------------------------------------------------------------------------------------------
 ##---------------------------------------------------------------------------------------------------------------------
@@ -1008,9 +1516,9 @@ print("DONE 13")
 ## COMPOSING THE OVERALL MATRIX 
 
 if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
-	print_info = c(analysis_matrices1, analysis_matrices2,  analysis_matrices3, analysis_matrices4, analysis_matrices5, analysis_matrices5b, analysis_matrices6, analysis_matrices7, analysis_matrices8, analysis_matrices9, analysis_matrices10, analysis_matrices11,  analysis_matrices12, analysis_matrices13)
+	print_info = c(analysis_matrices1, analysis_matrices2,  analysis_matrices3, analysis_matrices4, analysis_matrices5, analysis_matrices5b, analysis_matrices6, analysis_matrices7, analysis_matrices8, analysis_matrices9, analysis_matrices10, analysis_matrices11,  analysis_matrices12, analysis_matrices13, analysis_matrices14, analysis_matrices15,analysis_matrices15.b, analysis_matrices16 )
 } else {
-	print_info = c(analysis_matrices1, analysis_matrices3, analysis_matrices7, analysis_matrices8, analysis_matrices10, analysis_matrices11, analysis_matrices12, analysis_matrices13)
+	print_info = c(analysis_matrices1, analysis_matrices3, analysis_matrices7, analysis_matrices8, analysis_matrices10, analysis_matrices11, analysis_matrices12, analysis_matrices13, analysis_matrices14, analysis_matrices15, analysis_matrices15.b, analysis_matrices16)
 }
 
 ## Combining all the matrices into one big dataframe
@@ -1033,7 +1541,6 @@ overall_matrix$sample <- gsub("TCR_", "", overall_matrix$sample)
 read_depths_all$SampleIDforDepths <- gsub("BCR_", "", read_depths_all$SampleIDforDepths)
 read_depths_all$SampleIDforDepths <- gsub("TCR_", "", read_depths_all$SampleIDforDepths)
 overall_matrix <- merge(overall_matrix, read_depths_all, by.x="sample", by.y="SampleIDforDepths")
-
 ##---------------------------------------------------------------------------------------------------------------------
 ## EDIT TO FILTER FOR DIFFERENT READ DEPTHS 
 ###############################################################################################
@@ -1044,15 +1551,12 @@ print("#########################################################################
 print("ATTENTION!")
 print(paste0("REMOVED Samples with read depth less than: ", subsampled_depth_allx))
 print(paste0("REMOVED ", length(samples_to_low_all), " Samples"))
-
 print("###############################################################################################")
 print("###############################################################################################")
 ###############################################################################################
 
-
 ##---------------------------------------------------------------------------------------------------------------------
 ## For TCRs we must filter for the chain of interest!
-
 if(chain_vdj %like% "T"){
 	counts_try <- counts_used[(counts_used$X.isotype  != "ALL" & counts_used$X.isotype  != "all"),]
 	receptor <- counts_try$X.isotype[counts_try$min==max(counts_try$min)]
@@ -1070,13 +1574,12 @@ if(chain_vdj %like% "T"){
 	keep <- colnames(overall_matrix)[colnames(overall_matrix) %in% keeping_columns]
 	overall_matrix <- overall_matrix[, c(keep)]
 }
-
 ## this will be used later for naming the columns of the final matrix!
 if(chain_vdj %like% "T"){
 	counts_try <- counts_used[(counts_used$X.isotype  != "ALL" & counts_used$X.isotype  != "all"),]
 	receptor <- counts_try$X.isotype[counts_try$min==max(counts_try$min)]
 }
-
+print("Filtered for valid Metrics from file")
 ##---------------------------------------------------------------------------------------------------------------------
 ## Add in the proportions of different isotypes across groups!
 ## Only relevant for BCRs
@@ -1097,24 +1600,22 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		overall_matrix <- merge(overall_matrix, proportions_file, by.x="sample", by.y=paste0("Sample__ALL"))
 		overall_matrix$Sample__ALL <- NULL
 } 
-
-
 overall_matrix <- overall_matrix %>% select(ReadDepth, everything())
 
-  
-		
 ## REPLACE ANY INSTANCES OF '-1' (meaning to small sample size so not calculated with NA!" 
 ################We want to add in percentage each group  (SHM - relevant for BCRS) 	
-overall_matrix[overall_matrix=="-1"] <- "NA"
+## IF we keep this we will NA the CDR3 hydrophobicity but I think its okay as I did this in each step 
+#overall_matrix[overall_matrix==-1 | overall_matrix=="-1" | overall_matrix=="-1.0" | overall_matrix==-1.0] <- "NA"
 ## Remove any columns which are empty (e.g. nothing was calculated) 
 empty <- apply(overall_matrix, 2, function(x){length(which(x==0 | x=="NA"))})
 empty_cols <- empty[empty==dim(overall_matrix)[1]]
 overall_matrix<- overall_matrix[, c(!colnames(overall_matrix) %in% names(empty_cols))]
-## Remove NA columns 
-empty <- apply(overall_matrix, 2, function(x){length(which(x=="NA"))})
-empty_cols <- empty[empty==dim(overall_matrix)[1]]
-overall_matrix<- overall_matrix[, c(!colnames(overall_matrix) %in% names(empty_cols))]
-
+#if(any(overall_matrix[!is.na(overall_matrix)]=="-1.0" | overall_matrix[!is.na(overall_matrix)]==-1.0  | overall_matrix[!is.na(overall_matrix)]==-1| overall_matrix[!is.na(overall_matrix)]=="-1")){
+#	print("WARNING SOME '-1' aka NA values remain in dataset")
+#} else {
+#	print("All NAs successfully removed!")
+#} 
+#return(overall_matrix)
 ##---------------------------------------------------------------
 # Save the raw UNFILTERED output!!! 
 ################################
@@ -1131,7 +1632,6 @@ write.table(overall_matrix, file = out_file_table, append = FALSE, quote = FALSE
 
 new <- overall_matrix
 
-
 ## ***** Default of corelation test will be to omit na values *****
 ## Calculate correlation and missingness 
 # note that missingness is really percentage of samples which are not na! (so high is good!)
@@ -1141,7 +1641,10 @@ for(i in 3:(length(colnames(new)))){
 	id <- colnames(new)[i]
 	depths <- new$ReadDepth
 	data <- data.frame(cbind(variable, depths))
-	data[data=="-1"] <- "NA"
+	#Hydrophobicity can be less than 0
+	if(!id %like% "Hydrophobicity"){
+		data[data=="-1"] <- "NA"
+	}
 	suppressWarnings(data$variable <- as.numeric(data$variable))
 	suppressWarnings(data$depths <- as.numeric(data$depths))
 	missingness <- data$variable[!is.na(data$variable)]
@@ -1169,9 +1672,8 @@ values <- data.frame(values)
 values$sig <- "significant"
 values$pval <- as.numeric(as.character(values$pval))
 values$sig[values$pval > 0.05] <- ""
-values$sig[values$missingness < 0.5] <- "warning >50% missingness"
+values$sig[values$missingness < 0.6] <- "warning >60% missingness"
 values$sig[is.na(values$pval)] <- "WARNING MISSINGNESS >75% STAT not Calculated"
-
 ## Fill in with subampled depth for those metrics that were subsampled. 
 subsampled_data <- grep("Subsampled", values$Metric, value=TRUE)
 data_metrics <- values$Metric 
@@ -1182,7 +1684,6 @@ values$subsampled_depth <- NA
 values$isotype <- iso
 values$subsampled <- NA
 values$isotype[!values$isotype %in% counts_used$X.isotype] <- NA
-
 for(i in 1:length(rownames(values))){
 	row_id <- values$Metric[i]
 	if(row_id %in% subsampled_data){
@@ -1199,26 +1700,21 @@ for(i in 1:length(rownames(values))){
 ## where we specified subsample depth in script!
 subsampled_data <- grep("SAMPLED", values$Metric, value=TRUE)
 values$subsampled_depth[values$Metric %in% subsampled_data] <- 250
-
 # Remove spurious column names :D 
 values$isotype[!values$isotype %in% counts_used$X.isotype] <- NA
 values$percentage_present <- as.numeric(as.character(values$percentage_present))
-
 ## Assess columns with high missingness
 bad_columns <- values$Metric[values$percentage_present<50]
 bad_columns2 <- values$Metric[values$percentage_present<25]
 bad_columns3 <- values$Metric[values$percentage_present<75]
-
 ## Save Significance to a txt file 
 write.table(values, paste0(outputdir, "Summary/isotyper_metrics_summary_stats", subsampled_depth_all,  "_", iso_type, ".txt"), sep="\t")
-
 #Extract just those that are significant 
 #Save file
 ## If there are many that are significant we may want to consider rerunning with higher
 ## redepth 
 significant_samples <- values[values$sig=="significant",]
 write.table(significant_samples, paste0(outputdir, "Summary/isotyper_metrics_summary_stats_sig_correlated_readdepth_", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t")
-
 
 ##----------------------------------------------------------------------------------------
 ##----------------------------------------------------------------------------------------
@@ -1227,7 +1723,7 @@ write.table(significant_samples, paste0(outputdir, "Summary/isotyper_metrics_sum
 ## Assessing which metrics to keeep 
 ## Baed on Rachaels script 
 p <- as.matrix(overall_matrix)
-
+#return(p)
 ## Remove read depth column 
 p1 = p[,which(colnames(p)!="ReadDepth" )]
 samples = p1[, "sample"]
@@ -1238,53 +1734,51 @@ mat = matrix(data = -1, nrow = length(samples), ncol = length(headers), dimnames
 for(i in c(1:length(headers))){
 	mat[,headers[i]] = as.numeric(p1[, headers[i]])
 }
-
 ## remove all incomplete rows then columns
-nz_cols = apply(mat, 2, function(x){length(which(x!="-1" & !is.na(x)))})
-matr1 = mat[,which(nz_cols>= max(nz_cols))]
-nz_rows = apply(mat, 1, function(x){length(which(x!="-1" & !is.na(x)))})
-matr2 = matr1[which(nz_rows>= max(nz_rows)),]
-
+nz_cols = apply(mat, 2, function(x){length(which(!is.na(x)))})
+nz_rows = apply(mat, 1, function(x){length(which(!is.na(x)))})
 ## Create plots directory if not present
 if (!file.exists(paste0(outputdir, "Plots/ISOTYPER"))){
     dir.create(paste0(outputdir, "Plots/ISOTYPER"))
 }
-
-
 ###############
 # Doing plot 
 pdf(paste0(outputdir, "Plots/ISOTYPER/Metrics_Missingness_Summary_", subsampled_depth_all, "_", iso_type,".pdf"), width=6, height=6)
 par(mfrow= c(2,2), mar = c(5,5,3,3))
 ##1
-nz_cols = apply(mat, 2, function(x){length(which(x!=-1& !is.na(x)))})
+nz_cols = apply(mat, 2, function(x){length(which(!is.na(x)))})
 threshold = quantile(nz_cols, 0.25)
 plot(sort(nz_cols), xlab = "feature rank", ylab = "number of non-NA values", pch = 21, bg = "blue", col = "blue",main=paste0("run1 threshold: ", threshold))
 segments(-10,threshold, 10000, threshold, col = "red", lwd = 2,lty = 2)
 mat1 = mat[,which(nz_cols>= threshold)]
-
 ##2
-nz_rows = apply(mat1, 1, function(x){length(which(x!=-1& !is.na(x)))})
+nz_rows = apply(mat1, 1, function(x){length(which(!is.na(x)))})
 threshold = quantile(nz_rows, 0.1)
 plot(sort(nz_rows), xlab = "sample rank", ylab = "number of non-NA values", pch = 21, bg = "red", col = "red",main=paste0("run2 threshold: ", threshold))
 segments(-10,threshold, 10000, threshold, col = "red", lwd = 2,lty = 2)
 mat2 = mat1[which(nz_rows>= threshold),]
-
 ##3
-nz_cols = apply(mat2, 2, function(x){length(which(x!=-1& !is.na(x)))})
+nz_cols = apply(mat2, 2, function(x){length(which(!is.na(x)))})
 threshold = quantile(nz_cols, 0.25)
 plot(sort(nz_cols), xlab = "feature rank", ylab = "number of non-NA values", pch = 21, bg = "blue", col = "blue",main=paste0("run3 threshold: ", threshold))
 segments(-10,threshold, 10000, threshold, col = "red", lwd = 2,lty = 2)
 mat3 = mat2[,which(nz_cols>= threshold)]
-
 ##4
-nz_rows = apply(mat3, 1, function(x){length(which(x!=-1& !is.na(x)))})
+nz_rows = apply(mat3, 1, function(x){length(which(!is.na(x)))})
 threshold = quantile(nz_rows, 0.1)
 plot(sort(nz_rows), xlab = "sample rank", ylab = "number of non-NA values", pch = 21, bg = "red", col = "red",main=paste0("run4 threshold: ", threshold))
 segments(-10,threshold, 10000, threshold, col = "red", lwd = 2,lty = 2)
 mat4 = mat3[which(nz_rows>= threshold),]
 dev.off()
+print("plot1")
 
 #################################
+#################################
+#################################
+## FILTERING 
+#################################
+#################################
+
 ## Removing repetitive annotations 
 ## Keeping those that are biologically informative 
 ## Removing those with high misingness! 
@@ -1299,973 +1793,114 @@ if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
  annotated_metrics_to_keep <- read.delim('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/Isotyper/inclusion_metrics.txt', header=TRUE)
  annotated_metrics_to_keep_colnames <- annotated_metrics_to_keep$Metric[annotated_metrics_to_keep$Include_Metric=="1"]
  keep <- values$Metric[values$percentage_present > threshold_new]
- keep <- keep[!keep %like% "IGHV"]
  keep <- unique(c(keep, annotated_metrics_to_keep_colnames))
  keep <- keep[!keep %in% annotated_metrics_to_keep$Metric[annotated_metrics_to_keep$Include_Metric=="0"]]
- keep <- keep[keep %in% values$Metric[values$percentage_present > threshold_new]]
+ keep <- keep[keep %in% values$Metric[values$percentage_present >= threshold_new]]
  keep <- keep[keep %in% colnames(mat)]
  mat_filtered = mat[,c(keep)]
+ print(paste0("Removed ", (dim(overall_matrix)[2]-length(keep)), " Metrics"))
 } 
 
 if(chain_vdj %like% "T"){
  metrics_exclude <- grep("SHM", colnames(mat), value=TRUE)
  keepers <- colnames(mat)[!colnames(mat) %in% metrics_exclude]
  mat_filtered = mat[, c(keepers)]
- extra_exclude <- values$Metric[values$percentage_present < 50]
+ extra_exclude <- values$Metric[values$percentage_present < threshold_new]
  mat_filtered <- mat_filtered[, c(colnames(mat_filtered)[!colnames(mat_filtered) %in% extra_exclude])]
 } 
 
+
 ###########
-pdf(paste0(outputdir, "Plots/ISOTYPER/Metrics_Analysis_Filtered_Matrix", subsampled_depth_all, "_", iso_type,".pdf"), height=6, width=6)
-par(mfrow= c(2,2), mar = c(5,5,3,3))
-nz_rows = apply(mat_filtered, 1, function(x){length(which(x!=-1))})
-plot(sort(nz_rows), xlab = "sample rank", ylab = "number of non-NA values", pch = 21, bg = "red", col = "red",main ="run2.1")
-threshold = quantile(nz_rows, 0.1)
-segments(-10,threshold, 10000, threshold, col = "red", lwd = 2,lty = 2)
-mat_filtered1 = mat_filtered[which(nz_rows>= threshold),]
-nz_cols = apply(mat_filtered1, 2, function(x){length(which(x!=-1))})
-plot(sort(nz_cols), xlab = "feature rank", ylab = "number of non-NA values", pch = 21, bg = "blue", col = "blue",main ="run2.2")
-dev.off()
-
-##---------------------------------------------------------------------------------------------
-## *** Make correllogram of all the different measures **** 
-
-#Findcolumns with all missing values
-data_1 <- data.frame(overall_matrix[, 1:(length(colnames(overall_matrix))-1)])
-
-allmisscols <- apply(data_1,2, function(x)all(is.na(x)));
-colswithallmiss <-names(allmisscols[allmisscols>0]);
-colswithallmiss <- c(colswithallmiss, "sample")
-
-# Remove columns with all missing (already done but dont bother editing) 
-all_miss <- colnames(data_1)[!colnames(data_1) %in% colswithallmiss]
-data_1 <- data_1[, c(all_miss)]
-bad_columns <- unique(c(colswithallmiss, bad_columns))
-new_cols <- colnames(data_1)[!colnames(data_1) %in% bad_columns]
-data_2 <- data_1[, c(new_cols)]
-bad_columns2 <- unique(c(colswithallmiss, bad_columns2))
-new_cols2 <- colnames(data_1)[!colnames(data_1) %in% bad_columns2]
-data_3 <- data_1[, c(new_cols2)]
-bad_columns3 <- unique(c(colswithallmiss, bad_columns3))
-new_cols3 <- colnames(data_1)[!colnames(data_1) %in% bad_columns3]
-data_4 <- data_1[, c(new_cols3)]
-
-data_1 <- apply(as.matrix(data_1),2,as.numeric) 
-data_2 <- apply(as.matrix(data_2),2,as.numeric)
-data_3 <- apply(as.matrix(data_3),2,as.numeric)
-data_4 <- apply(as.matrix(data_4),2,as.numeric)
-
-
-## Final matrix!!
-data_mat <- as.matrix(mat_filtered)
-data_mat <- apply(as.matrix(data_mat),2,as.numeric)
-
-## Calculate the correlation between matrices 
-## because we have nas we have to use pairwise complete obs 
-## then the correlation or covariance between each pair of variables is computed using all complete pairs of observations on those variables. 
-## This can result in covariance or correlation matrices which are not positive semi-definite, as well as NA entries if there are no complete pairs for that pair of variables.
-
-correlation_matrix <- tryCatch(Hmisc::rcorr(data_1),error=function(e) e, warning=function(w) w)
-correlation_matrix2 <- tryCatch(Hmisc::rcorr(data_2),error=function(e) e, warning=function(w) w)
-correlation_matrix3 <- tryCatch(Hmisc::rcorr(data_3),error=function(e) e, warning=function(w) w)
-correlation_matrix4 <- tryCatch(Hmisc::rcorr(data_4),error=function(e) e, warning=function(w) w)
-correlation_matrixmat <- tryCatch(Hmisc::rcorr(data_mat),error=function(e) e, warning=function(w) w)
-    
-# Calculating widths for plots 
-if(length(colnames(data_1)) <= 50){
-	width <- 35
-	height <- 35
-	if(length(colnames(data_1)) <= 20){
-			width <- 25
-			height <- 25
-	}
-} else if (length(colnames(data_1)) > 50 & length(colnames(data_1)) < 100){
-	width <- 45
-	height <- 45
+if((dim(mat_filtered))[2] >0){
+	pdf(paste0(outputdir, "Plots/ISOTYPER/Metrics_Analysis_Filtered_Matrix", subsampled_depth_all, "_", iso_type,".pdf"), height=6, width=6)
+	par(mfrow= c(2,2), mar = c(5,5,3,3))
+	nz_rows = apply(mat_filtered, 1, function(x){length(which(!is.na(x)))})
+	plot(sort(nz_rows), xlab = "sample rank", ylab = "number of non-NA values", pch = 21, bg = "red", col = "red",main ="run2.1")
+	threshold = quantile(nz_rows, 0.1)
+	segments(-10,threshold, 10000, threshold, col = "red", lwd = 2,lty = 2)
+	mat_filtered1 = mat_filtered[which(nz_rows>= threshold),]
+	nz_cols = apply(mat_filtered1, 2, function(x){length(which(!is.na(x)))})
+	plot(sort(nz_cols), xlab = "feature rank", ylab = "number of non-NA values", pch = 21, bg = "blue", col = "blue",main ="run2.2")
+	dev.off()
+	print("plot2!")
 } else {
-	width <- 65
-	height <- 65
-} 
-
-## Added in 'trys' to handle errors 
-pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_", subsampled_depth_all, "_", iso_type,".pdf"), width=width, height=height)
-
-if(!("warning" %in% class(correlation_matrix)) && !("error" %in% class(correlation_matrix))){
-	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="No % Present threshold, p<0.05", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="No % Present threshold: p<0.01", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="No % Present threshold: p<0.001",mar=c(0,0,2,0)))
-} 
-
-if(!("warning" %in% class(correlation_matrix4)) && !("error" %in% class(correlation_matrix))){
-	try(corrplot(correlation_matrix4[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix4[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="75% Present threshold, p<0.05", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix4[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix4[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="75% Present threshold: p<0.01", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix4[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix4[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="75% Present threshold: p<0.001",mar=c(0,0,2,0)))
-} 
-
-if(!("warning" %in% class(correlation_matrix2)) && !("error" %in% class(correlation_matrix2))){
-	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="50% Present threshold: p<0.05", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="50% Present threshold: p<0.01", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix2[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix2[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="50% Present threshold: p<0.001", mar=c(0,0,2,0)))
+	print("No metrics passed filtering")
 }
-
-if(!("warning" %in% class(correlation_matrix3)) && !("error" %in% class(correlation_matrix3))){
-	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="25% Present threshold: p<0.05", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="25% Present threshold: p<0.01", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrix3[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrix3[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="25% Present threshold: p<0.001", mar=c(0,0,2,0)))
-}
-dev.off()
-
-pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_FINAL_MATRIX_", subsampled_depth_all, "_", iso_type,".pdf"), width=width, height=height)
-if(!("warning" %in% class(correlation_matrixmat)) && !("error" %in% class(correlation_matrixmat))){
-	try(corrplot(correlation_matrixmat[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixmat[[3]], sig.level = 0.05, insig = "blank", tl.col="black", title="FINAL MATRIX p<0.05", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrixmat[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixmat[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title="FINAL MATRIX p<0.01", mar=c(0,0,2,0)))
-	try(corrplot(correlation_matrixmat[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixmat[[3]], sig.level = 0.001, insig = "blank", tl.col="black", title="FINAL MATRIX p<0.001", mar=c(0,0,2,0)))
-}
-dev.off()
-
+##---------------------------------------------------------------------------------------------
 ## Appending chain type to columns to ensure we can merge them later
 
-if(chain_vdj %like% "T"){
+if(chain_vdj %like% "T" & (dim(mat_filtered))[2] >0){
 	colnames(mat_filtered) <- paste0(receptor, "_",iso_type, "_", colnames(mat_filtered))
 	colnames(mat_filtered) <- gsub(paste0("__", receptor), "", colnames(mat_filtered))
 	colnames(mat_filtered) <- gsub("[.]", "_", colnames(mat_filtered))
+	print("colnames edited")
 } 
 
 if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
-	colnames(mat_filtered) <- paste0("BCR_", iso_type, "_", colnames(mat_filtered))
+	if((dim(mat_filtered))[2] >0){
+		colnames(mat_filtered) <- paste0("BCR_", iso_type, "_", colnames(mat_filtered))
+		print("colnames edited")
+	}
 } 
 
-## Write the final filtered matric to an outs file
+## Code to replace technical replicate with mean of all technical replicates (may need to edit if has diferent name)
+print("Collapsing Technical replicate by name")
+control_row <-data.frame(mat_filtered[rownames(mat_filtered) %like% "JR1795_1003",])
+control_rowid <- rownames(mat_filtered) %like% "JR1795_1003"
+new_row <- t(data.frame(colSums(control_row)/dim(control_row)[1]))
+rownames(new_row) <- "JR1795_1003_POSITIVE_MEAN"
+mat_filtered <- mat_filtered[!control_rowid,]
+mat_filtered <- rbind(mat_filtered, new_row)
+	
+control_row <- mat_filtered[rownames(mat_filtered) %like% "JR_HD_T0",]
+control_rowid <- rownames(mat_filtered) %like% "JR_HD_T0"
+new_row <- t(data.frame(colSums(control_row)/dim(control_row)[1]))
+rownames(new_row) <- "JR_HD_T0_POSITIVE_MEAN"
+mat_filtered <- mat_filtered[!control_rowid,]
+mat_filtered <- rbind(mat_filtered, new_row)
+print("Done")
+
+## Final filtering 
+## Remove features relating to pseudo genes 
+print("Final Filtering...")
+p <- mat_filtered
+features = colnames(p)
+## exclude psuedogenes!!
+features = features[grep("IGHGP", features, invert = T)]
+features = features[grep("IGHEP", features, invert = T)]
+## remove all features with very few unique values
+## This likely means there are a lot of 0 values!
+diff_values = apply(p[,features], 2, function(x){length(unique(x[which(is.na(x)==F)]))})
+features = intersect(features, names(diff_values)[which(diff_values>=8)])
+print("Filtering Performed")
+xx <- length(colnames(p))-length(features)
+print(paste0(xx, " Features Removed from Matrix"))
+feature_columns <-   mat_filtered[,!colnames(mat_filtered) %in% grep("IGHV|TRAV|TRBV|TRGV|TRDV", colnames(mat_filtered), value=TRUE)]
+## We also want to check samples for greater than 40% missingness
+mat_filtered <- mat_filtered[, c(features)]
+## Missingness per sample (must be less than 40%!): 
+## AFter this point imputation gets messy.....
+missing_threshold <- 0.4*length(feature_columns)
+if(any(rowSums(is.na(mat_filtered))>missing_threshold)){
+	samples_exclude <- rownames(mat_filtered)[rowSums(is.na(mat_filtered))>missing_threshold]
+	mat_filtered <- mat_filtered[!rownames(mat_filtered) %in% samples_exclude,]
+} 
+### 
+print("Done psuedogene filtering, no. unique values filtering and missingness filtering!")
+	
+## Write the final filtered matric to an outs file - used for weighted network correlation analysis!
 write.table(mat_filtered, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
+
+## We also want to do one with no rownames or headers for tensor decomposition analysis!!!!  
+write.table(mat_filtered, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_TENSOR_FORMAT_", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
 print("DONE PART 1")
 
-######################################################################################################################
-######################################################################################################################
+## get sample and feature order which are needed for tensor analysis
+sample_order <- rownames(mat_filtered)
+feature_order <- colnames(mat_filtered)
 
-######################################################################################################################
-## PART 2 - ve gene usage 
-## FOR TCR 
-if(chain_vdj %like% "T"){
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_grouped_isotype_frequency_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	# remove samples with too low read count
-	p=p[which(!as.character(p[,"X.sample"]) %in% samples_to_low_all),]
-	
-	p <- data.frame(p)
-	p$uniq_read_freq <- as.numeric(p$uniq_read_freq)
-	p <- p[!p$class %in% c("ALL", "expanded", "IGHD,IGHM_unmutated_singleton", "Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "unexpanded", "class"),] 
+write.table(sample_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_TENSOR_FORMAT_SAMPLE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(feature_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_TENSOR_FORMAT_FEATURE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
 
-	if(chain_vdj %like% "T"){
-		p <- p[p[, "class"]==receptor,]
-	} 
-		
-	## Calculate a percentage of repertoire which is each read 
-	p$percent_repertoire <- NA
-	for(i in unique(p[, "X.sample"])){
-		sample_id <- i 
-		sum_frequency <- sum(p$uniq_read_freq[p$X.sample==sample_id])
-		p$percent_repertoire[p$X.sample==sample_id] <- (p$uniq_read_freq[p$X.sample==sample_id])/sum_frequency
-	} 
-	p$VIso <- paste0(p$class, "_", p$V.gene)	
-	p1 <- p[, c("X.sample", "percent_repertoire", "VIso")]
-
-	a <- spread(p1, key = VIso, value = percent_repertoire)
-	write.table(a, paste0(outputdir, "Summary/V_Gene_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	if(chain_vdj %like% "T"){
-		colnames(a) <- gsub(paste0(receptor, "_"), "", colnames(a))
-	} 
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_V_genes_UNIQUE_READS_", subsampled_depth_all, "_", iso_type,".pdf"), width=20, height=25)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-
-	print("DONE V GENE COMPARISON")
-	## v family usage 
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_grouped_isotype_frequency_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	# remove samples with too low read count
-	p=p[which(!as.character(p[,"X.sample"]) %in% samples_to_low_all),]
-	
-	p <- data.frame(p)
-	p$uniq_read_freq <- as.numeric(p$uniq_read_freq)
-	p <- p[!p$class %in% c("ALL", "expanded", "IGHD,IGHM_unmutated_singleton", "Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "unexpanded", "class"),] 
-	if(chain_vdj %like% "T"){
-		p <- p[p[, "class"]==receptor,]
-	} 
-	v_fam <- data.frame(str_split_fixed(p$V.gene, "-", 2))[,1]
-	p$vfam <- v_fam
-
-	## get frequencies
-	datax <- c()
-	for(i in unique(p[, "X.sample"])){
-		sample_id <- i 
-		for(c in unique(p$vfam[p$X.sample==sample_id])){
-			v_gene <- c
-			sum_frequency <- sum(p$uniq_read_freq[p$X.sample==sample_id & p$vfam==v_gene])
-			sum_frequency2 <- (sum_frequency / sum(p$uniq_read_freq[p$X.sample==sample_id]))*100
-			datarow <- c(sample_id, v_gene, sum_frequency2)
-			#print(datarow)
-			datax <- rbind(datax, datarow) 
-	}
-	}
-	 
-	datax <- data.frame(datax)
-	colnames(datax) <- c("Sample", "V_family", "Percent_Repertoire")
-	datax$Percent_Repertoire <- as.numeric(datax$Percent_Repertoire)
-
-	a <- spread(datax, key = V_family, value = Percent_Repertoire)
-	write.table(a, paste0(outputdir, "Summary/V_Family_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	if(chain_vdj %like% "T"){
-		colnames(a) <- gsub(paste0(receptor, "_"), "", colnames(a))
-	} 
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_V_families_UNIQUE_READS_", subsampled_depth_all, "_", iso_type,".pdf"), width=20, height=25)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-
-	print("DONE V FAMILY COMPARISON")
-	## J gene usage 
-	###################################################
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_J_gene_grouped_isotype_frequency_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	# remove samples with too low read count
-	p=p[which(!as.character(p[,"X.sample"]) %in% samples_to_low_all),]
-	p <- data.frame(p)
-	p$uniq_read_freq <- as.numeric(p$uniq_read_freq)
-	p <- p[!p$class %in% c("ALL", "expanded", "IGHD,IGHM_unmutated_singleton", "Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "unexpanded", "class"),] 
-
-	if(chain_vdj %like% "T"){
-		p <- p[p[, "class"]==receptor,]
-	} 
-		
-	## Calculate a percentage of repertoire which is each read 
-	p$percent_repertoire <- NA
-	for(i in unique(p[, "X.sample"])){
-		sample_id <- i 
-		sum_frequency <- sum(p$uniq_read_freq[p$X.sample==sample_id])
-		p$percent_repertoire[p$X.sample==sample_id] <- (p$uniq_read_freq[p$X.sample==sample_id])/sum_frequency
-	} 
-	p$VIso <- paste0(p$class, "_", p$J.gene)	
-	p1 <- p[, c("X.sample", "percent_repertoire", "VIso")]
-
-	a <- spread(p1, key = VIso, value = percent_repertoire)
-	write.table(a, paste0(outputdir, "Summary/J_Gene_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	if(chain_vdj %like% "T"){
-		colnames(a) <- gsub(paste0(receptor, "_"), "", colnames(a))
-	} 
-
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_J_genes_UNIQUE_READS_", subsampled_depth_all, "_", iso_type,".pdf"), width=20, height=25)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-	print("DONE J GENE COMPARISON")
-	###############################################################################
-	### VJ gene usage 
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	q <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	q <- data.frame(q)
-		
-	# remove samples with too low read count
-	q=q[which(!as.character(q[,"X.ID"]) %in% samples_to_low_all),]
-	
-	q$number.of.sequences <- as.numeric(q$number.of.sequences)
-	q <- q[q$classification %in% c(unique(p$class)),] 
-	q$X.ID <- gsub("BCR_", "", q$X.ID)
-	q$X.ID <- gsub("TCR_", "", q$X.ID)
-	q$X.ID <- gsub("TCRA_", "", q$X.ID)
-	q$X.ID <- gsub("TCRB_", "", q$X.ID)
-	q$X.ID <- gsub("TCRG_", "", q$X.ID)
-	q$X.ID <- gsub("TCRD_", "", q$X.ID)
-
-	q$X.ID <- gsub("_productive", "", q$X.ID)
-	q$X.ID <- gsub("_unproductive", "", q$X.ID)
-	q$VJISO <- paste0(q$classification, "_", q$VJ)
-	## Calculate a percentage of repertoire which is each read 
-	q$percent_repertoire <- NA
-	for(i in unique(q[, "X.ID"])){
-		sample_id <- i 
-		sum_frequency <- sum(q$number.of.sequences[q$X.ID==sample_id])
-		q$percent_repertoire[q$X.ID==sample_id] <- (q$number.of.sequences[q$X.ID==sample_id])/sum_frequency
-	} 
-	q1 <- q[, c("X.ID", "percent_repertoire", "VJISO")]
-	b <- spread(q1, key = VJISO, value = percent_repertoire)
-	write.table(b, paste0(outputdir, "Summary/VJ_Gene_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	
-	a <- b
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_VJ_genes", subsampled_depth_all, "_", iso_type,".pdf"), width=40, height=45)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-	print("DONE VJ GENE COMPARISON")
-	########
-} 
-
-#######################################################################################
-#######################################################################################
-#######################################################################################
-#######################################################################################
-
-if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_grouped_isotype_frequency_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	# remove samples with too low read count
-	p=p[which(!as.character(p[,"X.sample"]) %in% samples_to_low_all),]
-	
-	p <- data.frame(p)
-	p$uniq_read_freq <- as.numeric(p$uniq_read_freq)
-	p <- p[!p$class %in% c("ALL", "expanded", "IGHD,IGHM_unmutated_singleton", "Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "unexpanded", "class"),] 
-	
-	## Collapse for V gene Usage (ignore isotype)
-	p1 <- aggregate(p$uniq_read_freq, by=list(p$X.sample, p$V.gene), FUN=sum)
-	colnames(p1) <- c("X.sample", "V.gene", "uniq_read_freq")
-	old_p <- p 
-	p <- p1
-	
-	## Calculate a percentage of repertoire which is each read 
-	p$percent_repertoire <- NA
-	for(i in unique(p[, "X.sample"])){
-		sample_id <- i 
-		sum_frequency <- sum(p$uniq_read_freq[p$X.sample==sample_id])
-		p$percent_repertoire[p$X.sample==sample_id] <- (p$uniq_read_freq[p$X.sample==sample_id])/sum_frequency
-	} 
-	p1 <- p[, c("X.sample", "percent_repertoire", "V.gene")]
-
-	a <- spread(p1, key = V.gene, value = percent_repertoire)
-	write.table(a, paste0(outputdir, "Summary/V_Gene_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_V_genes_UNIQUEREADS_", subsampled_depth_all, "_", iso_type,".pdf"), width=20, height=25)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-
-	print("DONE V GENE COMPARISON")
-	## v family usage 
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_grouped_isotype_frequency_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	# remove samples with too low read count
-	p=p[which(!as.character(p[,"X.sample"]) %in% samples_to_low_all),]
-
-	p <- data.frame(p)
-	p$uniq_read_freq <- as.numeric(p$uniq_read_freq)
-	p <- p[!p$class %in% c("ALL", "expanded", "IGHD,IGHM_unmutated_singleton", "Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "unexpanded", "class"),] 
-	
-	## Collapse for V gene Usage (ignore isotype)
-	p1 <- aggregate(p$uniq_read_freq, by=list(p$X.sample, p$V.gene), FUN=sum)
-	colnames(p1) <- c("X.sample", "V.gene", "uniq_read_freq")
-	old_p <- p 
-	p <- p1
-	
-	v_fam <- data.frame(str_split_fixed(p$V.gene, "-", 2))[,1]
-	p$vfam <- v_fam
-
-	## get frequencies
-	datax <- c()
-	for(i in unique(p[, "X.sample"])){
-		sample_id <- i 
-		for(c in unique(p$vfam[p$X.sample==sample_id])){
-			v_gene <- c
-			sum_frequency <- sum(p$uniq_read_freq[p$X.sample==sample_id & p$vfam==v_gene])
-			sum_frequency2 <- (sum_frequency / sum(p$uniq_read_freq[p$X.sample==sample_id]))*100
-			datarow <- c(sample_id, v_gene, sum_frequency2)
-			#print(datarow)
-			datax <- rbind(datax, datarow) 
-	}
-	}
-	 
-	datax <- data.frame(datax)
-	colnames(datax) <- c("Sample", "V_family", "Percent_Repertoire")
-	datax$Percent_Repertoire <- as.numeric(datax$Percent_Repertoire)
-
-	a <- spread(datax, key = V_family, value = Percent_Repertoire)
-	write.table(a, paste0(outputdir, "Summary/V_Family_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_V_families_UNIQUEREADS_", subsampled_depth_all, "_", iso_type,".pdf"), width=10, height=10)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total V genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-
-	print("DONE V FAMILY GENE COMPARISON")
-	## J gene usage 
-	###################################################
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_J_gene_grouped_isotype_frequency_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-	# remove samples with too low read count
-	p=p[which(!as.character(p[,"X.sample"]) %in% samples_to_low_all),]
-	
-	p <- data.frame(p)
-	p$uniq_read_freq <- as.numeric(p$uniq_read_freq)
-	p <- p[!p$class %in% c("ALL", "expanded", "IGHD,IGHM_unmutated_singleton", "Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "unexpanded", "class"),] 
-		
-	p1 <- aggregate(p$uniq_read_freq, by=list(p$X.sample, p$J.gene), FUN=sum)
-	colnames(p1) <- c("X.sample", "J.gene", "uniq_read_freq")
-	old_p <- p 
-	p <- p1
-	
-	## Calculate a percentage of repertoire which is each read 
-	p$percent_repertoire <- NA
-	for(i in unique(p[, "X.sample"])){
-		sample_id <- i 
-		sum_frequency <- sum(p$uniq_read_freq[p$X.sample==sample_id])
-		p$percent_repertoire[p$X.sample==sample_id] <- (p$uniq_read_freq[p$X.sample==sample_id])/sum_frequency
-	} 
-
-	p1 <- p[, c("X.sample", "percent_repertoire", "J.gene")]
-
-	a <- spread(p1, key = J.gene, value = percent_repertoire)
-	write.table(a, paste0(outputdir, "Summary/J_Gene_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_J_genes_UNIQUEREADS_", subsampled_depth_all, "_", iso_type,".pdf"), width=10, height=10)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total J genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total J genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-	print("DONE J GENE COMPARISON")
-	
-	
-	###############################################################################
-	### VJ gene usage 
-	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_per_cluster_VJ_gene_usage_by_cluster_classification_", iso_type, ".txt")
-	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
-	if(length(subsample_identifier)==0){
-		check3 <- FALSE
-	} else {
-		check3 <- TRUE
-	}
-	q <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
-	q <- data.frame(q)
-	q=q[which(as.character(q[,"X.ID"]) %in% ids_all),]
-	# remove samples with too low read count
-	q=q[which(!as.character(q[,"X.ID"]) %in% samples_to_low_all),]
-	
-	q <- data.frame(q)
-	q$number.of.sequences <- as.numeric(q$number.of.sequences)
-	q <- q[!q$classification %in% c("ALL", "expanded", "IGHD,IGHM_unmutated_singleton", "Class_switched", "IGHD,IGHM_mutated", "IGHD,IGHM_unmutated", "unexpanded", "class"),] 			
-	q$number.of.sequences <- as.numeric(q$number.of.sequences)
-	q$X.ID <- gsub("BCR_", "", q$X.ID)
-	q$X.ID <- gsub("TCR_", "", q$X.ID)
-	q$X.ID <- gsub("TCRA_", "", q$X.ID)
-	q$X.ID <- gsub("TCRB_", "", q$X.ID)
-	q$X.ID <- gsub("TCRG_", "", q$X.ID)
-	q$X.ID <- gsub("TCRD_", "", q$X.ID)
-	q$X.ID <- gsub("_productive", "", q$X.ID)
-	q$X.ID <- gsub("_unproductive", "", q$X.ID)
-	
-	q1 <- aggregate(q$number.of.sequences, by=list(q$X.ID, q$VJ), FUN=sum)
-	colnames(q1) <- c("X.sample", "VJ.gene", "frequency")
-	old_q <- q 
-	q <- q1
-
-	## Calculate a percentage of repertoire which is each read 
-	q$percent_repertoire <- NA
-	for(i in unique(q[, "X.sample"])){
-		sample_id <- i 
-		sum_frequency <- sum(q$frequency[q$X.sample==sample_id])
-		q$percent_repertoire[q$X.sample==sample_id] <- (q$frequency[q$X.sample==sample_id])/sum_frequency
-	} 
-	
-	q1 <- q[, c("X.sample", "percent_repertoire", "VJ.gene")]
-	b <- spread(q1, key = VJ.gene, value = percent_repertoire)
-	write.table(b, paste0(outputdir, "Summary/VJ_Gene_usage", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-	
-	a <- b
-	samplesxx <- a$X.sample
-	a$X.sample <- NULL
-	a <- apply(as.matrix(a),2,as.numeric)
-	row.names(a) <- samples
-
-	## identify most common v genes (e.g. those with high presence)
-	allmisscolsa <- apply(a,2, function(x)sum(!is.na(x)))
-	no_samples <- dim(a)[1]
-	present_25 <- names(allmisscolsa[allmisscolsa>(0.25*no_samples)])
-	present_50 <- names(allmisscolsa[allmisscolsa>(0.5*no_samples)])
-	present_75 <- names(allmisscolsa[allmisscolsa>(0.75*no_samples)])
-	present_10 <- names(allmisscolsa[allmisscolsa>(0.1*no_samples)])
-	present_90 <- names(allmisscolsa[allmisscolsa>(0.9*no_samples)])
-
-	a25 <- a[, c(present_25)]
-	a50 <- a[, c(present_50)]
-	a75 <- a[, c(present_75)]
-	a10 <- a[, c(present_10)]
-	a90 <- a[, c(present_90)]
-
-	correlation_matrixa25 <- tryCatch(Hmisc::rcorr(a25, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa50 <- tryCatch(Hmisc::rcorr(a50, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa75 <- tryCatch(Hmisc::rcorr(a75, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa10 <- tryCatch(Hmisc::rcorr(a10, type="pearson"),error=function(e) e, warning=function(w) w)
-	correlation_matrixa90 <- tryCatch(Hmisc::rcorr(a90, type="pearson"),error=function(e) e, warning=function(w) w)
-
-	rep10 <- round((length(present_10)/dim(a)[2])*100, digits=1)
-	rep25 <- round((length(present_25)/dim(a)[2])*100, digits=1)
-	rep50 <- round((length(present_50)/dim(a)[2])*100, digits=1)
-	rep75 <- round((length(present_75)/dim(a)[2])*100, digits=1)
-	rep90 <- round((length(present_90)/dim(a)[2])*100, digits=1)
-
-	pdf(paste0(outputdir, "Plots/ISOTYPER/Correlation_between_measures_VJ_genes", subsampled_depth_all, "_", iso_type,".pdf"), width=40, height=45)
-	if(!("warning" %in% class(correlation_matrixa90)) && !("error" %in% class(correlation_matrixa90))){
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<0.001: ", rep90, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-05: ", rep90, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa90[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa90[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >90% of Individuals:  p<1e-10: ", rep90, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa75)) && !("error" %in% class(correlation_matrixa75))){
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<0.001: ", rep75, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-05: ", rep75, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa75[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa75[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >75% of Individuals:  p<1e-10: ", rep75, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa50)) && !("error" %in% class(correlation_matrixa50))){
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<0.001: ", rep50, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-05: ", rep50, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa50[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa50[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >50% of Individuals:  p<1e-10: ", rep50, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa25)) && !("error" %in% class(correlation_matrixa25))){
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<0.001: ", rep25, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-05: ", rep25, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa25[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa25[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >25% of Individuals:  p<1e-10: ", rep25, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	if(!("warning" %in% class(correlation_matrixa10)) && !("error" %in% class(correlation_matrixa10))){
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.01, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<0.001: ", rep10, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.00001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-05: ", rep10, "% total VJ genes"), mar=c(0,0,2,0)))
-		try(corrplot(correlation_matrixa10[[1]], is.corr = FALSE, method = "color",type = "lower", p.mat = correlation_matrixa10[[3]], sig.level = 0.0000000001, insig = "blank", tl.col="black", title=paste0("Present in >10% of Individuals:  p<1e-10: ", rep10, "% total VJ genes"), mar=c(0,0,2,0)))
-	}
-	dev.off()
-	########
-	print("DONE VJ GENE COMPARISON")
-} 
 
 }
-
-## THE END FINALLY :D 
-
-
-
-
-
-
-
-
-
-
-

@@ -15,6 +15,8 @@ echo "********************************************************"
 DEPENDANCIES=$1
 SAMPLES_FILE_POST=$2
 LAYOUTS_FILE=$3
+CODE_DIRECTORY=$4
+IMGT_MUTATION=$5
 
 ## Job arguments 
 OUTPUTDIR=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$8}" $SAMPLES_FILE_POST)
@@ -389,7 +391,8 @@ module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
 echo "Loaded R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0 Module"
 
 echo "RUNNING ISOTYPE ANALYSIS PLOTS"
-CMD="Rscript ISOTYPER_ANALYSIS.R -o ${OUTPUTDIR} -s ${SAMPLES_FILE_POST} -g ${GENE} -l ${LAYOUTS_FILE}"
+cd ${CODE_DIRECTORY}
+CMD="Rscript ${CODE_DIRECTORY}ISOTYPER_ANALYSIS.R -o ${OUTPUTDIR} -s ${SAMPLES_FILE_POST} -g ${GENE} -l ${LAYOUTS_FILE} -r ${IMGT_MUTATION}"
 echo ${CMD}
 eval "${CMD}" 
 echo "DONE"

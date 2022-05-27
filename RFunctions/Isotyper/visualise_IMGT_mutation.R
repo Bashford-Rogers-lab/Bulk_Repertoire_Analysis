@@ -1,7 +1,7 @@
 # Author: Lauren Overend 
 # Function to visualise the Filtering Reports for all files processed through the RBR Bulk BCR/TCR pipeline
 # Author: Lauren Overend 
-
+# December 2021
 #path_to_outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/BCR_CH2/'
 #path_to_layout <- '/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Batching_Layouts_SEPSIS_BCR_CH12.txt'
 #productivity <- "UNPRODUCTIVE"

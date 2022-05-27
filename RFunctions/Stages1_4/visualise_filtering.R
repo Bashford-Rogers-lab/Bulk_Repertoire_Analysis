@@ -41,6 +41,9 @@ visualise_filtering_bcr <- function(path_to_outputdir = path_to_outputdir, run_n
 		heightx <- 25
 		heighty <- 10
 	}
+	if(widthx < 5){
+		widthx <- 5
+	}
 		
 	pdf(paste0(path_to_outputdir,'/Plots/Filtering_QC_', Run_name, '.pdf'), width=widthx, height=heightx)
 	p4 <- ggplot(Filtering_Results, aes(x=Sample, y=PercentagePassedFiltering)) + geom_point()  +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("BCRs: % BCRs Passed Filtering") +geom_hline(yintercept=mean(Filtering_Results$PercentagePassedFiltering), col="red", linetype='dotted') +ylim(0,100)+geom_hline(yintercept=(mean(Filtering_Results$PercentagePassedFiltering) + sd(Filtering_Results$PercentagePassedFiltering)), col="purple", linetype='dotted')+geom_hline(yintercept=(mean(Filtering_Results$PercentagePassedFiltering) - sd(Filtering_Results$PercentagePassedFiltering)), col="purple", linetype='dotted')
@@ -128,6 +131,9 @@ visualise_filtering_bcr_layouts <- function(path_to_outputdir = path_to_outputdi
 		heightx <- 25
 		heighty <- 10
 	}
+	if(widthx < 5){
+		widthx <- 5
+	}
 		
 	pdf(paste0(path_to_outputdir,'/Plots/Filtering_QC_', Run_name, '.pdf'), width=widthx, height=heightx)
 	p4 <- ggplot(Filtering_Results, aes(x=Sample, y=PercentagePassedFiltering, shape=Lane, colour=Library)) + geom_point()  +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("BCRs: % BCRs Passed Filtering") +geom_hline(yintercept=mean(Filtering_Results$PercentagePassedFiltering), col="red", linetype='dotted') +ylim(0,100)+geom_hline(yintercept=(mean(Filtering_Results$PercentagePassedFiltering) + sd(Filtering_Results$PercentagePassedFiltering)), col="purple", linetype='dotted')+geom_hline(yintercept=(mean(Filtering_Results$PercentagePassedFiltering) - sd(Filtering_Results$PercentagePassedFiltering)), col="purple", linetype='dotted') + guides(colour=guide_legend(ncol=4), shape=guide_legend(ncol=4))+ scale_shape_manual(values = c(c(0:length(unique(Filtering_Results$Lane)))))
@@ -210,6 +216,9 @@ visualise_filtering_tcr <- function(path_to_outputdir = path_to_outputdir, run_n
 	} else {
 		heightx <- 25
 		heighty <- 10
+	}
+	if(widthx < 5){
+		widthx <- 5
 	}
 	
 	pdf(paste0(path_to_outputdir,'/Plots/Filtering_QC_', Run_name, '.pdf'), width=widthx, height=heightx)
@@ -312,7 +321,9 @@ visualise_filtering_tcr_layouts <- function(path_to_outputdir = path_to_outputdi
 		heightx <- 25
 		heighty <- 10
 	}
-	
+	if(widthx < 5){
+		widthx <- 5
+	}
 	pdf(paste0(path_to_outputdir,'/Plots/Filtering_QC_', Run_name, '.pdf'), width=widthx, height=heightx)
 	p4 <- ggplot(Filtering_Results, aes(x=Sample, y=PercentagePassedFiltering, shape=Lane, colour=Library)) + geom_point()  +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("TCRs: % TCRs Passed Filtering") +geom_hline(yintercept=mean(Filtering_Results$PercentagePassedFiltering), col="red", linetype='dotted') +ylim(0,100)+geom_hline(yintercept=(mean(Filtering_Results$PercentagePassedFiltering) + sd(Filtering_Results$PercentagePassedFiltering)), col="purple", linetype='dotted')+geom_hline(yintercept=(mean(Filtering_Results$PercentagePassedFiltering) - sd(Filtering_Results$PercentagePassedFiltering)), col="purple", linetype='dotted') + guides(colour=guide_legend(ncol=5), shape=guide_legend(ncol=5))+ scale_shape_manual(values = c(c(0:length(unique(Filtering_Results$Lane)))))
 	p2 <- ggplot(Filtering_Results, aes(x=Sample, y=N_UniqueTCRS, shape=Lane, colour=Library)) + geom_point()  +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +geom_hline(yintercept=1000, col="blue") +ylab("TCRs: No. Unique Sequences Post-Filtering") +xlab("Sample") + geom_hline(yintercept=mean(Filtering_Results$N_UniqueTCRS), col="red", linetype='dotted')+geom_hline(yintercept=(mean(Filtering_Results$N_UniqueTCRS) + sd(Filtering_Results$N_UniqueTCRS)), col="purple", linetype='dotted')+geom_hline(yintercept=(mean(Filtering_Results$N_UniqueTCRS) - sd(Filtering_Results$N_UniqueTCRS)), col="purple", linetype='dotted') + guides(colour=guide_legend(ncol=5), shape=guide_legend(ncol=5))+ scale_shape_manual(values = c(c(0:length(unique(Filtering_Results$Lane)))))

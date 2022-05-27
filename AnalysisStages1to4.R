@@ -20,7 +20,8 @@ option_list <- list(
   make_option(c("-o", "--outputdir"), action="store", type="character", default="NA", help="Path to BCR/TCR Outputdir"),
   make_option(c("-r", "--runname"), action="store", type="character", default="BCR_TCR_ANALYSIS", help="Runname for analysis [default]"),
   make_option(c("-g", "--gene"), action="store", type="character", help="GENE either TCR or BCR"),
-  make_option(c("-b", "--batchfile"), action="store", type="character", default="FALSE", help="Location of Barcode Batch file")
+  make_option(c("-b", "--batchfile"), action="store", type="character", default="FALSE", help="Path to Layouts file"), 
+  make_option(c("-t", "--technicalreplicates"), action="store", type="character", default="FALSE", help="Path to technical replicates file") 
 )
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trailingOnly = TRUE)) 
@@ -30,6 +31,7 @@ results_outputdir <- opt$o
 runname <- opt$r
 gene <- opt$g
 layoutsx <- opt$b
+technicals <- opt$t
 # Source Auxillary Functions
 my_aux_functions <- c("RFunctions/Stages1_4")           
 source_files <- list.files(my_aux_functions, "*.R$", full.names=TRUE)  # locate all .R files
@@ -50,6 +52,11 @@ if(gene=="IGH"){
 	visualise_vj_usage_bcr(results_outputdir, runname)
 	visualise_isoptype_cluster_bcr(results_outputdir, runname)
 	calculate_rarefaction(results_outputdir)
+	visualise_vj_QC(results_outputdir)
+	if(!is.na(opt$t)){
+		compare_technicals(results_outputdir, runname, technicals)
+	} 
+	
 } 
 
 if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
@@ -63,6 +70,10 @@ if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
 	visualise_vj_usage_tcr(results_outputdir, runname)
 	visualise_isoptype_cluster_tcr(results_outputdir, runname)
 	calculate_rarefaction(results_outputdir)
+	visualise_vj_QC(results_outputdir)
+	if(!is.na(opt$t)){
+		compare_technicals(results_outputdir, runname, technicals)
+	} 
 } 
 
 print("Done")
