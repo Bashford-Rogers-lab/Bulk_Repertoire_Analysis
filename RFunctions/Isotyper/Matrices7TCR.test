@@ -1,0 +1,55 @@
+if(chain_vdj %like% "T"){
+	file  = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Secondary_rearrangements_", iso_type, ".txt")
+	subsample_identifier <- grep("SAMPLED", file, value=TRUE)
+	if(length(subsample_identifier)==0){
+		check7 <- FALSE
+	} else {
+		check7 <- TRUE
+	}
+	info = file.info(file)
+	if(info$size != 0) {
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		id = as.character(p[,"X.sample"])
+		
+		#######################
+		p <- data.frame(p)
+		## Want to make the relevant columns numeric
+		p[, c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		## Convert '-1' to NA 
+		if(any(p[!is.na(p)]==-1)){
+			p[p==-1] <- NA
+		}
+		######################
+		if(class(p)=="character"){
+			p <- as.matrix(t(p))
+		} 
+		## Can't have different datatypes in dataframe
+		p <- data.frame(p)
+		p[,  c(-1,-2)] <- apply(p[ , c(-1,-2)], 2, as.numeric)
+		############################
+		#Reshape 
+		colnames(p) <- c("X.sample", "chain", "secondary_rearrangement_count", "total", "V_gene_replacement_frequency")
+		p <- p[, c("X.sample", "chain", "V_gene_replacement_frequency")] 				
+		colnames(p) <- gsub("\\.", "_", colnames(p))
+		l <- reshape(p, idvar = "X_sample", timevar = "chain", direction = "wide")
+		colnames(l) <- gsub("\\.", "__", colnames(l))
+		rownames(l) <- l$X_sample
+		l$X_sample <- NULL
+		analysis_matrices = list(l)
+		analysis_names = c("V_gene_replacement_frequency")
+		names(analysis_matrices) <- analysis_names
+		analysis_matrices7 = analysis_matrices
+
+		} else { 
+			print(paste0("File: ", file, " IS EMPTY"))
+			analysis_matrices7 <- vector(mode = "list", length = 0)
+		} 
+} 
+print("DONE 7")

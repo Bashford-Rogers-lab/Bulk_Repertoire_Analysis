@@ -40,13 +40,13 @@ opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trai
 ######################### 
 ## For practising code
 setwd('/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/')
-samplesfilepost <- "/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/LEO_SEPSIS_BCR_CH12_post.txt"
-outputdir <- "/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/BCR_CH2/"
+samplesfilepost <- "LEO_SEPSIS_BCR_ALL_post.txt"
+outputdir <- "/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/"
 cluster_nodes <- 10
-path_to_layout <- '/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Batching_Layouts_SEPSIS_BCR_CH2.txt'
+path_to_layout <- "LEO_SEPSIS_BCR_ALL_layouts.txt"
 path_to_outputdir <- outputdir
-productivity <- "PRODUCTIVE"
-iso_type <- "PRODUCTIVE"
+#productivity <- "ALL"
+#iso_type <- "ALL"
 run_mutation <- "NO"
 #######################
 
@@ -69,27 +69,15 @@ for (f in source_files) {
 ## This can take quite some time so if it has been run previously we don't want  to rerun it just to update the summary isotyper!
 if(run_mutation %like% "Y" | run_mutation %like% "y"){
 	if(gene %like% "IGH" | gene %like% "BCR"){
-		if(outputdir %like% "SEPSIS"){
-			imgt_mutation_statistics_sepsis(outputdir, cluster_nodes = 11, "ALL", path_to_layout)
-			print("IMGT Mutation Summary statistics for Sepsis ALL complete")
-			gc()
-			imgt_mutation_statistics_sepsis(outputdir,  cluster_nodes = 11, "UNPRODUCTIVE", path_to_layout)
-			print("IMGT Mutation Summary statistics for Sepsis UNPRODUCTIVE complete")
-			gc()
-			imgt_mutation_statistics_sepsis(outputdir, cluster_nodes = 11,  "PRODUCTIVE", path_to_layout)
-			print("IMGT Mutation Summary statistics for Sepsis PRODUCTIVE complete")
-			gc()
-			} else {
-			imgt_mutation_statistics(outputdir, cluster_nodes = 11, "ALL", path_to_layout)
-			print("IMGT Mutation Summary statistics for ALL complete")
-			gc()
-			imgt_mutation_statistics(outputdir,  cluster_nodes = 11, "UNPRODUCTIVE", path_to_layout)
-			print("IMGT Mutation Summary statistics for UNPRODUCTIVE complete")
-			gc()
-			imgt_mutation_statistics(outputdir, cluster_nodes = 11,  "PRODUCTIVE", path_to_layout)
-			print("IMGT Mutation Summary statistics for Sepsis PRODUCTIVE complete")
-			gc()
-			}
+		imgt_mutation_statistics(outputdir, cluster_nodes = 11, "ALL", path_to_layout)
+		print("IMGT Mutation Summary statistics for ALL complete")
+		gc()
+		imgt_mutation_statistics(outputdir,  cluster_nodes = 11, "UNPRODUCTIVE", path_to_layout)
+		print("IMGT Mutation Summary statistics for UNPRODUCTIVE complete")
+		gc()
+		imgt_mutation_statistics(outputdir, cluster_nodes = 11,  "PRODUCTIVE", path_to_layout)
+		print("IMGT Mutation Summary statistics for Sepsis PRODUCTIVE complete")
+		gc()
 	}
 }
 

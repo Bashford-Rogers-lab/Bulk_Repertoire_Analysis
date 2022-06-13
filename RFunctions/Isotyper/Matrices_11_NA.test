@@ -1,0 +1,54 @@
+make_matrices11 <- function(file=file){
+	info = file.info(file)	
+	if(info$size != 0) {
+		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
+		p=p[which(p[,1]!="#sample"),]
+		if(dim(p)[1]!=0){
+			if(class(p)=="character"){
+					p <- as.matrix(t(p))
+			} 
+			id = as.character(p[,"X.sample"])
+			ids = sort(unique(id))
+			
+			#######################
+			p <- data.frame(p)
+			## Want to make the relevant columns numeric
+			p[, c(-1, -2, -3)] <- apply(p[ , c(-1, -2, -3)], 2, as.numeric)
+			## Convert '-1' to NA 
+			if(any(p[!is.na(p)]==-1)){
+				p[p==-1] <- NA
+			}
+			######################
+			if(class(p)=="character"){
+				p <- as.matrix(t(p))
+			} 
+			## Can't have different datatypes in dataframe
+			p <- data.frame(p)
+			p[,  c(-1, -2, -3)] <- apply(p[ , c(-1, -2, -3)], 2, as.numeric)
+			############################
+			p$id_replacement_freq_norm <- as.numeric(p$uniq_id_replacement_freq)/as.numeric(p$n_repeats)
+			s <- aggregate(p$id_replacement_freq_norm, by=list(Sample=p$X.sample, isotype=p$isotype), FUN=mean)
+			colnames(s) <- c("Sample", "isotype", "Normalised_Subsampled_Secondary_Rearrangment_Frequency_")
+			s <- reshape(s, idvar = "Sample", timevar = "isotype", direction = "wide")
+			colnames(s) <- gsub("\\.", "__", colnames(s))
+			rownames(s) <- s$Sample
+			s$Sample <- NULL
+			# Turn to matrix
+			analysis_matrices = list(s)
+			analysis_names = c("Secondary_Rearrangements_SAMPLED")
+			names(analysis_matrices) <- analysis_names
+			for(i in 1:length(analysis_matrices)){
+				analysis_matrices[[i]][analysis_matrices[[i]]==-1 | analysis_matrices[[i]]=="-1" | analysis_matrices[[i]]=="-1.0" | analysis_matrices[[i]]==-1.0] <- NA
+			} 
+			analysis_matrices11 = analysis_matrices
+			} else {
+				print(paste0("File: ", file, " IS EMPTY"))
+				analysis_matrices11 <- vector(mode = "list", length = 0)
+			}
+		} else { 
+				print(paste0("File: ", file, " IS EMPTY"))
+				analysis_matrices11 <- vector(mode = "list", length = 0)	
+		} 
+	return(analysis_matrices11)	
+	print("DONE 11")
+}
