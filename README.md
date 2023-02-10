@@ -103,12 +103,6 @@ Ensure that the following R packages are installed:
 `cd path_to/BCR_TCR_PROCESSING_PIPELINE`
 `mkdir COMMANDLOGS`
 
-
-# Author Contribution 
-
-* Rachael J. M. Bashford-Rogers developed the python based TCR/BCR repertoire analysis pipeline and User Guide. 
-* Lauren E. Overend developed the bash wrapper, R functions and helped write documentation. 
-
 # References 
 
 If you find Immune-Network-Generation useful, please cite reference #2 (R. J. Bashford-Rogers et al., 2019). 
