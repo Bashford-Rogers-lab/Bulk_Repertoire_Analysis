@@ -31,33 +31,38 @@ library(cowplot)
 
 plot_eigenvectors <- function(eigenvectors, meta_data1, productivity, outputdir, type_use, subsampled_deptha){
 	
-	mat_eigenvectors <- eigenvectors
+	mat_eigenvectors <- data.frame(eigenvectors)
 	iso_type <- productivity
 	plot_outputdir <- outputdir
 	
 	# Adding Day column 
-	DAY <- rownames(mat_eigenvectors)
-	DAY <- str_split_fixed(DAY, "_", 2)
-	mat_eigenvectors <- data.frame(mat_eigenvectors)
-	mat_eigenvectors$DAY <- DAY[,2]
-	mat_eigenvectors$DAY[!mat_eigenvectors$DAY=="1" & !mat_eigenvectors$DAY=="3" & !mat_eigenvectors$DAY=="5"] <- "CONTROL"
-	mat_eigenvectors$sample = rownames(mat_eigenvectors)
-	mat_eigenvectors$sample <- gsub("_1", "", mat_eigenvectors$sample)
-	mat_eigenvectors$sample <- gsub("_3", "", mat_eigenvectors$sample)
-	mat_eigenvectors$sample <- gsub("_5", "", mat_eigenvectors$sample)
-	mat_eigenvectors$sample[mat_eigenvectors$sample %like% "JR1795003_POSITIVE_"] <- "JR1795003_POSITIVE"
-	mat_eigenvectors$sample[mat_eigenvectors$sample %like% "JR_HD_T0_POSITIVE"] <- "JR_HD_T0_POSITIVE"
+	mat_eigenvectors$sample <-  rownames(mat_eigenvectors)
+	mat_eigenvectors$DAY <- NA
+	mat_eigenvectors$DAY[grep("_1", mat_eigenvectors$sample)] <- "Day1"
+	mat_eigenvectors$DAY[grep("_3", mat_eigenvectors$sample)] <- "Day3"
+	mat_eigenvectors$DAY[grep("_5", mat_eigenvectors$sample)] <- "Day5"
+	mat_eigenvectors$DAY[grep("T1", mat_eigenvectors$sample)] <- "Day1"
+	mat_eigenvectors$DAY[grep("T3", mat_eigenvectors$sample)] <- "Day3"
+	mat_eigenvectors$DAY[grep("T5", mat_eigenvectors$sample)] <- "Day5"
+	mat_eigenvectors$DAY[!mat_eigenvectors$DAY=="Day1" & !mat_eigenvectors$DAY=="Day3" & !mat_eigenvectors$DAY=="Day5"] <- "CONTROL"
+	mat_eigenvectors$DISEASE <- "SEPSIS"
+	mat_eigenvectors$DISEASE[mat_eigenvectors$sample %like% "HV"] <- "HEALTH"
+	mat_eigenvectors$DISEASE[mat_eigenvectors$sample %like% "JR1795_1003"] <- "TECHNICAL"
+	mat_eigenvectors$DAY[mat_eigenvectors$sample %like% "JR1795_1003_"] <- "TECHNICAL"
+	
+	technicals <- mat_eigenvectors[mat_eigenvectors$DISEASE=="TECHNICAL", ]
+	mat_eigenvectors <- mat_eigenvectors[!mat_eigenvectors$DISEASE=="TECHNICAL", ]
 	
 	## Health vs disease onset 
-	mat_eigenvectors_hd <- mat_eigenvectors[mat_eigenvectors$DAY %like% "1" | mat_eigenvectors$DAY %like% "CONTROL",]
+	mat_eigenvectors_hd <- mat_eigenvectors[mat_eigenvectors$DAY %like% "1",]
 	mat_eigenvectors_hd$State <- NA
-	mat_eigenvectors_hd$State[mat_eigenvectors_hd$DAY %like% "1"] <- "Sepsis Day 1"
-	mat_eigenvectors_hd$State[mat_eigenvectors_hd$DAY %like% "CONTROL"] <- "Health"
+	mat_eigenvectors_hd$State[mat_eigenvectors_hd$DAY %like% "Day1" & mat_eigenvectors_hd$DISEASE=="SEPSIS"] <- "Sepsis Day 1"
+	mat_eigenvectors_hd$State[mat_eigenvectors_hd$DAY %like% "Day1" & mat_eigenvectors_hd$DISEASE=="HEALTH"] <- "Health Day 1"
 	
 	## Plotting eigenvectors by day 
 	print("Plotting Eigenvectors by Day") 
-	pdf(paste0(outputdir, "Plots/TRY_EIGEN_scaleTRUE_byDAY_", type_use, "_", subsampled_deptha, "_", iso_type,".pdf"), height=5, width=5)
-	for(i in 1:(length(colnames(mat_eigenvectors))-2)){
+	pdf(paste0(outputdir, "Plots/TRY_EIGEN_scaleTRUE_byDAY_", type_use, "_", subsampled_deptha, "_", iso_type,".pdf"), height=7.5, width=10)
+	for(i in 1:(length(colnames(mat_eigenvectors))-3)){
 		coluse <- colnames(mat_eigenvectors)[i]
 		f <- as.formula(paste0(coluse, "~DAY"))
 		a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors)))
@@ -65,30 +70,26 @@ plot_eigenvectors <- function(eigenvectors, meta_data1, productivity, outputdir,
 		for(z in 1:length(a[,1])){
 			my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
 		}
-		p <- ggplot(mat_eigenvectors, aes_string(x="DAY", y=sym(coluse), fill="DAY")) +geom_boxplot() + geom_point()+theme_bw(base_size = 6)+stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE)
-		plot(p) #stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test"))
-	}
-	dev.off()
-	
-	print("Plotting Eigenvectors by HealthvsDisease") 
-	## Plotting eigenvectors by Health Vs Disease
-	pdf(paste0(outputdir, "Plots/TRY_EIGEN_scaleTRUE_Health_vs_Disease_", type_use, "_", subsampled_deptha, "_", iso_type,".pdf"), height=5, width=5)
-	for(i in 1:(length(colnames(mat_eigenvectors))-2)){
-		coluse <- colnames(mat_eigenvectors_hd)[i]
-		f <- as.formula(paste0(coluse, "~State"))
-		a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors_hd)))
+		p <- ggplot(mat_eigenvectors, aes_string(x="DAY", y=sym(coluse))) +geom_boxplot(aes(fill=DISEASE)) + geom_point(aes( group=DISEASE), position=position_dodge(width=0.75),)+theme_bw(base_size = 6)+facet_wrap(~DISEASE, scales="free_x") + stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE)
+		pt <- ggplot(technicals, aes_string(x="DAY", y=sym(coluse))) +geom_boxplot(fill="yellow") + geom_point(aes( group=DISEASE), position=position_dodge(width=0.75),)+theme_bw(base_size = 6)+facet_wrap(~DISEASE, scales="free_x")
+		
+		coluse <- colnames(mat_eigenvectors)[i]
+		f <- as.formula(paste0(coluse, "~DISEASE"))
+		a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors)))
 		my_comparisons <- list()
 		for(z in 1:length(a[,1])){
 			my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
 		}
-		p <- ggplot(mat_eigenvectors_hd, aes_string(x="State", y=sym(coluse), fill="State")) +geom_boxplot() + geom_point()+theme_bw(base_size = 6)+stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE)
-		plot(p) #stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test"))
+		q <- ggplot(mat_eigenvectors, aes_string(x="DISEASE", y=sym(coluse))) +geom_boxplot(aes(fill=DISEASE)) + geom_point(aes( group=DAY), position=position_dodge(width=0.75),)+theme_bw(base_size = 6)+facet_wrap(~DAY, scales="free_x") + stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE) 
+		qt <- ggplot(technicals, aes_string(x="DISEASE", y=sym(coluse))) +geom_boxplot(fill="yellow") + geom_point(aes( group=DAY), position=position_dodge(width=0.75),)+theme_bw(base_size = 6)+facet_wrap(~DAY, scales="free_x") 
+
+		plot(plot_grid(p, pt, q, qt, ncol=2, rel_widths=c(3,1)))
 	}
 	dev.off()
 	
 	print("Plotting Module Correllogram") 
 	########### plot correlation matrix of eigenvectors
-	mat_eigenvectors_numeric <- mat_eigenvectors[,c(1:(length(colnames(mat_eigenvectors))-2))]
+	mat_eigenvectors_numeric <- mat_eigenvectors[,c(1:(length(colnames(mat_eigenvectors))-3))]
 	mat_eigenvectors_numeric <- data.frame(mat_eigenvectors_numeric)
 	cortest = corr.test(mat_eigenvectors_numeric, adjust="holm")
 	pval = cortest$p
@@ -99,10 +100,10 @@ plot_eigenvectors <- function(eigenvectors, meta_data1, productivity, outputdir,
 	dev.off()
 	
 	### Save eigenvectors
-	write.table(mat_eigenvectors, paste0(outputdir, "Eigenvectors_", type_use, "_", iso_type, ".txt"), sep='\t')
+	write.table(mat_eigenvectors, paste0(outputdir, "Eigenvectors_No_Technical_", type_use, "_", iso_type, ".txt"), sep='\t')
 	print("DONE")
 	
-	if(file.exists(meta_data1)){
+	if(file.exists(meta_data1) & (outputdir %like% "SEPSIS")){
 		###############################################################################################################
 		## Remove th
 		## read in meta data 
@@ -112,83 +113,68 @@ plot_eigenvectors <- function(eigenvectors, meta_data1, productivity, outputdir,
 		mat_eigenvectors_new <- merge(mat_eigenvectors, meta_data, by = 0, all.x=TRUE)
 		rownames(mat_eigenvectors_new) <- mat_eigenvectors_new$Row.names
 		mat_eigenvectors_new$Row.names <- NULL
-		mat_eigenvectors_new$X7DAY_MORTALITY[is.na(mat_eigenvectors_new$X7DAY_MORTALITY)] <- "Control"
+		mat_eigenvectors_new$X7DAY_MORTALITY[mat_eigenvectors_new$DISEASE=="TECHNICAL"] <- "T.CONTROL"
+		mat_eigenvectors_new <- mat_eigenvectors_new[mat_eigenvectors_new$DISEASE!="TECHNICAL",]
+		mat_eigenvectors_new$SRS <- as.character(mat_eigenvectors_new$SRS)
+		mat_eigenvectors_new$SRS[mat_eigenvectors_new$DISEASE=="HEALTH" ] <- "HEALTH"	
+		mat_eigenvectors_new$outcome <- NA 
+		mat_eigenvectors_new$outcome[mat_eigenvectors_new$DISEASE=="HEALTH"] <- "HEALTHY CONTROL"
+		mat_eigenvectors_new$outcome[mat_eigenvectors_new$Days_death_from_ICU=="Alive"] <- "ALIVE"
+		mat_eigenvectors_new$outcome[mat_eigenvectors_new$Days_death_from_ICU!="Alive"] <- "DEAD"
+		mat_eigenvectors_new$X7DAY_MORTALITY[mat_eigenvectors_new$DISEASE=="HEALTH"] <- "HEALTH"
+		mat_eigenvectors_new$X7DAY_MORTALITY[mat_eigenvectors_new$X7DAY_MORTALITY==0] <- "7 Day Mortality"
+		mat_eigenvectors_new$X7DAY_MORTALITY[mat_eigenvectors_new$X7DAY_MORTALITY==1] <- "Post 7 Day Mortality"
+		mat_eigenvectors_new$X7DAY_MORTALITY[mat_eigenvectors_new$X7DAY_MORTALITY==2] <- "Alive"
 		
-		# Pre death 
-		mat_eigenvectors_new_predeath <- mat_eigenvectors_new[mat_eigenvectors_new$X7DAY_MORTALITY %like% "0" | mat_eigenvectors_new$X7DAY_MORTALITY %like% "1" | mat_eigenvectors_new$DAY %like% "CONTROL",]
-		
-		df_new <- data.frame()
-		for(i in 1:length(mat_eigenvectors_new_predeath$SampleID)){
-			if(mat_eigenvectors_new_predeath$DAY[i] %like% "CONTROL"){
-				df_new <- rbind(df_new, mat_eigenvectors_new_predeath[i,])
-			} else {
-				point <- mat_eigenvectors_new_predeath$DAY[i]
-				sample <- mat_eigenvectors_new_predeath$sample[i]
-				all_points <- mat_eigenvectors_new_predeath$DAY[mat_eigenvectors_new_predeath$sample ==sample]
-				last_point <- max(all_points)
-				if(point ==last_point){
-					df_new <- rbind(df_new, mat_eigenvectors_new_predeath[i,])
-					#print("Last point before death")
-				} else {
-					#print("Not last timepoint")
-				} 
+		mat_eigenvectors_new$X7DAY_MORTALITY <- factor(mat_eigenvectors_new$X7DAY_MORTALITY, levels = c("7 Day Mortality", "Post 7 Day Mortality", "Alive", "HEALTH"))
+			
+		pdf(paste0(outputdir, "Plots/TRY_EIGEN_scaleTRUE_byVariables_", type_use, "_", subsampled_deptha, "_", iso_type,".pdf"), height=10, width=10)
+		for(i in 1:(length(colnames(mat_eigenvectors))-3)){
+			coluse <- colnames(mat_eigenvectors_new)[i]
+			##############################
+			f <- as.formula(paste0(coluse, "~DAY"))
+			a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors_new)))
+			my_comparisons <- list()
+			for(z in 1:length(a[,1])){
+				my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
 			}
+			p <- ggplot(mat_eigenvectors_new, aes_string(x="DAY", y=sym(coluse))) +geom_boxplot(alpha=0.5, aes(fill=DISEASE)) +theme_bw(base_size = 6)+ facet_wrap(~DISEASE, scales="free_x") + stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE) +guides(fill=FALSE)
+			##############################
+			f <- as.formula(paste0(coluse, "~X7DAY_MORTALITY"))
+			a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors_new)))
+			my_comparisons <- list()
+			for(z in 1:length(a[,1])){
+				my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
+			}
+			q <- ggplot(mat_eigenvectors_new, aes_string(x="X7DAY_MORTALITY", y=sym(coluse))) +geom_boxplot(alpha=0.5, aes(fill=X7DAY_MORTALITY)) +theme_bw(base_size = 6)+ facet_wrap(~DAY, scales="free_x") + stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+guides(fill=FALSE)
+			##############################
+			f <- as.formula(paste0(coluse, "~outcome"))
+			a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors_new)))
+			my_comparisons <- list()
+			for(z in 1:length(a[,1])){
+				my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
+			}
+			r <- ggplot(mat_eigenvectors_new, aes_string(x="outcome", y=sym(coluse))) +geom_boxplot(alpha=0.5, aes(fill=outcome)) +theme_bw(base_size = 6)+ facet_wrap(~DAY, scales="free_x") + stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+guides(fill=FALSE)
+			##############################
+			f <- as.formula(paste0(coluse, "~SRS"))
+			a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors_new)))
+			my_comparisons <- list()
+			for(z in 1:length(a[,1])){
+				my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
+			}
+			s <- ggplot(mat_eigenvectors_new, aes_string(x="SRS", y=sym(coluse))) +geom_boxplot(alpha=0.5, aes(fill=SRS)) +theme_bw(base_size = 6)+ facet_wrap(~DAY, scales="free_x") + stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+guides(fill=FALSE)
+			##############################
+			f <- as.formula(paste0(coluse, "~Sex"))
+			a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors_new)))
+			my_comparisons <- list()
+			for(z in 1:length(a[,1])){
+				my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
+			}
+			t <- ggplot(mat_eigenvectors_new, aes_string(x="Sex", y=sym(coluse))) +geom_boxplot(alpha=0.5, aes(fill=Sex)) +theme_bw(base_size = 6)+ facet_wrap(~DAY, scales="free_x") + stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+guides(fill=FALSE)
+			##############################de
+			plot(plot_grid(p, q, r, s, ncol=2))	
 		}
-		df_new$Diseasepoint <- "Health"
-		df_new$Diseasepoint[!df_new$DAY=="CONTROL"] <- "Sepsis Sample Pre-Death"
-		mat_eigenvectors_hd_new <- mat_eigenvectors_hd[mat_eigenvectors_hd$sample %in% df_new$sample,]
-		
-		pdf(paste0(outputdir, "Plots/TRY_EIGEN_scaleTRUE_Health_vs_PreDeath_", type_use, "_", subsampled_deptha, "_", iso_type,".pdf"), height=4, width=6)
-		for(i in 1:(length(colnames(mat_eigenvectors))-2)){
-			coluse <- colnames(df_new)[i]
-				f <- as.formula(paste0(coluse, "~Diseasepoint"))
-				a <- data.frame(do.call(compare_means, list(f, data=df_new)))
-				my_comparisons <- list()
-				for(z in 1:length(a[,1])){
-					my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
-				}
-				p <- ggplot(df_new, aes_string(x="Diseasepoint", y=sym(coluse), fill="Diseasepoint")) +geom_boxplot() + geom_point()+theme_bw(base_size = 6)+stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE)+ guides(fill="none")+ggtitle("Non-Survivors")+ylim(-2, 10)
-				###
-				coluse <- colnames(mat_eigenvectors_hd_new)[i]
-				f <- as.formula(paste0(coluse, "~State"))
-				a <- data.frame(do.call(compare_means, list(f, data=mat_eigenvectors_hd_new)))
-				## occasionally there will be 0 in one group causing issues 
-				if(dim(a)[1]>0){
-					my_comparisons <- list()
-					for(z in 1:length(a[,1])){
-						my_comparisons[[z]] <- c(a$group1[z], a$group2[z])
-					}
-					p1<- ggplot(mat_eigenvectors_hd_new, aes_string(x="State", y=sym(coluse), fill="State")) +geom_boxplot() + geom_point()+theme_bw(base_size = 6)+stat_compare_means(comparisons =my_comparisons, label = "p.signif", exact=FALSE) + guides(fill="none")+ggtitle("Non-Survivors")+ylim(-2, 10)
-					####
-					plot(plot_grid(p, p1, ncol=2)) #stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test"))
-				} else {
-				print(coluse)
-				}
-		}
-		dev.off()
-		
-		pdf(paste0(outputdir, "Plots/TRY_EIGEN_scaleTRUE_byVariables_", type_use, "_", subsampled_deptha, "_", iso_type,".pdf"), height=5, width=7)
-		for(i in 1:(length(colnames(mat_eigenvectors))-2)){
-			coluse <- colnames(mat_eigenvectors_new)[i]
-			p <- ggplot(mat_eigenvectors_new, aes_string(x="DAY", y=sym(coluse), fill="X7DAY_MORTALITY")) +geom_boxplot(alpha=0.5) +theme_bw(base_size = 6)+ stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")
-			plot(p) 
-		}
-		for(i in 1:(length(colnames(mat_eigenvectors))-2)){
-			coluse <- colnames(mat_eigenvectors_new)[i]
-			p <- ggplot(mat_eigenvectors_new, aes_string(x="DAY", y=sym(coluse), fill="SRS_New")) +geom_boxplot(alpha=0.5)  +theme_bw(base_size = 6)+ stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")
-			plot(p) 
-		}
-		for(i in 1:(length(colnames(mat_eigenvectors))-2)){
-			coluse <- colnames(mat_eigenvectors_new)[i]
-			p <- ggplot(mat_eigenvectors_new, aes_string(x="DAY", y=sym(coluse), fill="Sex")) +geom_boxplot(alpha=0.5)+theme_bw(base_size = 6)+ stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")
-			plot(p) 
-		}
-		for(i in 1:(length(colnames(mat_eigenvectors))-2)){
-			coluse <- colnames(mat_eigenvectors_new)[i]
-			p <- ggplot(mat_eigenvectors_new, aes_string(x="DAY", y=sym(coluse), fill="Shock_sepsis2")) +geom_boxplot(alpha=0.5)+theme_bw(base_size = 6)+ stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")
-			plot(p) 
-		}
-		dev.off()
-	}
+	dev.off()
 	print("Plotting Done")
+}
 }

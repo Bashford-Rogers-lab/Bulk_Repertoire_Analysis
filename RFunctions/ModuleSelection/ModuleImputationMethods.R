@@ -29,18 +29,42 @@ library(psych)
 library(lavaan)
 
 
-optimise_imputing <- function(final_matrix, iso_type, na_freq, outputdir, type_use){
+
+
+optimise_imputing <- function(mat_filtered, iso_type, na_freq, outputdir, type_use){
+	
+	print(paste0("NA FREQ: ", na_freq))
 	type_use <- type_use
 	## Getting Filtered Matrix into correct format! 
-	p <- final_matrix 
+	p <- mat_filtered 
+	
 	p <- sapply(p, function(x) as.numeric(x))
-	rownames(p) <- rownames(final_matrix)
+	rownames(p) <- rownames(mat_filtered)
 	## Okay lets generate a complete data frame with no NAs
 	#remove rows with missing values in any column of data frame
 	df <- data.frame(p[complete.cases(p), ])
-	## Randomly fill the data frame with NA values at specified frequency
-	df_verif <- prodNA(df, noNA = na_freq)
+	
+	## Randomly fill the data frame with NA values at specified frequency per column rather than across whole df!!
+	#df_verif0 <- prodNA(df, noNA = 0.1)
+	df_verif <- data.frame(apply(df, 2, function(x) {prodNA(data.frame(x), na_freq)}))
+	colnames(df_verif) <- colnames(df)
 
+	## Plot the patterns of missingness in the data 
+	pdf(paste0(outputdir, "Plots/Imputation/Missingness_patterns_", na_freq, ".pdf"), width=60, height=40)
+	suppressMessages(md.pattern(p, rotate.names=TRUE, plot=TRUE))
+	suppressMessages(md.pattern(df_verif, rotate.names=TRUE, plot=TRUE))
+	dev.off()
+	
+	widthx <- dim(df)[1]/5
+	heightx <- dim(df)[2]/5
+	
+	pdf(paste0(outputdir, "Plots/Imputation/Missingness_values_", na_freq, ".pdf"), width=widthx, height=heightx)
+	df2 <- df_verif %>% is.na %>% data.frame
+	df2$sample <- rownames(df2)
+	d <- gather(df2, metric, Present, 1:(dim(df2)[2]-1), factor_key=TRUE)
+	plot(ggplot(d, aes(y=metric, x=sample, fill=Present)) + geom_tile() + 	theme_classic() + theme(axis.text.x  = element_text(angle=90, vjust=0.5)) + xlab("Sample") + ylab("Metric"))
+	dev.off()
+	
 	################################
 	################################
 	## Basic imputation with Hmisc 
@@ -75,58 +99,84 @@ optimise_imputing <- function(final_matrix, iso_type, na_freq, outputdir, type_u
 	print("Random Imputation Done")
 
 	## missMDA = regularised and EM
-	nbdim <- estim_ncpPCA(df_verif) # estimate the number of dimensions to impute
-	nbdim<- nbdim[[1]]
-	df_missMDA <- imputePCA(df_verif, ncp = nbdim)
-	df_missMDA <- df_missMDA$completeObs
-	df_missMDA1 <- data.frame(df_missMDA)
-	nrmse_missMDA1 <- missForest::nrmse(ximp=df_missMDA1, xmis=df_verif, xtrue=df)
-	df_missMDA1$method <- "missMDA_regularised"
-	rownames(df_missMDA1) <- rownames(df)
-	df_missMDA1$sample <- rownames(df)
-	print("missMDA Regularised Imputation Done")
-
-	nbdim <- estim_ncpPCA(df_verif) # estimate the number of dimensions to impute
-	nbdim<- nbdim[[1]]
-	df_missMDA <- imputePCA(df_verif, ncp = nbdim, method="EM")
-	df_missMDA <- df_missMDA$completeObs
-	df_missMDA2 <- data.frame(df_missMDA)
-	nrmse_missMDA2 <- missForest::nrmse(ximp=df_missMDA2, xmis=df_verif, xtrue=df)
-	df_missMDA2$method <- "missMDA_EM"
-	rownames(df_missMDA2) <- rownames(df)
-	df_missMDA2$sample <- rownames(df)
-	print("missMDA EM Imputation Done")
-
+	x <- try(nbdim <- estim_ncpPCA(df_verif)) # estimate the number of dimensions to impute
+	if(class(x)!="try-error"){
+		nbdim<- nbdim[[1]]
+		df_missMDA <- imputePCA(df_verif, ncp = nbdim)
+		df_missMDA <- df_missMDA$completeObs
+		df_missMDA1 <- data.frame(df_missMDA)
+		nrmse_missMDA1 <- missForest::nrmse(ximp=df_missMDA1, xmis=df_verif, xtrue=df)
+		df_missMDA1$method <- "missMDA_regularised"
+		rownames(df_missMDA1) <- rownames(df)
+		df_missMDA1$sample <- rownames(df)
+		print("missMDA Regularised Imputation Done")
+	} else {
+		df_missMDA1 <- data.frame()
+		nrmse_missMDA1 <- c()
+	}
+	
+	x <- try(nbdim <- estim_ncpPCA(df_verif)) # estimate the number of dimensions to impute
+	if(class(x)!="try-error"){
+		nbdim <- estim_ncpPCA(df_verif) # estimate the number of dimensions to impute
+		nbdim<- nbdim[[1]]
+		df_missMDA <- imputePCA(df_verif, ncp = nbdim, method="EM")
+		df_missMDA <- df_missMDA$completeObs
+		df_missMDA2 <- data.frame(df_missMDA)
+		nrmse_missMDA2 <- missForest::nrmse(ximp=df_missMDA2, xmis=df_verif, xtrue=df)
+		df_missMDA2$method <- "missMDA_EM"
+		rownames(df_missMDA2) <- rownames(df)
+		df_missMDA2$sample <- rownames(df)
+		print("missMDA EM Imputation Done")
+	} else {
+		df_missMDA2 <- data.frame()
+		nrmse_missMDA2 <- c()
+	}
+	
 	## Knn using VIM
-	df_knn <- VIM::kNN(df_verif)
-	df_knn <- df_knn %>% select(names(df_verif))
-	nrmse_knn <- missForest::nrmse(ximp=df_knn, xmis=df_verif, xtrue=df)
-	df_knn$method = "kNN"
-	rownames(df_knn) <- rownames(df)
-	df_knn$sample <- rownames(df)
-	print("KNN Imputation Done")
+	x <- try(df_knn <- VIM::kNN(df_verif))
+	if(class(x)!="try-error"){
+		df_knn <- df_knn %>% select(names(df_verif))
+		nrmse_knn <- missForest::nrmse(ximp=df_knn, xmis=df_verif, xtrue=df)
+		df_knn$method = "kNN"
+		rownames(df_knn) <- rownames(df)
+		df_knn$sample <- rownames(df)
+		print("KNN Imputation Done")
+	} else {
+		df_knn <- data.frame()
+		nrmse_knn <- c()
+	}
 
 	## missForest 
-	forest <- missForest(df_verif, maxiter=20, xtrue=df)
-	df_forest <- forest$ximp
-	nrmse_forest <- missForest::nrmse(ximp=df_forest, xmis=df_verif, xtrue=df)
-	df_forest$method = "missForest"
-	rownames(df_forest) <- rownames(df)
-	df_forest$sample <- rownames(df)
-	print("missForest Imputation Done")
-
+	x <- try(forest <- missForest(df_verif, maxiter=20, xtrue=df))
+	if(class(x)!="try-error"){
+		df_forest <- forest$ximp
+		nrmse_forest <- missForest::nrmse(ximp=df_forest, xmis=df_verif, xtrue=df)
+		df_forest$method = "missForest"
+		rownames(df_forest) <- rownames(df)
+		df_forest$sample <- rownames(df)
+		print("missForest Imputation Done")
+	} else {
+		df_forest <- data.frame()
+		nrmse_forest <- c()
+	}
+	
 	## Additive Regression HMISC
 	fmla <- as.formula(paste(" ~ ", paste(colnames(df_verif), collapse=" +")))
-	impute_areg <- aregImpute(formula=fmla, data = df_verif, n.impute = 5, nk=0)
-	tbl_imp_areg <- impute.transcan(impute_areg,imputation = 5,data = df_verif,list.out = TRUE,pr = FALSE,check = FALSE)
-	tbl_imp_areg <- data.frame(matrix(unlist(tbl_imp_areg), nrow = nrow(df)))
-	names(tbl_imp_areg) <- names(df)
-	nrmse_imp_areg <- missForest::nrmse(ximp=tbl_imp_areg, xmis=df_verif, xtrue=df)
-	tbl_imp_areg$method <- "impute_areg"
-	df_imp_areg <- tbl_imp_areg
-	rownames(df_imp_areg) <- rownames(df)
-	df_imp_areg$sample <- rownames(df)
-	print("Additive Regression Imputation Done")
+	x <- try(impute_areg <- aregImpute(formula=fmla, data = df_verif, n.impute = 5, nk=0))
+	if(class(x)!="try-error"){
+		tbl_imp_areg <- impute.transcan(impute_areg,imputation = 5,data = df_verif,list.out = TRUE,pr = FALSE,check = FALSE)
+		tbl_imp_areg <- data.frame(matrix(unlist(tbl_imp_areg), nrow = nrow(df)))
+		names(tbl_imp_areg) <- names(df)
+		nrmse_imp_areg <- missForest::nrmse(ximp=tbl_imp_areg, xmis=df_verif, xtrue=df)
+		tbl_imp_areg$method <- "impute_areg"
+		df_imp_areg <- tbl_imp_areg
+		rownames(df_imp_areg) <- rownames(df)
+		df_imp_areg$sample <- rownames(df)
+		print("Additive Regression Imputation Done")
+	} else {
+		df_imp_areg <- data.frame()
+		nrmse_imp_areg <- c()
+	}
 
 	##########################################
 	## Append type to original and validation data 
@@ -145,6 +195,11 @@ optimise_imputing <- function(final_matrix, iso_type, na_freq, outputdir, type_u
 	nrmse_combined <- cbind(nrmse_mean, nrmse_median, nrmse_random, nrmse_missMDA1, nrmse_missMDA2, nrmse_knn, nrmse_forest, nrmse_imp_areg, na_freq)
 	nrmse_combined <- data.frame(nrmse_combined)
 	
+	if (!file.exists(paste0(outputdir, "Summary/"))){
+		dir.create(paste0(outputdir, "Summary/"))
+	}
+	
+	
 	## Save nrmse_combines we will need these later
 	write.table(nrmse_combined, (paste0(outputdir, "Summary/nrmsescores_", type_use, "_", iso_type, "_", na_freq, ".txt")), sep="\t", row.names=FALSE)
 	print("NRMSE scores saved")
@@ -156,7 +211,7 @@ optimise_imputing <- function(final_matrix, iso_type, na_freq, outputdir, type_u
 	### This will allow us to calculuate RMSE for different variables 
 	tbl_imp_numeric <- tbl_imputations %>% 
 	  select(method, which(sapply(.,is.numeric))) %>% 
-	  cbind(., id= rep(1:nrow(df), 10))%>% 
+	  cbind(., id= rep(1:nrow(df), length(unique(tbl_imputations$method))))%>% 
 	  gather(key = variable, value, -id, -method)
 
 	tbl_imp_num_orig <- tbl_imp_numeric %>% 
@@ -192,8 +247,13 @@ optimise_imputing <- function(final_matrix, iso_type, na_freq, outputdir, type_u
 	for(i in 1:length(meanscompare$group1)){
 		new_list[[i]]<- c(meanscompare$group1[i], meanscompare$group2[i])
 	}
-
-	pdf(paste0(outputdir, "Plots/Imputation1_", type_use, "_", iso_type, "_", na_freq, ".pdf"), width=13, height=10)
+	
+	if (!file.exists(paste0(outputdir, "Plots/"))){
+		dir.create(paste0(outputdir, "Plots/"))
+	}
+	
+	
+	pdf(paste0(outputdir, "Plots/Imputation/Imputation1_", type_use, "_", iso_type, "_", na_freq, ".pdf"), width=13, height=10)
 	plot(ggplot(tbl_imp_numeric_error, aes(x=method, y=rsme, fill=method)) +geom_point(alpha = 0.7, aes(col=method), position = "jitter", set.seed(1)) +theme_bw() + geom_violin(alpha=0.5) + stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")+geom_hline(yintercept=0.5, col="red") +ggtitle("Wilcox test comparing RSME against base-mean"))
 	plot(ggplot(tbl_imp_numeric_error, aes(x=method, y=rsme, fill=method)) +geom_point(alpha = 0.7, aes(col=method), position = "jitter", set.seed(1)) +theme_bw() + geom_boxplot(alpha=0.5)+ stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")+geom_hline(yintercept=0.5, col="red")+ggtitle("Wilcox test comparing RSME against base-mean"))
 	dev.off() 
@@ -203,7 +263,7 @@ optimise_imputing <- function(final_matrix, iso_type, na_freq, outputdir, type_u
 	if(!length(unique(tbl_imp_numeric$variable)) >= max(variable_seq)){
 		variable_seq[length(variable_seq)+1] <-(variable_seq[length(variable_seq)]+9)
 	}	
-	pdf(paste0(outputdir, "Plots/Imputation2_Correlation_", type_use, "_",  iso_type, "_", na_freq, ".pdf"), width=10, height=10)	
+	pdf(paste0(outputdir, "Plots/Imputation/Imputation2_Correlation_", type_use, "_",  iso_type, "_", na_freq, ".pdf"), width=15, height=15)	
 	for(a in variable_seq){
 		zmin = a
 		ymax = a + 8
@@ -216,7 +276,7 @@ optimise_imputing <- function(final_matrix, iso_type, na_freq, outputdir, type_u
 	dev.off()
 
 	## Look at which variables have a worse error 
-	pdf(paste0(outputdir, "Plots/Imputation2_", type_use, "_", iso_type, "_", na_freq, ".pdf"), width=70, height=20)
+	pdf(paste0(outputdir, "Plots/Imputation/Imputation2_", type_use, "_", iso_type, "_", na_freq, ".pdf"), width=80, height=20)
 	plot(ggplot(tbl_imp_numeric_error, aes(x=variable, y=rsme, fill=method)) + geom_col(position = "dodge") +theme_bw() +facet_wrap(~method) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+geom_hline(yintercept=0.5, col="red"))
 	dev.off() 
 	print("Plots Done")

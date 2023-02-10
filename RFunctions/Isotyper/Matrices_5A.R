@@ -3,9 +3,6 @@ make_matrices5a <- function(file=file, ids_all=ids_all){
 	if(info$size != 0) {
 		p <- as.matrix(read.csv(file, head=TRUE, sep="\t"))
 		p=p[which(as.character(p[,"X.sample"]) %in% ids_all),]
-		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso1"]))),]
-		p=p[setdiff(c(1:length(p[,1])), grep("IGHG4",as.character(p[,"iso2"]))),]
-
 		#######################
 		p <- data.frame(p)
 		## Want to make the relevant columns numeric

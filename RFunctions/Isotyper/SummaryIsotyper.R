@@ -5,27 +5,28 @@
 ## lauren.overend@oriel.ox.ac.uk
 
 # Recquired Packages
-library(reshape2)
-library(ggplot2)
-library(Hmisc)
-library(corrplot)
-library(stringr)
-library(data.table)
-library(dplyr)
-library(purrr)
-library(tidyr)
-library(data.table)
-library(foreach)
-library(doParallel) 
-library(ggforce)
-library(plot3D)
-library(Peptides)
-library(plyr)
-library(moments)
-library(mousetrap)
+suppressMessages(library(reshape2))
+suppressMessages(library(ggplot2))
+suppressMessages(library(Hmisc))
+suppressMessages(library(corrplot))
+suppressMessages(library(stringr))
+suppressMessages(library(data.table))
+suppressMessages(library(purrr))
+suppressMessages(library(tidyr))
+suppressMessages(library(data.table))
+suppressMessages(library(foreach))
+suppressMessages(library(doParallel)) 
+suppressMessages(library(ggforce))
+suppressMessages(library(plot3D))
+suppressMessages(library(Peptides))
+suppressMessages(library(plyr))
+suppressMessages(library(dplyr))
+suppressMessages(library(moments))
+suppressMessages(library(mousetrap))
+
 
 ## Function 
-summary_isotyper <- function(outputdir=outputdir, samplesfilepost=samplesfilepost, iso_type=iso_type){
+summary_isotyper <- function(outputdir=outputdir, samplesfilepost=samplesfilepost, iso_type=iso_type, exclude_samples=exclude_samples){
 
 iso_type=iso_type
 #Getting SampleIDs
@@ -40,12 +41,12 @@ if(iso_type=="PRODUCTIVE"){
 	ids_all <- paste0(ids_all, "_productive")
 }
 
-
 ## Getting Read Depths for Each Sample based on RBR pipeline: 
 path <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT")
 source('RFunctions/Isotyper/ReadDepths.R')
 read_depths_all <- getdepths(path, iso_type)
 write.table(read_depths_all, paste0(outputdir, "Summary/Read_Depths_", iso_type, ".txt"), sep="\t", row.names=TRUE)
+
 
 ## Getting subsample depths which were used for isotyper script 
 counts_used <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS")
@@ -55,49 +56,45 @@ counts_used <- read.delim(all_files[1], sep="\t", header=TRUE)
 counts_used <- counts_used[counts_used$type=="UNIQ",]
 subsampled_depth_all <- counts_used$min[counts_used$X.isotype=="all"]
 ## Extract receptor information (e.g. chain usage if TCR
+## Update subsampled depth all if TCR (e.g. for chain not for ALL!
 if(chain_vdj=="TCR" | chain_vdj=="TR"){
 	counts_try <- counts_used[(counts_used$X.isotype  != "ALL" & counts_used$X.isotype  != "all"),]
 	receptor <- counts_try$X.isotype[counts_try$min==max(counts_try$min)]
+	subsampled_depth_all <- counts_try$min[counts_try$X.isotype==receptor]
+} else {
+	receptor <- "IGH"
+}
+
+print(paste0("Subsampled Depth Used (All if BCR/ Chain if TCR): ", subsampled_depth_all))
+
+## Per isotype
+source('RFunctions/Isotyper/GetReadDepths.R')
+depths_all <- get_read_depths(outputdir, iso_type, receptor)
+depths_all_unique <- depths_all[depths_all$type=="UNIQUE",]
+depths_all_total <- depths_all[depths_all$type=="TOTAL",]
+
+if(receptor %like% "TR"){
+	depths_all_unique <- depths_all_unique[, c("sample", "type", "TRAC", "TRBC", "TRGC", "TRDC", "ALL")]
+	depths_all_total <- depths_all_total[, c("sample", "type", "TRAC", "TRBC", "TRGC", "TRDC", "ALL")]
+
 }
 
 ## Plot read depths
-if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
-	IGHA2 = counts_used$min[counts_used$X.isotype=="IGHA2"]
-	IGHA1 = counts_used$min[counts_used$X.isotype=="IGHA1"]
-	IGHGP = counts_used$min[counts_used$X.isotype=="IGHGP"]
-	IGHG1 = counts_used$min[counts_used$X.isotype=="IGHG1"]
-	IGHG2 = counts_used$min[counts_used$X.isotype=="IGHG2"]
-	IGHG3 = counts_used$min[counts_used$X.isotype=="IGHG3"]
-	IGHG4 = counts_used$min[counts_used$X.isotype=="IGHG4"]
-	IGHE = counts_used$min[counts_used$X.isotype=="IGHE"]
-	IGHD = counts_used$min[counts_used$X.isotype=="IGHD"]
-	IGHEP2 = counts_used$min[counts_used$X.isotype=="IGHEP2"]
-	IGHM = counts_used$min[counts_used$X.isotype=="IGHM"]
-	
-	pdf(paste0(outputdir, "Plots/Read_Depths_", iso_type, ".pdf"), width=5, height=5)
-	s <- ggplot(data=read_depths_all, aes(ReadDepth)) + geom_histogram() + theme_bw() + geom_vline(aes(xintercept=subsampled_depth_all, col="ALL"), show.legend=TRUE) 
-	s <- s +  geom_vline(aes(xintercept=IGHA2, col="IGHA2"), show.legend=TRUE) 
-	s <- s + geom_vline(aes(xintercept=IGHA1, col="IGHA1"), show.legend=TRUE, linetype = "longdash") 
-	s <- s + geom_vline(aes(xintercept=IGHGP, col="IGHGP"), show.legend=TRUE)
-	s <- s + geom_vline(aes(xintercept=IGHG1, col="IGHG1"), show.legend=TRUE) 
-	s <- s + geom_vline(aes(xintercept=IGHG2, col="IGHG2"), show.legend=TRUE, linetype = "longdash") 
-	s <- s + geom_vline(aes(xintercept=IGHG3, col="IGHG3"), show.legend=TRUE, linetype = "longdash") 
-	s <- s + geom_vline(aes(xintercept=IGHG4, col="IGHG4"), show.legend=TRUE, linetype = "dotted") 
-	s <- s + geom_vline(aes(xintercept=IGHE, col="IGHE"), show.legend=TRUE) 	
-	s <- s + geom_vline(aes(xintercept=IGHM, col="IGHM"), show.legend=TRUE, linetype = "longdash") 
-	s <- s + geom_vline(aes(xintercept=IGHD, col="IGHD"), show.legend=TRUE, linetype = "dotted") 
-	s <- s + geom_vline(aes(xintercept=IGHEP2, col="IGHEP2"), show.legend=TRUE, linetype = "twodash") 
-	s <- s + scale_color_manual(name = "Thresholds", values = c(ALL="red", IGHA2="BLUE", IGHA1="ORANGE", IGHGP="DARKGREEN", IGHG1="BROWN4", IGHG2="YELLOW", IGHG3="GREY", IGHG4="PURPLE", IGHE="BLACK", IGHM="LIGHTBLUE", IGHEP2="LIGHTGREEN",IGHD="DEEPPINK"))
-	s <- s + facet_zoom(xlim=c(0, (subsampled_depth_all+50)))
-	plot(s)
-	dev.off()
-} else {
-	pdf(paste0(outputdir, "Plots/Read_Depths_", iso_type, ".pdf"), width=10, height=5)
-	s <- ggplot(data=read_depths_all, aes(ReadDepth)) + geom_histogram() + theme_bw() + geom_vline(aes(xintercept=subsampled_depth_all, col="ALL"), show.legend=TRUE) 
-	s <- s + scale_color_manual(name = "Thresholds", values = c(ALL="red"))
-	plot(s)
-	dev.off()
-}
+pdf(paste0(outputdir, "Plots/Read_Depths_", iso_type, ".pdf"), width=50, height=10)
+	for(i in 3:length(colnames(depths_all_unique))){
+		iso <- colnames(depths_all_unique)[i]
+		thresh <- counts_used$min[counts_used$X.isotype==iso]
+		if(iso =="ALL"){
+			thresh <- counts_used$min[counts_used$X.isotype=="all"]
+		}
+		data_plot <- depths_all_unique[, c("sample", iso)]
+		data_plot$pass <- "YES"
+		data_plot$pass[data_plot[,iso] < thresh] <- "NO"
+		
+		s <- ggplot(data_plot, aes_string(x="sample", y=iso, fill="pass")) + geom_col() + theme_bw() + geom_hline(yintercept=thresh, show.legend=TRUE, col="red") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ggtitle(iso)
+		plot(s)
+	}
+dev.off()
 
 ## Correct subsampled depth for productive/nonproductive 
 if(iso_type == "UNPRODUCTIVE"){ 
@@ -166,6 +163,10 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	source('RFunctions/Isotyper/Matrices_5A.R')
 	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Isotype_normalised_overlap_frequencies_uniq_", iso_type, ".txt")
 	analysis_matrices5a <- make_matrices5a(file, ids_all)
+	
+	source('RFunctions/Isotyper/Matrices_ISOuse.R')
+	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_Isotype_overlapping_frequencies_", iso_type, ".txt")
+	analysis_matrices5b <- make_matrices5b(file, ids_all)
 }
 
 ##---------------------------------------------------------------------------------------------------------------------
@@ -174,6 +175,9 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 	source('RFunctions/Isotyper/Matrices_6.R')
 	file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_SHM_Mutation_summmary_selection_", iso_type, ".txt")
 	analysis_matrices6 <- make_matrices6(file, ids_all)
+	remove_duplicate_cols <- grep("mean_mutations_per_VDJ__", colnames(analysis_matrices6[[1]]), value=TRUE)
+	keep_cols <- colnames(analysis_matrices6[[1]])[!colnames(analysis_matrices6[[1]]) %in% remove_duplicate_cols]
+	analysis_matrices6[[1]] <- analysis_matrices6[[1]][, c(keep_cols)]
 }
 	
 ##---------------------------------------------------------------------------------------------------------------------
@@ -245,14 +249,35 @@ path <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT")
 analysis_matrices16 <- get_productivity(path, ids_all, chain_vdj, counts_used)
 
 ##---------------------------------------------------------------------------------------------------------------------
+## MAIT and NKT analysis 
+if(receptor=="TRAC"){
+	print("TRAC Receptor type: Performing MAIT/NK quantificaition")
+	source('RFunctions/Isotyper/MAIT_NK.R')
+	file <- paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_isotype_frequency_", iso_type, ".txt")
+	analysis_matrices17 <- get_mait(file, ids_all)
+}
+
+##---------------------------------------------------------------------------------------------------------------------
+## IF its TCRB lets make the spreadsheet for GLIPH2 analysis  
+if(receptor=="TRBC"){
+	print("TRBC Receptor type: Reformatting IMGT for GLIPH2 Analaysis")
+	source('RFunctions/Isotyper/GLIPH2format.R')
+	makegliph2format(outputdir, iso_type)
+}
+
+
 ##---------------------------------------------------------------------------------------------------------------------
 ## PART 2!!!!!!
 ## COMPOSING THE OVERALL MATRIX 
 
 if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
-	print_info = c(analysis_matrices1, analysis_matrices2,  analysis_matrices3, analysis_matrices4, analysis_matrices5a,  analysis_matrices6, analysis_matrices7, analysis_matrices8, analysis_matrices9, analysis_matrices10,  analysis_matrices12, analysis_matrices13, analysis_matrices14, analysis_matrices15,analysis_matrices15b, analysis_matrices16 )
+	print_info = c(analysis_matrices1, analysis_matrices2,  analysis_matrices3, analysis_matrices4, analysis_matrices5a, analysis_matrices5b, analysis_matrices6, analysis_matrices7, analysis_matrices8, analysis_matrices9, analysis_matrices10,  analysis_matrices12, analysis_matrices13, analysis_matrices14, analysis_matrices15,analysis_matrices15b, analysis_matrices16)
 } else {
 	print_info = c(analysis_matrices1, analysis_matrices3, analysis_matrices8, analysis_matrices12, analysis_matrices13, analysis_matrices14, analysis_matrices15, analysis_matrices15b, analysis_matrices16)
+}
+
+if(receptor=="TRAC"){
+	print_info = c(print_info, analysis_matrices17)
 }
 
 ## Combining all the matrices into one big dataframe
@@ -268,6 +293,15 @@ read_depths_all$SampleIDforDepths <- gsub("BCR_", "", read_depths_all$SampleIDfo
 read_depths_all$SampleIDforDepths <- gsub("TCR_", "", read_depths_all$SampleIDforDepths)
 overall_matrix <- merge(overall_matrix, read_depths_all, by.x="sample", by.y="SampleIDforDepths")
 rownames(overall_matrix) <- overall_matrix$sample
+
+#########Remove those columns that are pseudogenes
+if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
+	remove_pseudo <- colnames(overall_matrix)[colnames(overall_matrix) %like% "IGHGP" | colnames(overall_matrix) %like% "IGHEP2"]
+	print("Removing Pseudo constant regions")
+	keep_pseudo<- colnames(overall_matrix)[!colnames(overall_matrix) %in% remove_pseudo]
+	overall_matrix <- overall_matrix[, c(keep_pseudo)]
+}
+
 
 ##---------------------------------------------------------------------------------------------------------------------
 ##---------------------------------------------------------------------------------------------------------------------
@@ -310,7 +344,7 @@ if(chain_vdj %like% "T"){
 }
 print("Filtered for valid Metrics from file")
 ##---------------------------------------------------------------------------------------------------------------------
-## Add in the proportions of different isotypes across groups!
+## Add in the proportions of different SHM isotypes across groups!
 ## Only relevant for BCRs
 if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		file <- paste0(outputdir, "Summary/IMGT/IMGT_Prop_SHM_", iso_type, ".txt")
@@ -329,6 +363,22 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		overall_matrix <- merge(overall_matrix, proportions_file, by.x="sample", by.y=paste0("Sample__ALL"))
 		overall_matrix$Sample__ALL <- NULL
 		rownames(overall_matrix) <- overall_matrix$sample
+		
+		## add kurtosis
+		file <- paste0(outputdir, "Summary/IMGT/Mutation_stats_", iso_type, ".txt")
+		datar <- read.delim(file, header=TRUE)
+		datar$Sample <- rownames(datar)
+		if(iso_type=="UNPRODUCTIVE"){
+			datar$Sample <- paste0(datar$Sample, "_unproductive")
+		}
+		if(iso_type=="PRODUCTIVE"){
+			datar$Sample <- paste0(datar$Sample, "_productive")
+		}	
+		
+		overall_matrix <- merge(overall_matrix, datar, by.x="sample", by.y=paste0("Sample"))
+		rownames(overall_matrix) <- overall_matrix$sample
+		
+		
 } 
 overall_matrix <- overall_matrix %>% select(ReadDepth, everything())
 
@@ -340,6 +390,22 @@ empty_cols <- empty[empty==dim(overall_matrix)[1]]
 overall_matrix<- overall_matrix[, c(!colnames(overall_matrix) %in% names(empty_cols))]
 #return(overall_matrix)
 ##---------------------------------------------------------------
+####################################################################################################
+
+print("Removing Samples Present in Exclude Sample File")
+if (!is.na(exclude_samples)){
+	exclude_samples <- read.delim(exclude_samples, header=TRUE, sep="\t")
+	if(iso_type == "UNPRODUCTIVE"){
+	exclude_samples[,1] <- paste0(exclude_samples[,1], "_unproductive")
+	}
+	if(iso_type=="PRODUCTIVE"){
+		exclude_samples[,1] <- paste0(exclude_samples[,1], "_productive")
+	}
+	print(paste0("Removing ", dim(exclude_samples)[1], " Sample IDs from provided file"))
+	overall_matrix <- overall_matrix[!rownames(overall_matrix) %in% exclude_samples[,1],]
+	print("Done")
+}
+
 # Save the raw UNFILTERED output!!! 
 ################################
 out_file_table=paste0(outputdir, "Summary/All_raw_values_unfiltered_", subsampled_depth_all, "_", iso_type, ".txt")
@@ -536,16 +602,17 @@ if(chain_vdj %like% "BC"| chain_vdj %like% "I"){
 } 
 
 ## Code to replace technical replicate with mean of all technical replicates (may need to edit if has diferent name)
-print("Collapsing Technical replicate by name")
-control_row <-data.frame(mat_filtered[rownames(mat_filtered) %like% "JR1795_1003",])
-if(dim(control_row)[1]>=1){
-	control_rowid <- rownames(mat_filtered) %like% "JR1795_1003"
-	control_row<- mutate_all(control_row, function(x) as.numeric(as.character(x)))
-	new_row <- t(data.frame(colSums(control_row, na.rm=TRUE)/dim(control_row)[1]))
-	rownames(new_row) <- "JR1795_1003_POSITIVE_MEAN"
-	mat_filtered <- mat_filtered[!control_rowid,]
-	mat_filtered <- rbind(mat_filtered, new_row)
-}
+## print("Collapsing Technical replicate by name")
+## Actually We dont want to do this - this way we can assess summary stats later!! :D 
+#control_row <-data.frame(mat_filtered[rownames(mat_filtered) %like% "JR1795_1003",])
+#if(dim(control_row)[1]>=1){
+	#control_rowid <- rownames(mat_filtered) %like% "JR1795_1003"
+	#control_row<- mutate_all(control_row, function(x) as.numeric(as.character(x)))
+	#new_row <- t(data.frame(colSums(control_row, na.rm=TRUE)/dim(control_row)[1]))
+	#rownames(new_row) <- "JR1795_1003_POSITIVE_MEAN"
+	#mat_filtered <- mat_filtered[!control_rowid,]
+	#mat_filtered <- rbind(mat_filtered, new_row)
+#}
 
 
 #---------------------------------------------------------------------------------------------		
@@ -559,7 +626,20 @@ features = colnames(p)
 ## remove all features with very few unique values
 ## This likely means there are a lot of 0 values!
 diff_values = apply(p[,features], 2, function(x){length(unique(x[which(is.na(x)==F)]))})
-features = intersect(features, names(diff_values)[which(diff_values>=8)])
+
+if(dim(mat_filtered)[1]>=50){
+	features = intersect(features, names(diff_values)[which(diff_values>=8)])
+	print(paste0("Columns must have at least 8 Unique Values"))
+
+} else {
+	minx <- 4
+	print(paste0("Columns must have at least ", minx, " Unique Values"))
+	if((dim(mat_filtered)[1]) < minx){
+		minx <- (dim(mat_filtered)[1])
+	}
+	features = intersect(features, names(diff_values)[which(diff_values>=minx)])
+}
+
 print("Filtering Performed")
 xx <- length(colnames(p))-length(features)
 print(paste0(xx, " Features Removed from Matrix"))
@@ -577,12 +657,24 @@ if(any(rowSums(is.na(mat_filtered))>missing_threshold)){
 print("Done filtering on unique values filtering and missingness filtering!")
 	
 #---------------------------------------------------------------------------------------------	
+mat_filtered_final <- mat_filtered
+## Split between V genes and Metrics:
+mat_filtered_vgenes <- mat_filtered[,colnames(mat_filtered) %in% grep("IGHV|TRAV|TRBV|TRGV|TRDV", colnames(mat_filtered), value=TRUE)]
+## Split into Features and VDJ usage 
+mat_filtered <- mat_filtered[,!colnames(mat_filtered) %in% grep("IGHV|TRAV|TRBV|TRGV|TRDV", colnames(mat_filtered), value=TRUE)]
+print("Split into Features and V gene usage dataframe")
+	
 #---------------------------------------------------------------------------------------------	
 ## Write the final filtered matric to an outs file - used for weighted network correlation analysis!
 write.table(mat_filtered, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
+write.table(mat_filtered_vgenes, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_VGENE_", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
+write.table(mat_filtered_final, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_ALL_", subsampled_depth_all, "_", iso_type, ".txt"), sep="\t", row.names=TRUE)
 
 ## We also want to do one with no rownames or headers for tensor decomposition analysis!!!!  
 write.table(mat_filtered, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_TENSOR_FORMAT_", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(mat_filtered_vgenes, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_VGENE_TENSOR_FORMAT_", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(mat_filtered_final, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_ALL_TENSOR_FORMAT_", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
 print("DONE PART 1")
 
 ## get sample and feature order which are needed for tensor analysis
@@ -591,6 +683,19 @@ feature_order <- colnames(mat_filtered)
 
 write.table(sample_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_TENSOR_FORMAT_SAMPLE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
 write.table(feature_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_METRICS_TENSOR_FORMAT_FEATURE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+sample_order <- rownames(mat_filtered_vgenes)
+feature_order <- colnames(mat_filtered_vgenes)
+
+write.table(sample_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_VGENE_TENSOR_FORMAT_SAMPLE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(feature_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_VGENE_TENSOR_FORMAT_FEATURE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+sample_order <- rownames(mat_filtered_final)
+feature_order <- colnames(mat_filtered_final)
+
+write.table(sample_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_ALL_TENSOR_FORMAT_SAMPLE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+write.table(feature_order, paste0(outputdir, "Summary/isotyper_metrics_filtered_FINAL_ALL_TENSOR_FORMAT_FEATURE_ORDER", subsampled_depth_all, "_", iso_type, ".txt"), sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
 
 print("Finished")
 }

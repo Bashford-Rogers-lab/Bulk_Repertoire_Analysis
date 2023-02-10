@@ -54,7 +54,7 @@ visualise_vj_QC <- function(path_to_outputdir = path_to_outputdir, cluster_nodes
 		Known_V_genes$colour <- NA
 		Known_V_genes$colour[Known_V_genes$count >0] <- "Black"
 		Known_V_genes$colour[Known_V_genes$count ==0] <- "Red"
-		pdf(paste0(path_to_outputdir, '/Plots/V_Gene_Usage_Detection_.pdf'), width=20, height=10)
+		pdf(paste0(path_to_outputdir, '/Plots/V_Gene_Usage_Detection.pdf'), width=20, height=10)
 		p1 <- ggplot(Known_V_genes, aes(x=Vgene, y=count)) +geom_bar(stat="identity") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, colour=Known_V_genes$colour)) +xlab("All Known V genes") + ylab("Count") + ggtitle("V gene detection in full dataset")
 		plot(p1)
 		dev.off()

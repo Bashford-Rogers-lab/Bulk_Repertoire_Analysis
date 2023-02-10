@@ -44,6 +44,8 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	suppressMessages(library(ggrastr))
 	suppressMessages(library(ggpubr))
 	suppressMessages(library(plot3D))
+	suppressMessages(library(mousetrap))
+	suppressMessages(library(moments))
 	`%notin%` <- Negate(`%in%`)
 	print("Libraries Loaded")
 	## Makes files considerabley smaller!
@@ -198,11 +200,30 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 		days <- data.frame(str_split_fixed(FullData$Sample, "_", 2))
 		days <- days$X2
 		FullData <- cbind(FullData, days)
-		FullData$days <- gsub("T", "", FullData$days)
-		FullData$days[FullData$days != 1 & FullData$days != 3 & FullData$days != 5] <- "Control"
+		if(outputdir %like% "SEPSIS"){
+			FullData$days <- gsub("T", "", FullData$days)
+			FullData$days[FullData$days != 1 & FullData$days != 3 & FullData$days != 5] <- "Control"
+		} 
 	} else {
 		FullData$days <- "NA"
 	} 
+	
+	datas <- c()
+	## Get kurtosis, skewness and bimodality 
+	for(i in 1:length(unique(FullData$Sample))){
+		sampler <- unique(FullData$Sample)[i]
+		distr <- FullData$V.REGION.Nb.of.mutations[FullData$Sample==sampler]
+		kurt <- kurtosis(as.numeric(distr))
+		skew <- skewness(as.numeric(distr))
+		bimod <- bimodality_coefficient(as.numeric(distr))
+		ros <- c(sampler, kurt, skew, bimod)
+		datas <- rbind(ros, datas)
+	}
+	datas <- data.frame(datas)
+	colnames(datas) <- c("Sample", "V_gene_total_mutations_kurtosis__ALL",  "V_gene_total_mutations_skewness__ALL",  "V_gene_total_mutations_biomdality__ALL")
+	rownames(datas) <- datas$Sample
+	datas$Sample <- NULL
+	write.table(datas, paste0(path_to_outputdir, "/Summary/IMGT/Mutation_stats_", productivity, ".txt"), sep="\t")
 	
 	## Get Relevant plotting columns 
 	mutations <- grep('mutations', cols_calc, value=TRUE)
@@ -211,8 +232,18 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	ignore <- grep("Nb", transitions, value=TRUE)
 	transitions <- transitions[!transitions %in% ignore]
 	
+	## Plot dimensions
+	if(length(unique(FullData$Sample))<60){
+		widthx=20
+		heightx=10
+	} else {
+		widthx=60
+		heightx=20
+	}
+	######
+	
 	print("Plotting Mutation Data..")
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_', productivity, '.pdf'), width=60, height=20, useDingbats = TRUE)
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_', productivity, '.pdf'), width=widthx, height=heightx, useDingbats = TRUE)
 	for(i in 1:length(mutations)){
 		column_id <- mutations[i]
 		column_id_neat <- gsub("[[:punct:]]", " ", column_id)	
@@ -238,10 +269,10 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	classify <- FullData[, c("Sample", "V.REGION.Nb.of.mutations", "Barcode", "Lane", "Plate", "Library", "Position", "PCRBarcode")]
 	classify$Nb.Mutations <- as.numeric(classify$V.REGION.Nb.of.mutations)
 	classify$ClassSequence <- NULL
-	classify$ClassSequence[classify$Nb.Mutations <= 3] <- "UNMUTATED (naive)"
-	classify$ClassSequence[classify$Nb.Mutations <= 11 & classify$Nb.Mutations > 3] <- "LOW MUTATION (extrafollicular)"
-	classify$ClassSequence[classify$Nb.Mutations <= 75 & classify$Nb.Mutations > 11] <- "HIGH MUTATION (SHM germinal centre)"
-	classify$ClassSequence[classify$Nb.Mutations > 75] <- "VERY HIGH MUTATION (SHM germinal centre)"
+	classify$ClassSequence[classify$Nb.Mutations <= 3] <- "UNMUTATED"
+	classify$ClassSequence[classify$Nb.Mutations <= 11 & classify$Nb.Mutations > 3] <- "LOW MUTATION"
+	classify$ClassSequence[classify$Nb.Mutations <= 75 & classify$Nb.Mutations > 11] <- "HIGH MUTATION"
+	classify$ClassSequence[classify$Nb.Mutations > 75] <- "VERY HIGH MUTATION"
 	
 	data_new <- classify
 	data_new <- data_new[!is.na(data_new$ClassSequence),]
@@ -250,20 +281,33 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	w <- data.frame(prop.table(w, margin = 1)) 
 	
 	print("..DONE")
+	
 	## Plotting change in proportions across time 
-	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Summary_bar_', productivity, '.pdf'), width=60, height=20)
+	if(length(unique(FullData$Sample))<60){
+		widthx=20
+		heightx=10
+	} else {
+		widthx=60
+		heightx=20
+	}
+	######################
+	print("Plotting proportions across groups")
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_Summary_bar_', productivity, '.pdf'), width=widthx, height=heightx)
 	q1 <- ggplot(w, aes(fill=ClassSequence, x=Sample, y=Freq), na.rm = TRUE) +  rasterise(geom_col(position = "dodge", na.rm = TRUE), dpi = 300) +theme_bw() + xlab("Sample") + ylab("Frequency") + ggtitle(paste0("Total Mutations ", productivity))+labs(fill="Class of VDJ")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + facet_wrap(~ClassSequence, scales="free_y")
 	grid.arrange(q1)
 	dev.off()
-	
+	print("..DONE")
 	
 	# make wide format 
+	print("Making Wide Format..")
 	s <-spread(w, key = ClassSequence, value = Freq)
 	colnames(s) <- gsub(" ", "_", colnames(s))
+	if(dir.exists(paste0(path_to_outputdir, "Summary/IMGT/"))==FALSE){
+		dir.create(paste0(path_to_outputdir, "Summary/IMGT/"))
+	}	
 	write.table(s, paste0(path_to_outputdir, "/Summary/IMGT/IMGT_Prop_SHM_", productivity, ".txt"), sep="\t")
 	print("Mutation Statistics Done and Saved")
-	print("Finish")
-	
+	print("Finish")	
 }
 
 imgt_mutation_statistics_sepsis <- function(path_to_outputdir = path_to_outputdir, cluster_nodes = 8, productivity=productivity, path_to_layout=path_to_layout){
@@ -443,6 +487,25 @@ imgt_mutation_statistics_sepsis <- function(path_to_outputdir = path_to_outputdi
 		FullData$days <- "NA"
 	} 
 	
+	datas <- c()
+	## Get kurtosis, skewness and bimodality 
+	for(i in 1:length(unique(FullData$Sample))){
+		sampler <- unique(FullData$Sample)[i]
+		distr <- FullData$V.REGION.Nb.of.mutations[FullData$Sample==sampler]
+		kurt <- kurtosis(as.numeric(distr))
+		skew <- skewness(as.numeric(distr))
+		bimod <- bimodality_coefficient(as.numeric(distr))
+		ros <- c(sampler, kurt, skew, bimod)
+		datas <- rbind(ros, datas)
+	}
+	datas <- data.frame(datas)
+	colnames(datas) <- c("Sample", "V_gene_total_mutations_kurtosis__ALL",  "V_gene_total_mutations_skewness__ALL",  "V_gene_total_mutations_biomdality__ALL")
+	rownames(datas) <- datas$Sample
+	datas$Sample <- NULL
+	write.table(datas, paste0(path_to_outputdir, "/Summary/IMGT/Mutation_stats_", productivity, ".txt"), sep="\t")
+	
+	
+	
 	## Get Relevant plotting columns 
 	mutations <- grep('mutations', cols_calc, value=TRUE)
 	transitions <- cols_calc[!cols_calc %in% mutations]
@@ -567,10 +630,10 @@ imgt_mutation_statistics_sepsis <- function(path_to_outputdir = path_to_outputdi
 	data_new <- data_new[data_new$Type=="TOTAL",]
 	data_new$Nb.Mutations <- as.numeric(data_new$Nb.Mutations)
 	data_new$ClassSequence <- NULL
-	data_new$ClassSequence[data_new$Nb.Mutations <= 3] <- "UNMUTATED (naive)"
-	data_new$ClassSequence[data_new$Nb.Mutations <= 11 & data_new$Nb.Mutations > 3] <- "LOW MUTATION (extrafollicular)"
-	data_new$ClassSequence[data_new$Nb.Mutations <= 75 & data_new$Nb.Mutations > 11] <- "HIGH MUTATION (SHM germinal centre)"
-	data_new$ClassSequence[data_new$Nb.Mutations > 75] <- "VERY HIGH MUTATION (SHM germinal centre)"
+	data_new$ClassSequence[data_new$Nb.Mutations <= 3] <- "UNMUTATED"
+	data_new$ClassSequence[data_new$Nb.Mutations <= 11 & data_new$Nb.Mutations > 3] <- "LOW MUTATION"
+	data_new$ClassSequence[data_new$Nb.Mutations <= 75 & data_new$Nb.Mutations > 11] <- "HIGH MUTATION"
+	data_new$ClassSequence[data_new$Nb.Mutations > 75] <- "VERY HIGH MUTATION"
 
 	data_new <- data_new[!is.na(data_new$ClassSequence),]
 	

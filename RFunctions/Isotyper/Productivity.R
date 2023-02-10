@@ -35,6 +35,14 @@ get_productivity <- function(path=path, ids_all=ids_all, chain_vdj=chain_vdj, co
 	colnames(functionality) <- paste0("prop_", colnames(functionality), "__", all_class)
 	functionality <- as.data.frame.matrix(functionality)
 	
+	if(any(ids_all %like% "_productive")){
+		rownames(functionality) <- paste0(rownames(functionality), "_productive")
+	}
+	
+	if(any(ids_all %like% "_unproductive")){
+		rownames(functionality) <- paste0(rownames(functionality), "_unproductive")
+	}
+	
 	functionality <- functionality[rownames(functionality) %in% ids_all,]	
 	functionality <- as.matrix(functionality)
 	analysis_matrices16 = list(functionality)

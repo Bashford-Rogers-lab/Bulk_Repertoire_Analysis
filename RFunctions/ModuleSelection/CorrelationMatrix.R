@@ -3,11 +3,11 @@
 ## lauren.overend@oriel.ox.ac.uk
 ## Jan 2022 
 
-
-Get_subsample_corr_matrix <-function(features, p, min_sample_input, outputdir, iso_type, type){
+############ Where we correlate on the whole dataset! 
+Get_subsample_corr_matrix <-function(features, p, min_sample_input, outputdir, iso_type, type, method=NA){
   # get subsampled corr matrix
   mat_feature_corr = matrix(data = 0, nrow = length(features), ncol = length(features), dimnames = c(list(features), list(features)))
-  repeats = 100
+  repeats = 10000
   for(i1 in c(1:length(features))){
     print (i1)
     for(i2 in c(i1:length(features))){
@@ -35,8 +35,21 @@ Get_subsample_corr_matrix <-function(features, p, min_sample_input, outputdir, i
       }
     }
   }
-  
   sort(apply(mat_feature_corr, 1, function(x){length(which(is.na(x)))}))
-  saveRDS(file = paste0(outputdir, "Summary/Correlation_between_measures_SUBSAMPLED_", type, "_", iso_type, ".rds"), mat_feature_corr)
+  if(!is.na(method)){
+		if(method=="Day1"){
+		saveRDS(file = paste0(outputdir, "Summary/Correlation_between_measures_SUBSAMPLED_DAY1ONLY_", type, "_", iso_type, ".rds"), mat_feature_corr)
+		}
+		if(method=="Day3"){
+		saveRDS(file = paste0(outputdir, "Summary/Correlation_between_measures_SUBSAMPLED_DAY3ONLY_", type, "_", iso_type, ".rds"), mat_feature_corr)
+		}
+		if(method=="Day5"){
+		saveRDS(file = paste0(outputdir, "Summary/Correlation_between_measures_SUBSAMPLED_DAY5ONLY_", type, "_", iso_type, ".rds"), mat_feature_corr)
+		}
+		
+  } else {
+		saveRDS(file = paste0(outputdir, "Summary/Correlation_between_measures_SUBSAMPLED_", type, "_", iso_type, ".rds"), mat_feature_corr)
+  }
+  
   return(mat_feature_corr)
 }
