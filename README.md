@@ -1,6 +1,20 @@
 # Bulk Repertoire Analysis
+## Introduction ## 
 
-This Repository contains the code required to preform the BCR/TCR pre-processing pipeline for NGS data based on the IsoTyper and TCR protocols developed in the Bashford-Rogers Lab. For handling multiple samples we provide two solutions: a) a python based wrapper for job submission using bsub (Processing_sequences_large_scale.py) and b) a standard job submission bash script using qsub (BCR_TCR_Wrapper_Cluster.sh). The latter is preferable for running on the BMRC cluster (Recomp) as it utilises the module system and could be easily adapted for another cluster architecture. 
+This repository contains code to preform the BCR/TCR repertoire analysis for NGS data based on the BCR/TCR protocols developed in the Bashford-Rogers Lab as published in: Bashford-Rogers, R.J.M., Bergamaschi, L., McKinney, E.F. et al. Analysis of the B cell receptor repertoire in six immune-mediated diseases. Nature 574, 122–126 (2019). https://doi.org/10.1038/s41586-019-1595-3
+
+
+## Author Contributions 
+- Rachael Bashford Rogers: Python code (pre-proccessing and repertoire feature generation)
+- Lauren Overend: R code (Module Reduction, QC metrics, batch effect assessment, pipeline manager, ReadME)
+
+## Job Submission
+To run the pre-processing pipeline we provide several different approaches 
+### Running individual stages:
+   - A python based wrapper for job submission using bsub (Processing_sequences_large_scale.py) 
+   - A bash script using qsub (BCR_TCR_Wrapper_Cluster.sh). The latter is preferable for running on the BMRC cluster (Rescomp) 
+### Running the full pipeline:
+  - A bash script using qsub (BCR_TCR_Wrapper_Cluster.sh). The latter is preferable for running on the BMRC cluster (Rescomp).
 
 *An indepth guide to installation/using the pipeline can be found in the BCR_TCR_preprocessingmanual2.0.pdf* 
 
@@ -88,12 +102,6 @@ Ensure that the following R packages are installed:
 * When using the BCR_TCR_Wrapper_Cluster.sh wrapper all log files will be output to a directory called COMMANDLOGS within the current working directory (directory containing pipeline). However this must be created prior to running the job submission wrapper using the following bash script e.g.:  
 `cd path_to/BCR_TCR_PROCESSING_PIPELINE`
 `mkdir COMMANDLOGS`
-
-
-# Author Contribution 
-
-* Rachael J. M. Bashford-Rogers developed the python based TCR/BCR repertoire analysis pipeline and User Guide. 
-* Lauren E. Overend developed the bash wrapper, R functions and helped write documentation. 
 
 # References 
 
