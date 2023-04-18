@@ -54,13 +54,18 @@ correlate_eigenvectors_srs <- function(eigenvectors, metadata, outputdir, type_r
 	## Set the Effect Direction for Sex to make sure its constant!!!!!
 	eigenvectors$Sex <- factor(eigenvectors$Sex, levels=c("Female", "Male"))
 	eigenvectors$DISEASE <- factor(eigenvectors$DISEASE, levels=c("HEALTH", "SEPSIS"))
-
+	print("Merged Number of Eigenvector samples")
+	print(dim(eigenvectors)[1])
 
 	##Add srs assignments 
 	srs <- read.delim(srs_assignment, header=TRUE, sep="\t")
 	colnames(srs)[1] <- "sample"
-	eigenvectors <- merge(eigenvectors, srs, by="sample", all.x=TRUE)
+	eigenvectors <- merge(eigenvectors, srs, by="sample")
 	eigenvectors$SRS <- factor(eigenvectors$SRS, levels= c("SRS3", "SRS2", "SRS1", NA))
+	
+	print("Merged Number of Matched RNAseq and Repertoire Samples")
+	print(dim(eigenvectors)[1])
+	
 	
 	########################################################################################
 	## do we subset just for sepsis? 
@@ -68,6 +73,10 @@ correlate_eigenvectors_srs <- function(eigenvectors, metadata, outputdir, type_r
 	#CURRENT SETTING JUST SEPSIS 
 	eigenvectors <- eigenvectors[eigenvectors$DISEASE=="SEPSIS",]
 	eigenvectors <- eigenvectors[!is.na(eigenvectors$SRS),]
+	
+	#print("Merged Number of Sepsis (only) Samples")
+	#print(dim(eigenvectors)[1])
+	
 	#........................................................
 	#############################################################
 	#### lets do a little scatter plot giving you an idea of the shape of the data 
@@ -99,6 +108,8 @@ correlate_eigenvectors_srs <- function(eigenvectors, metadata, outputdir, type_r
 	vif_all <- c()
 	
 	print("Calculating Stats!")
+	pdf(paste0(outputdir, "/SRS_Adj_Plotsignore.pdf"),width=8, height=12)
+
 	## Run a simple model to look for interaction
 	for(i in 2:(length(colnames(eigenvectors))-10)){
 		eigenvectors <- data.frame(eigenvectors)
@@ -119,7 +130,7 @@ correlate_eigenvectors_srs <- function(eigenvectors, metadata, outputdir, type_r
 
 		## Set up the plot to look at srsq having considered time and sample effect 
 		est <-effects::Effect("SRSq",  partial.residuals=TRUE, xmdl)
-		p1 <- plot(est)
+		p1 <- plot(est,  ylab="Residual\nModule Score", main=colnames(eigenvectors)[i], xlab="SRSq")
 		class(p1) <- "trellis"
 		myplots[[(i-1)]] <-p1
 
@@ -184,7 +195,7 @@ correlate_eigenvectors_srs <- function(eigenvectors, metadata, outputdir, type_r
 		print("got effect estimates")
 	}
 	print("Calculating Stats.. DONE")
-
+	dev.off()
 	colnames(p_values_out) <- c("Module", "TIMEPOINT", "SRSq",  "AGE", "SEX.MALE", "COMORBIDITIES:CI", "ANOVA_NULL", "ANOVA_COV") 	
 	#colnames(p_values_out) <- c("Module", "TIMEPOINT", "SRS2", "SRS1", "AGE", "SEX.MALE", "COMORBIDITIES:CI", "TIMEPOINTxSRS2", "TIMEPOINTxSRS1", "F_TEST") 	
 	
@@ -196,12 +207,12 @@ correlate_eigenvectors_srs <- function(eigenvectors, metadata, outputdir, type_r
 		col_number <- 4
 		dims <- 16
 	} else if (type_receptor=="BCR"){
-		col_number <- 5 
-		dims <- 20
+		col_number <- 4 
+		dims <- 15
 	}
 	
 	## Do residual plots to visualise corrected values after adjusting for covariates. 
-	pdf(paste0(outputdir, "/SRS_AdjModel_Residual_Plot.pdf"),width=(dims+5), height=dims)
+	pdf(paste0(outputdir, "/SRS_AdjModel_Residual_Plot.pdf"),width=dims, height=(dims+5))
 	source('/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/ModuleSelection/multiplot.R')
 	plot(do.call("grid.arrange", c(myplots, ncol=col_number)))
 	dev.off()
@@ -238,12 +249,13 @@ correlate_eigenvectors_srs <- function(eigenvectors, metadata, outputdir, type_r
 	p_hd$BHsig <- "ns"
 	p_hd$BHsig[p_hd$BH < 0.05] <- "sig"
 	p_hd_sub <- p_hd[p_hd$BHsig =="sig",]
-	p_hd$Type <- "ADDITIVE MODEL EFFECT"
+	p_hd$Type <- "ADDITIVE MODEL"
 	p_hd$Type[p_hd$Effect %like% "ANOVA"] <- "ANOVA"
 	p_hd$Effect <- as.character(p_hd$Effect)
     p_hd$Effect[p_hd$Effect=="ANOVA_NULL"] <- "NULL MODEL"
 	p_hd$Effect[p_hd$Effect=="ANOVA_COV"] <- "COV ONLY MODEL"
-
+	p_hd$Type <- str_wrap(p_hd$Type, width = 12)
+	
 	#p_hd$Effect <- factor(p_hd$Effect, levels=c("TIMEPOINT", "SRS2", "SRS1", "AGE", "SEX.MALE", "COMORBIDITIES:CI", "TIMEPOINTxSRS2", "TIMEPOINTxSRS1", "MODEL"))
 	p_hd$Effect <- factor(p_hd$Effect, levels=c("TIMEPOINT", "SRSq",  "AGE", "SEX.MALE", "COMORBIDITIES:CI", "NULL MODEL", "COV ONLY MODEL"))
 

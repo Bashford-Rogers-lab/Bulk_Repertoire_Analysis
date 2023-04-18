@@ -8,7 +8,7 @@
 #--------------------------------------------------------------------------------------------------------------------------------------
 ### Visualise imputation
 
-summary_imputation <- function(path_to_outputdir, plot_dir, stat_dir){
+summary_imputation <- function(path_to_outputdir, plot_dir, stat_dir, type_use, iso_type){
 	imputation_methods <- read.delim(paste0(path_to_outputdir, "/Summary/nmrse_variables_", type_use, "_", iso_type, ".txt"), header=TRUE, sep="\t")	
 	## Lets look at the average imputation score across all NAseed per method and select the best one
 	method_means <- imputation_methods %>% dplyr::group_by(method) %>% dplyr::summarise(mean_error = mean(rsme))
@@ -54,8 +54,10 @@ summary_imputation <- function(path_to_outputdir, plot_dir, stat_dir){
 	dev.off()
 	
 	pdf(paste0(plot_dir, "/Imputation_Summary.pdf"), width=13, height=13)
-	a <- ggplot(imputation_methods, aes(x=method, y=rsme, fill=method)) +geom_point(alpha = 0.7, aes(col=method), position = "jitter", set.seed(1)) +theme_bw() + geom_violin(alpha=0.5) + stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")+guides(fill="none")+geom_hline(yintercept=0.5, col="red") +ggtitle("Wilcox test comparing RSME against base-mean") +facet_wrap(~NAseedfrequency)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +xlab("Method")+ ylab("RMSE")
-	b <- ggplot(imputation_methods, aes(x=method, y=rsme, fill=method)) +geom_point(alpha = 0.7, aes(col=method), position = "jitter", set.seed(1)) +theme_bw() + geom_boxplot(alpha=0.5)+ stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")+guides(fill="none")+geom_hline(yintercept=0.5, col="red")+ggtitle("Wilcox test comparing RSME against base-mean") +facet_wrap(~NAseedfrequency)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +xlab("Method")+ ylab("RMSE")
+	a <- ggplot(imputation_methods, aes(x=method, y=rsme, fill=method)) +geom_point(alpha = 0.7, aes(col=method), position = "jitter", set.seed(1)) +theme_bw() + geom_violin(alpha=0.5) + stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")+guides(fill="none", colour="none")+geom_hline(yintercept=0.5, col="red") +ggtitle(paste0(type_use, " Wilcox test comparing RSME against base-mean")) +facet_wrap(~NAseedfrequency)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +xlab("Method")+ ylab("RMSE")+
+    scale_y_continuous(expand = c(0.05, 0.15))
+	b <- ggplot(imputation_methods, aes(x=method, y=rsme, fill=method)) +geom_point(alpha = 0.7, aes(col=method), position = "jitter", set.seed(1)) +theme_bw() + geom_boxplot(alpha=0.5)+ stat_compare_means(ref.group = ".all.", label = "p.signif", method="wilcox.test")+guides(fill="none", colour="none")+geom_hline(yintercept=0.5, col="red")+ggtitle(paste0(type_use, " Wilcox test comparing RSME against base-mean")) +facet_wrap(~NAseedfrequency)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +xlab("Method")+ ylab("RMSE")+
+    scale_y_continuous(expand = c(0.05, 0.15))
 	c <- ggplot(nrmse_df2, aes(x=Method, y=NRMSE, fill=Method)) +geom_col() +theme_bw() +facet_wrap(~NAseedfrequency)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +xlab("Method (Seed NA per column)")+ ylab("NRMSE")
 	plot(a)
 	plot(b)
@@ -103,10 +105,10 @@ summary_imputation <- function(path_to_outputdir, plot_dir, stat_dir){
 	final_means$colourx[final_means$variable %in% sig_var] <- "p <0.05"
 	
 	pdf(paste0(plot_dir, "/Imputation_Summary_pervariable.pdf"), width=10, height=8)
-	p<-ggplot(result_imp, aes(x=p)) +  geom_histogram(color="black", fill="lightgrey", bins=50)+theme_bw()+geom_vline(xintercept=0.05, col="red") +xlab("p Value for Wilcox Test ") + ylab("Number of Repertoire Features")
-	p1<-ggplot(means_group[means_group$difference!=0,], aes(x=difference)) +  geom_histogram(color="black", fill="lightgrey", bins=50)+theme_bw()+geom_vline(xintercept=0.00, col="red") +xlab("Abs % Change in Mean after Imputation") + ylab("Number of Repertoire Features")
-	p2<-ggplot(d, aes(x=isna)) +  geom_histogram(color="black", fill="lightgrey", bins=50)+theme_bw() +xlab("Number of Missing Values") + ylab("Number of Repertoire Features")
-	p3<-ggplot(final_means, aes(x=isna, y=difference)) +  geom_point(aes(colour=colourx))+theme_bw() +xlab("Number of Missing Values") + ylab("Abs % Change in Mean after Imputation")+scale_colour_manual(values=c("black", "red"))+labs(colour="")+ stat_cor(method = "pearson", label.x = 0, label.y = 40) + geom_smooth(method=lm, se=FALSE)
+	p<-ggplot(result_imp, aes(x=p)) +  geom_histogram(color="black", fill="lightgrey", bins=50)+theme_bw()+geom_vline(xintercept=0.05, col="red") +xlab("p Value for Wilcox Test ") + ylab("Number of Repertoire Features")+ggtitle(type_use)
+	p1<-ggplot(means_group[means_group$difference!=0,], aes(x=difference)) +  geom_histogram(color="black", fill="lightgrey", bins=50)+theme_bw()+geom_vline(xintercept=0.00, col="red") +xlab("Abs % Change in Mean after Imputation") + ylab("Number of Repertoire Features")+ggtitle(type_use)
+	p2<-ggplot(d, aes(x=isna)) +  geom_histogram(color="black", fill="lightgrey", bins=50)+theme_bw() +xlab("Number of Missing Values") + ylab("Number of Repertoire Features")+ggtitle(type_use)
+	p3<-ggplot(final_means, aes(x=isna, y=difference)) +  geom_point(aes(colour=colourx))+theme_bw() +xlab("Number of Missing Values") + ylab("Abs % Change in Mean after Imputation")+scale_colour_manual(values=c("black", "red"))+labs(colour="")+ stat_cor(method = "pearson", label.x = 0, label.y = 40) + geom_smooth(method=lm, se=FALSE)+ggtitle(type_use)
 	plot(plot_grid(p2, p, p1, p3, labels = c('A', 'B', 'C', 'D'), ncol=2))
 	dev.off()
 	
@@ -120,6 +122,7 @@ summary_imputation <- function(path_to_outputdir, plot_dir, stat_dir){
 	colnames(means_group)[5] <- "NA count"
 	write.table(means_group, paste0(stat_dir, "/ImputationSummaryStats.txt"), sep="\t", row.names=FALSE)
 
+    return(list(a, b, c, p2, p, p1, p3))
 }
 
 

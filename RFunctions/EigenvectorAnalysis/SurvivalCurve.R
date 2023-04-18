@@ -41,11 +41,12 @@ plot_survival <- function(eigenvectors, metadata, outputdir){
 	survival_cal$proportion_surviving <- (dim(metadata_daysdeath)[1]-survival_cal$Cumulative_deaths)/(dim(metadata_daysdeath)[1])
 	
 	## Plot the survival curves
-	pdf(paste0(outputdir,"/Survival_Curve.pdf"), width=5, height=3)
-	plot(ggplot(survival_cal, aes(x=Days_to_death, y=proportion_surviving)) + geom_line() + theme_classic() +xlab("Days to Death from ICU Admission") + ylab("Proportion of Cohort Alive")+
-	geom_vline(xintercept=7, col="red") + geom_vline(xintercept=180, col="blue") + ggtitle("Survival Curve for Sepsis Cohort")+ylim(0,1))
-	plot(ggplot(survival_cal, aes(x=Days_to_death, y=Cumulative_deaths)) + geom_line() + theme_classic() +xlab("Days to Death from ICU Admission") + ylab("Cumulative Number of Deaths")+
-	geom_vline(xintercept=7, col="red") + geom_vline(xintercept=180, col="blue")+ geom_vline(xintercept=28, col="orange") + ggtitle("Survival Curve for Sepsis Cohort")+ geom_vline(xintercept=5, col="yellow"))
+	pdf(paste0(outputdir,"/Survival_Curve.pdf"), width=6, height=3)
+	x1 <- ggplot(survival_cal, aes(x=Days_to_death, y=proportion_surviving)) + geom_line() + theme_classic() +xlab("Days to Death from ICU Admission") + ylab("Proportion of Cohort Alive")+
+	geom_vline(xintercept=7, col="red") + geom_vline(xintercept=180, col="blue") +ylim(0,1)
+	x2 <- ggplot(survival_cal, aes(x=Days_to_death, y=Cumulative_deaths)) + geom_line() + theme_classic() +xlab("Days to Death from ICU Admission") + ylab("Cumulative Number of Deaths")+
+	geom_vline(xintercept=7, col="red") + geom_vline(xintercept=180, col="blue") 
+	plot(plot_grid(x1, x2, align="v", axis="lbt" , ncol=2))
 	dev.off()
 
 	## What is the best grouping....

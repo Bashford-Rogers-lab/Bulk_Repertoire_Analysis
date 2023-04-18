@@ -46,9 +46,9 @@ plot_correlation_across <- function(eigenvector_list, outputdir, type_receptor){
 	pdf(paste0(outputdir, "/AcrossModuleCorrelation_", type_receptor, ".pdf"), height=7, width=7)
 	par(mfrow= c(1,1), mar = c(5,5,5,5))
 	if(min(pval)<0.05){
-		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Across Module Correlations BH correction All Days:1"), method = "ellipse", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0))
+		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Across Module Correlations BH correction\nAll Days ", type_receptor), method = "circle", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black")
 	} else {
-		corrplot(rval,  title =paste0("Across Module Correlations BH correction: Day3"), method = "ellipse", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0))
+		corrplot(rval,  title =paste0("Across Module Correlations BH correction\nAll Days ", type_receptor), method = "circle", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0), tl.col = "black")
 	}
 	dev.off()
 	
@@ -88,9 +88,9 @@ plot_correlation_across <- function(eigenvector_list, outputdir, type_receptor){
 	#par( mfrow= c(2,3) )
 	
 	if(min(pval)<0.05){
-		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Across Module Correlations BH correction: Day1"), method = "ellipse", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0))
+		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Receptor Module Correlations (BH Adj p)\nDay1 ", type_receptor), method = "circle", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black")
 	} else {
-		corrplot(rval,  title =paste0("Across Module Correlations BH correction: Day3"), method = "ellipse", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0))
+		corrplot(rval,  title =paste0("Receptor Module Correlations (BH Adj p)\nDay1 ", type_receptor), method = "circle", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0), tl.col = "black")
 	}
 	
 	################################################
@@ -109,9 +109,9 @@ plot_correlation_across <- function(eigenvector_list, outputdir, type_receptor){
 	colnames(rval2long)[3] <- "Day3"
 	#########
 	if(min(pval)<0.05){
-		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Across Module Correlations BH correction: Day3"), method = "ellipse", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0))
+		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Receptor Module Correlations (BH Adj p)\nDay3 ", type_receptor), method = "circle", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black")
 	} else {
-		corrplot(rval,  title =paste0("Across Module Correlations BH correction: Day3"), method = "ellipse", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0))
+		corrplot(rval,  title =paste0("Receptor Module Correlations (BH Adj p)\nDay3 ", type_receptor), method = "circle", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0), tl.col = "black")
 	}
 	
 	###############################
@@ -130,9 +130,9 @@ plot_correlation_across <- function(eigenvector_list, outputdir, type_receptor){
 	colnames(rval3long)[3] <- "Day5"
 	##############
 	if(min(pval)<0.05){
-		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Across Module Correlations BH correction: Day5"), method = "ellipse", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0))
+		corrplot(rval, p.mat=pval, insig="label_sig", sig.level=0.05, title =paste0("Receptor Module Correlations (BH Adj p)\nDay5 ", type_receptor), method = "circle", diag = F, order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black")
 	} else {
-		corrplot(rval,  title =paste0("Across Module Correlations BH correction: Day3"), method = "ellipse", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0))
+		corrplot(rval,  title =paste0("Receptor Module Correlations (BH Adj p)\nDay5 ", type_receptor), method = "circle", order = 'original', tl.cex = 0.7,diag = F, mar=c(0,0,2,0), tl.col = "black")
 	}
 	
 	####### Look at how r values change 
@@ -219,10 +219,10 @@ plot_correlation_across <- function(eigenvector_list, outputdir, type_receptor){
 				}
 			}
 		}	
-	pdf(paste0(outputdir, "/AcrossModuleCorrelation_RMCORR_", type_receptor, ".pdf"), height=6, width=6)
-	corrplot(to_plot, p.mat=m, insig="label_sig",  sig.level=0.05, title =paste0("Within Module Correlations RMCORR: ", type_receptor), method = "ellipse",  order = 'original', tl.cex = 0.7, mar=c(0,0,2,0))
+	pdf(paste0(outputdir, "/AcrossModuleCorrelation_RMCORR_", type_receptor, ".pdf"), height=7, width=7)
+	corrplot(to_plot, p.mat=m, insig="label_sig",  sig.level=0.05, title =paste0("Receptor Module Correlations \nRMCORR (BH Adj p): ", type_receptor), method = "circle",  order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black", pch.cex = 2)
 	if(min(madj)<0.05){
-		corrplot(to_plot, p.mat=madj, insig="label_sig",  sig.level=0.05, title =paste0("Within Module Correlations RMCORR: ", type_receptor), method = "ellipse",  order = 'original', tl.cex = 0.7, mar=c(0,0,2,0))
+		corrplot(to_plot, p.mat=madj, insig="label_sig",  sig.level=0.05, title =paste0("Receptor Module Correlations \nRMCORR (BH Adj p): ", type_receptor), method = "circle",  order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black", pch.cex = 2)
 	}
 	dev.off()
 }

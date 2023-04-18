@@ -115,6 +115,8 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 				data_allx <- gather(data_all, "Feature", "Scaled_Score",  -Sample, factor_key=TRUE)
 				## get the module
 				data_usex <- merge(data_allx, meta_all, by.x="Sample", by.y="SampleID_alternative")
+				print("Merged Number of Samples")
+				print(length(unique(data_usex$Sample)))
 			} else {
 				data_use$Sample <- rownames(data_use)
 				data_allx <- gather(data_use, "Feature", "Scaled_Score",  -Sample, factor_key=TRUE)
@@ -153,11 +155,11 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 			
 			## Set plot dimensions
 			if(dims_pdfh < 15){
-				dims_pdfh == 20
+				dims_pdfh <- 20
 			}
 			
 			if(dims_pdfw < 20){
-				dims_pdfw == 20
+				dims_pdfw <- 20
 			}
 
 			p_estimatesh <- c() 
@@ -192,7 +194,11 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 				hvsdp <- estimates[2]
 				tp <- estimates[1]
 				
-				p1 <- interactions::interact_plot(xmdl, pred = DAY, modx = DISEASE, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nSepsis: p=", round(hvsdp,2), "\nTimepoint: p=",round(tp,2)), y.label="Scaled Score") + theme(plot.title = element_text(color = col_text, size=10))
+				if(feature_use %like% "Module"){
+							p1 <- interactions::interact_plot(xmdl, pred = DAY, modx = DISEASE, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nSepsis: p=", round(hvsdp,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Module Score") + theme(plot.title = element_text(color = col_text, size=10))
+				} 	else{
+					p1 <- interactions::interact_plot(xmdl, pred = DAY, modx = DISEASE, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nSepsis: p=", round(hvsdp,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Scaled Score") + theme(plot.title = element_text(color = col_text, size=10))
+				}
 				myplots_hvsd[[(x)]] <- p1
 					
 				####
@@ -215,7 +221,11 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 				ed <-  estimates[3]
 				ld <-  estimates[2]
 				
-				p1x <- interactions::interact_plot(xmdlx, pred = DAY, modx = Mortality, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nED: p=", round(ed,2), ", LD: p=", round(ld,2), "\nTimepoint: p=",round(tp,2)), y.label="Scaled Score")+ theme(plot.title = element_text(color = col_text, size=10))
+				if(feature_use %like% "Module"){
+					p1x <- interactions::interact_plot(xmdlx, pred = DAY, modx = Mortality, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nED: p=", round(ed,2), ", LD: p=", round(ld,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Module Score")+ theme(plot.title = element_text(color = col_text, size=10))
+				} else {
+					p1x <- interactions::interact_plot(xmdlx, pred = DAY, modx = Mortality, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nED: p=", round(ed,2), ", LD: p=", round(ld,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Scaled Score")+ theme(plot.title = element_text(color = col_text, size=10))
+				}
 				myplots_mort[[(x)]] <- p1x
 				
 				## Lets R bind

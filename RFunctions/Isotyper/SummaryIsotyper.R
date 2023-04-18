@@ -393,7 +393,7 @@ overall_matrix<- overall_matrix[, c(!colnames(overall_matrix) %in% names(empty_c
 ####################################################################################################
 
 print("Removing Samples Present in Exclude Sample File")
-if (!is.na(exclude_samples)){
+if (exclude_samples!="NA"){
 	exclude_samples <- read.delim(exclude_samples, header=TRUE, sep="\t")
 	if(iso_type == "UNPRODUCTIVE"){
 	exclude_samples[,1] <- paste0(exclude_samples[,1], "_unproductive")
