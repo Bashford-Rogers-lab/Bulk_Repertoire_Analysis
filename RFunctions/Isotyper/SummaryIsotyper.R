@@ -26,7 +26,7 @@ suppressMessages(library(mousetrap))
 
 
 ## Function 
-summary_isotyper <- function(outputdir=outputdir, samplesfilepost=samplesfilepost, iso_type=iso_type, exclude_samples=exclude_samples){
+summary_isotyper <- function(outputdir=outputdir, samplesfilepost=samplesfilepost, iso_type=iso_type, exclude_samples=exclude_samples,  path_to_layout=path_to_layout, normalise=FALSE){
 
 iso_type=iso_type
 #Getting SampleIDs
@@ -79,6 +79,7 @@ if(receptor %like% "TR"){
 
 }
 
+#k <- c("UK47630020_3", "UK51540002_1", "UK55250007_3")
 ## Plot read depths
 pdf(paste0(outputdir, "Plots/Read_Depths_", iso_type, ".pdf"), width=50, height=10)
 	for(i in 3:length(colnames(depths_all_unique))){
@@ -226,9 +227,13 @@ analysis_matrices13 <- make_matrices13(file, ids_all)
 ##---------------------------------------------------------------------------------------------------------------------
 ## File Number 14 V gene Usages:  checked BCR!!!  
 source('RFunctions/Isotyper/Matrices_14.R')
+source('RFunctions/Isotyper/Matrices_14_BATCHCORRECT.R')
 file = paste0(outputdir, "ORIENTATED_SEQUENCES/ISOTYPER/All_V_gene_grouped_isotype_frequency_", iso_type, ".txt")
 analysis_matrices14 <- make_matrices14(file, chain_vdj, ids_all, counts_used, iso_type)
-	
+if(normalise != "FALSE"){
+	print("Running Normalised V gene Calculation") 
+	analysis_matrices14 <- make_matrices14_normalised(file, chain_vdj, ids_all, counts_used, iso_type, path_to_layout, outputdir)
+}
 ##---------------------------------------------------------------------------------------------------------------------
 ## Get Hydrophobicity:  checked BCR!!! 
 ## ignore the warning I think there is an error in the package?? I've checked to see that the CDR3 contain the listed amino acids
@@ -650,8 +655,29 @@ mat_filtered <- mat_filtered[, c(features)]
 ## AFter this point imputation gets messy.....
 missing_threshold <- 0.4*length(feature_columns)
 if(any(rowSums(is.na(mat_filtered))>missing_threshold)){
+	print(dim(mat_filtered))
 	samples_exclude <- rownames(mat_filtered)[rowSums(is.na(mat_filtered))>missing_threshold]
 	mat_filtered <- mat_filtered[!rownames(mat_filtered) %in% samples_exclude,]
+	print(dim(mat_filtered))
+}
+
+####################################################
+####################################################
+####################################################
+####################################################
+### HERE IS WHAT MAKES ME THING THERES AN ERROR IN RACHAELS Code
+## 	I ALREADY FILTERED SAMPLES WITH A LOW READ DEPTH < SUBSAMPLE DEPTH
+## SO WHY ARE THERE SOME THAT HAVENT GOT SUBSAMPLE MEASURES CALCULATED???
+## THEY HAVE ENOUGH IN THE FILE 
+### For some reason the TCR seems to not always downsample properly....
+if(chain_vdj %like% "T" & any(rowSums(is.na(mat_filtered))>2)){
+		print("Some samples where subsampled measures have not been calculated!")
+		print("Removing these")
+		print(dim(mat_filtered))
+		samples_exclude <- rownames(mat_filtered)[rowSums(is.na(mat_filtered))>2]
+		print(paste0("Removing ", length(samples_exclude), " samples"))
+		mat_filtered <- mat_filtered[!rownames(mat_filtered) %in% samples_exclude,]
+		print(dim(mat_filtered))
 } 
 ### 
 print("Done filtering on unique values filtering and missingness filtering!")

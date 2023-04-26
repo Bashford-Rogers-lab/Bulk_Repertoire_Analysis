@@ -30,6 +30,12 @@ srs_assignment <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/Sam
 cyber_sort  <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_CYBERSORT_assignment.txt'
 gene_expression_file <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/GeneExpression/REPERTOIRE_SAMPLES_GEX_EnsembeID.txt'
 protein  <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/Yuxin_PROTEOMIC_PROCESSED/REPERTOIRE_SAMPLES_IMMUNOGLOBULIN.txt'
+final_data <- "/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/Imputed_DATA_FINAL_BCR_PRODUCTIVE.txt"
+iso_type <- "PRODUCTIVE"
+meta <- '/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/sepsis_meta_health.txt'
+minClusterSizex <- 20
+thresh_sd <- 1.4
+
 
 #TCRAB
 eigenvectors <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Eigenvectors_No_Technical_TCRAB_PRODUCTIVE.txt'
@@ -42,6 +48,11 @@ imputed_data <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Imputed_DAT
 loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Summary/Module_FeaturePCALoadings_TCRAB_375_PRODUCTIVE.rds'
 srs_assignment <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_SRS_RNA_seq_assignment.txt'
 cyber_sort  <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_CYBERSORT_assignment.txt'
+final_data <- "/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Imputed_DATA_FINAL_TCRAB_PRODUCTIVE.txt"
+iso_type <- "PRODUCTIVE"
+meta <- '/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/sepsis_meta_health.txt'
+minClusterSizex <- 20
+thresh_sd <- 1.2
 
 ##TCRGD
 eigenvectors <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD/Eigenvectors_No_Technical_TCRGD_PRODUCTIVE.txt'
@@ -64,8 +75,11 @@ feature_assignment <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/S
 imputed_data <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Imputed_DATA_FINAL_SCALED_TCRGD_PRODUCTIVE.txt'
 loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Summary/Module_FeaturePCALoadings_TCRGD_80_PRODUCTIVE.rds'
 srs_assignment <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_SRS_RNA_seq_assignment.txt'
-
-
+final_data <- "/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD/Imputed_DATA_FINAL_TCRGD_PRODUCTIVE.txt"
+iso_type <- "PRODUCTIVE"
+meta <- '/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/sepsis_meta_health.txt'
+minClusterSizex <- 20
+thresh_sd <- 0.75
 
 ##-----------------------------------------------------------------------------
 ## This first function looks at all day 1 measures and correlates them to the clinical data provided 
@@ -105,7 +119,9 @@ correlate_eigenvectors_t1(eigenvectors, metadata, outputdir, type_receptor, NA)
 ## STEP 10: CORRELATE TO Longitudinal Clinical variables 
 source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/EigenvectorAnalysis/Model_Continuous_Metadata.R')
 correlate_eigenvectors_continuous(eigenvectors, metadata, outputdir, type_receptor)
-
+## Cluster Samples 
+source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/EigenvectorAnalysis/SampleClustering.R')
+cluster_samples(final_data, paste0(outputdir, "/"), type_receptor, iso_type, meta, minClusterSizex, thresh_sd)
 
 ##------------------------------------------------------------------------------------------------------------
 ##------------------------------------------------------------------------------------------------------------

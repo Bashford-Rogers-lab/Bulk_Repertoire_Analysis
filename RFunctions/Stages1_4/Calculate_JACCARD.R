@@ -95,18 +95,43 @@ calculate_jaccard_matrix <- function(path_to_output, runname){
 	JACCARD_MATRIX_2$SharedSeq.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)
 	JACCARD_MATRIX_2$Size.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted)
 	JACCARD_MATRIX_2$Jaccard.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted)
-	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample))
-	JACCARD_MATRIX_2$log.Size.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample))
-	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample))
-	JACCARD_MATRIX_2$log.SharedSeq.Full <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full))
-	JACCARD_MATRIX_2$log.Size.Full <- log(as.numeric(JACCARD_MATRIX_2$Size.Full))
-	JACCARD_MATRIX_2$log.Jaccard.Full <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.Full))
-	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.Size.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.SharedSeq.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted))
-	JACCARD_MATRIX_2$log.Size.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted))
-	JACCARD_MATRIX_2$log.Jaccard.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted))
+	
+	## When we log we need to add a small constant 
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.MeanSubsample[JACCARD_MATRIX_2$SharedSeq.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.MeanSubsample[JACCARD_MATRIX_2$Size.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$Size.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.Size.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.MeanSubsample[JACCARD_MATRIX_2$Jaccard.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.Full[JACCARD_MATRIX_2$SharedSeq.Full!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.Full)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.Full <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.Full[JACCARD_MATRIX_2$Size.Full!=0 & !is.na(JACCARD_MATRIX_2$Size.Full)])/2
+	JACCARD_MATRIX_2$log.Size.Full <- log2(as.numeric(JACCARD_MATRIX_2$Size.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.Full[JACCARD_MATRIX_2$Jaccard.Full!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.Full)])/2
+	JACCARD_MATRIX_2$log.Jaccard.Full <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.MeanSubsample.Weighted[JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted )])/2
+	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.MeanSubsample.Weighted[JACCARD_MATRIX_2$Size.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted)])/2
+	JACCARD_MATRIX_2$log.Size.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.MeanSubsample.Weighted[JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted)])/2
+	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.Full.Weighted[JACCARD_MATRIX_2$SharedSeq.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.Full.Weighted[JACCARD_MATRIX_2$Size.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$Size.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.Size.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.Full.Weighted[JACCARD_MATRIX_2$Jaccard.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.Jaccard.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted)+c)
 	
 	## Make an extra column considering whether results were NA because they couldn't be subsampled.
 	## This is used in the plotting. 
@@ -293,19 +318,43 @@ calculate_jaccard_matrix_libhopcorrection <- function(path_to_output, runname, p
 	JACCARD_MATRIX_2$SharedSeq.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)
 	JACCARD_MATRIX_2$Size.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted)
 	JACCARD_MATRIX_2$Jaccard.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted)
-	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample))
-	JACCARD_MATRIX_2$log.Size.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample))
-	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample))
-	JACCARD_MATRIX_2$log.SharedSeq.Full <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full))
-	JACCARD_MATRIX_2$log.Size.Full <- log(as.numeric(JACCARD_MATRIX_2$Size.Full))
-	JACCARD_MATRIX_2$log.Jaccard.Full <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.Full))
-	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.Size.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.SharedSeq.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted))
-	JACCARD_MATRIX_2$log.Size.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted))
-	JACCARD_MATRIX_2$log.Jaccard.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted))
+	## When we log we need to add a small constant 
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.MeanSubsample[JACCARD_MATRIX_2$SharedSeq.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample)+c)
 	
+	c <- min(JACCARD_MATRIX_2_$Size.MeanSubsample[JACCARD_MATRIX_2$Size.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$Size.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.Size.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.MeanSubsample[JACCARD_MATRIX_2$Jaccard.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.Full[JACCARD_MATRIX_2$SharedSeq.Full!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.Full)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.Full <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.Full[JACCARD_MATRIX_2$Size.Full!=0 & !is.na(JACCARD_MATRIX_2$Size.Full)])/2
+	JACCARD_MATRIX_2$log.Size.Full <- log2(as.numeric(JACCARD_MATRIX_2$Size.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.Full[JACCARD_MATRIX_2$Jaccard.Full!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.Full)])/2
+	JACCARD_MATRIX_2$log.Jaccard.Full <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.MeanSubsample.Weighted[JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted )])/2
+	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.MeanSubsample.Weighted[JACCARD_MATRIX_2$Size.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted)])/2
+	JACCARD_MATRIX_2$log.Size.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.MeanSubsample.Weighted[JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted)])/2
+	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.Full.Weighted[JACCARD_MATRIX_2$SharedSeq.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.Full.Weighted[JACCARD_MATRIX_2$Size.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$Size.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.Size.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.Full.Weighted[JACCARD_MATRIX_2$Jaccard.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.Jaccard.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted)+c)
+
 	## Make an extra column considering whether results were NA because they couldn't be subsampled.
 	## This is used in the plotting. 
 	JACCARD_MATRIX_2$ANYNAS <- NA
@@ -496,18 +545,42 @@ calculate_jaccard_matrix_libcontam_correction <- function(path_to_output, runnam
 	JACCARD_MATRIX_2$SharedSeq.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)
 	JACCARD_MATRIX_2$Size.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted)
 	JACCARD_MATRIX_2$Jaccard.Full.Weighted <- as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted)
-	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample))
-	JACCARD_MATRIX_2$log.Size.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample))
-	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample))
-	JACCARD_MATRIX_2$log.SharedSeq.Full <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full))
-	JACCARD_MATRIX_2$log.Size.Full <- log(as.numeric(JACCARD_MATRIX_2$Size.Full))
-	JACCARD_MATRIX_2$log.Jaccard.Full <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.Full))
-	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.Size.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted))
-	JACCARD_MATRIX_2$log.SharedSeq.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted))
-	JACCARD_MATRIX_2$log.Size.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted))
-	JACCARD_MATRIX_2$log.Jaccard.Full.Weighted <- log(as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted))
+	## When we log we need to add a small constant 
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.MeanSubsample[JACCARD_MATRIX_2$SharedSeq.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.MeanSubsample[JACCARD_MATRIX_2$Size.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$Size.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.Size.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.MeanSubsample[JACCARD_MATRIX_2$Jaccard.MeanSubsample!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.MeanSubsample)])/2
+	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.Full[JACCARD_MATRIX_2$SharedSeq.Full!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.Full)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.Full <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.Full[JACCARD_MATRIX_2$Size.Full!=0 & !is.na(JACCARD_MATRIX_2$Size.Full)])/2
+	JACCARD_MATRIX_2$log.Size.Full <- log2(as.numeric(JACCARD_MATRIX_2$Size.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.Full[JACCARD_MATRIX_2$Jaccard.Full!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.Full)])/2
+	JACCARD_MATRIX_2$log.Jaccard.Full <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.Full)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.MeanSubsample.Weighted[JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted )])/2
+	JACCARD_MATRIX_2$log.SharedSeq.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.MeanSubsample.Weighted[JACCARD_MATRIX_2$Size.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted)])/2
+	JACCARD_MATRIX_2$log.Size.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Size.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.MeanSubsample.Weighted[JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted !=0 & !is.na(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted)])/2
+	JACCARD_MATRIX_2$log.Jaccard.MeanSubsample.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.MeanSubsample.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$SharedSeq.Full.Weighted[JACCARD_MATRIX_2$SharedSeq.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.SharedSeq.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$SharedSeq.Full.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Size.Full.Weighted[JACCARD_MATRIX_2$Size.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$Size.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.Size.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Size.Full.Weighted)+c)
+	
+	c <- min(JACCARD_MATRIX_2_$Jaccard.Full.Weighted[JACCARD_MATRIX_2$Jaccard.Full.Weighted!=0 & !is.na(JACCARD_MATRIX_2$Jaccard.Full.Weighted)])/2
+	JACCARD_MATRIX_2$log.Jaccard.Full.Weighted <- log2(as.numeric(JACCARD_MATRIX_2$Jaccard.Full.Weighted)+c)
 	
 	## Make an extra column considering whether results were NA because they couldn't be subsampled.
 	## This is used in the plotting. 
