@@ -28,17 +28,17 @@ opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trai
 
 ######################################
 ## For debugging 
-results_outputdir <- '/well/immune-rep/shared/MISEQ/TEST_PIPE'
-runname <- 'TEST'
-gene <- 'IGH'
-layoutsx <- 'LEO_SEPSIS_BCR_ALL_layouts.txt'
-technicals <- 'LEO_SEPSIS_BCR_ALL_technicals.txt'
+#results_outputdir <- '/well/immune-rep/shared/MISEQ/TEST_PIPE'
+#runname <- 'TEST'
+#gene <- 'IGH'
+#layoutsx <- 'LEO_SEPSIS_BCR_ALL_layouts.txt'
+#technicals <- 'LEO_SEPSIS_BCR_ALL_technicals.txt'
 
-results_outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRG/'
-runname <- 'TEST'
-gene <- 'TCRG'
-layoutsx <- 'LEO_SEPSIS_TCRG_ALL_layouts.txt'
-technicals <- 'LEO_SEPSIS_TCRG_ALL_technicals.txt'
+#results_outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRG/'
+#runname <- 'TEST'
+#gene <- 'TCRG'
+#layoutsx <- 'LEO_SEPSIS_TCRG_ALL_layouts.txt'
+#technicals <- 'LEO_SEPSIS_TCRG_ALL_technicals.txt'
 #########################################
 
 
@@ -66,16 +66,15 @@ if (!dir.exists(stat_dir)){
 my_aux_functions <- c("RFunctions/Stages1_4")           
 source_files <- list.files(my_aux_functions, "*.R$", full.names=TRUE)  # locate all .R files
 for (f in source_files) {
-    source(f)
+    #print(f)
+	source(f)
 }
-
-
-
 
 ########################################
 ### BCR QC 
 ########################################
 if(gene=="IGH"){
+	print("Running BCR QC")
 	if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false"){
 	
 	## STAGE 1: VISUALISE READ DEPTH AND PERCENTAGE PASSED FILTERING BY LIBRARY 
@@ -94,6 +93,7 @@ if(gene=="IGH"){
 	calculate_rarefaction_neat(results_outputdir, gene, plot_dir)
 	## DETECTED_VGENES
 	visualise_vj_QC_neat(results_outputdir, cluster_nodes = 5, gene, plot_dir)	
+}
 } 
 
 ########################################
@@ -102,6 +102,7 @@ if(gene=="IGH"){
 if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
 	if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false"){
 	
+	print("Running TCR QC")
 	## STAGE 1: VISUALISE READ DEPTH AND PERCENTAGE PASSED FILTERING BY LIBRARY 
 	visualise_filtering_bcr_layouts_neat(results_outputdir, runname, layoutsx, plot_dir, stat_dir, cluster_nodes = 5, gene)
 	## STAGE 2: VISUALISE READ DEPTH AND PERCENTAGE PASSED FILTERING BY SAMPLE
@@ -119,7 +120,7 @@ if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
 	## DETECTED_VGENES
 	visualise_vj_QC_neat(results_outputdir, cluster_nodes = 5, gene, plot_dir)
 } 
-
+}
 print("Done")
 
 ## PIPELINE COMPLETE

@@ -323,6 +323,10 @@ def Get_nearest_neighbours(edge_file, merged_cluster_file, seq_file,merged_clust
 
 def IMGT_sequence_trimming_constant_regions(seq_file, IMGT_trimmed_sequence_file, annot_file3):
   seqs,freqs,alias = Get_sequences(seq_file)
+  total = 0
+  for id in freqs:
+    total = total+sum(freqs[id])
+  print "total before:",total
   seq_tree = Tree()
   fh=open(annot_file3,"r")
   for l in fh:
@@ -330,6 +334,10 @@ def IMGT_sequence_trimming_constant_regions(seq_file, IMGT_trimmed_sequence_file
       l=l.strip().split("\t")
       if(l[2].count("productive")!=0):
         id,seq = l[1].split("__")[0], l[6].upper()
+        if(len(seq)<=10):
+          seq =l[7].upper()
+        if(len(seq)<=10):
+          print l
         seq_tree[seq][id].value = 1
         if(len(seq)==0):
           seq = l[7].upper()
@@ -338,12 +346,14 @@ def IMGT_sequence_trimming_constant_regions(seq_file, IMGT_trimmed_sequence_file
   fh=open(IMGT_trimmed_sequence_file,"w")
   fh.close()
   out, ind = '',0
+  total = 0
   for seq in seq_tree:
     if(len(seq_tree[seq])==1):
       for id in seq_tree[seq]:
         if(id in alias):
           out = out+">"+alias[id]+"\n"+seq+"\n"
           ind = ind+1
+          total =total+sum(freqs[id])
         #else:print id,"error"
     else:
       f,id_use = [],''
@@ -359,11 +369,13 @@ def IMGT_sequence_trimming_constant_regions(seq_file, IMGT_trimmed_sequence_file
         id = id_use+"__"+"_".join(map( str, f))+"|"+ext
         out = out+">"+id+"\n"+seq+"\n"
         ind = ind+1
+        total = total+sum(f)
     if(ind>500):
       Write_out(out, IMGT_trimmed_sequence_file)
       out, ind = '',0
   Write_out(out, IMGT_trimmed_sequence_file)
   out, ind = '',0
+  print "total after:",total
   return()
 
 def Get_CDR3_defined_cluster_file_non_IMGT(annot_file_internal, cluster_file,merged_cluster_file,pre_CDR3_cluster_file,IMGT_trimmed_sequence_file):
@@ -3962,8 +3974,7 @@ STAGE = 6 ### get secondary rearrangement information
 STAGE = 7 ### get phylogenetic trees (NOT FULLY DEVELOPED)
 
 STAGE = [1,2,3,4,5,6]
-#STAGE = [6]
-
+#STAGE = [1]
 
 IMGT = True
 if(IMGT== True):seq_trimmed_file = IMGT_trimmed_sequence_file

@@ -8,6 +8,10 @@
 # read/write what it's created by the script
 #umask 002
 
+echo "********************************************************"
+echo `date`: Executing task ${SLURM_ARRAY_TASK_ID} of job ${SLURM_ARRAY_JOB_ID} on `hostname` as user ${USER} 
+echo "********************************************************"
+
 # Job Arguments
 # Extracting Outputdir
 DEPENDANCIES=$1
@@ -19,8 +23,9 @@ SAMPLES_EXCLUDE=$6
 NORMALISE_VGENEUSAGE=$7
 
 ## Job arguments 
-OUTPUTDIR=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$8}" $SAMPLES_FILE_POST)
-GENE=$(awk -F '\t' "{if (NR==$SGE_TASK_ID) print \$4}" $SAMPLES_FILE_POST)    # Output folder path
+OUTPUTDIR=$(awk -F '\t' "{if (NR==$SLURM_ARRAY_TASK_ID) print \$8}" $SAMPLES_FILE_POST)
+GENE=$(awk -F '\t' "{if (NR==$SLURM_ARRAY_TASK_ID) print \$4}" $SAMPLES_FILE_POST)    
+
 
 ## Location of IDs! 
 SAMPLE_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_SAMPLES.txt
@@ -28,8 +33,8 @@ IDS_FILE=COMMANDLOGS/${SAMPLES_FILE_POST}_IDS.txt
 
 echo "* Job Details"
 echo "********************************************************"
-echo "SGE job ID       : "$JOB_ID
-echo "SGE task ID      : "$SGE_TASK_ID
+echo "SLURM job ID       : "$SLURM_ARRAY_JOB_ID
+echo "SLURM task ID      : "$SLURM_ARRAY_TASK_ID
 echo "Run on host      : "`hostname`
 echo "Operating system : "`uname -s`
 echo "Username         : "`whoami`
@@ -39,8 +44,14 @@ echo "********************************************************"
 echo "* Job Parameters"
 echo "********************************************************"
 echo "OUTPUTDIR       : ${OUTPUTDIR}"
-echo "Sample File     : ${SAMPLE_FILE}"
+echo "SAMPLES FILE POST : ${SAMPLES_FILE_POST}"
+echo "DEPENDANCIES    : ${DEPENDANCIES}"
+echo "CODE DIRECTORY  : ${CODE_DIRECTORY}"
+echo "LAYOUTS FILE    : ${LAYOUTS_FILE}"
+echo "SAMPLE FILEE    : ${SAMPLE_FILE}"
+echo "IMGT MUTATION   : ${IMGT_MUTATION}"
 echo "IDs File        : ${IDS_FILE}"
+echo "NORMALISE VGENEUSAGE: ${NORMALISE_VGENEUSAGE}"
 echo "********************************************************"
 
 # "catch exit status 1" grep wrapper

@@ -86,7 +86,7 @@ for (f in source_files) {
 
 
 if(normalise == "TRUE"){
-	print("WARNING Normalised IGHV gene usage will be calculated!!"
+	print("WARNING Normalised IGHV gene usage will be calculated!!")
 }
 	
 ## DO IMGT ANALYSIS	

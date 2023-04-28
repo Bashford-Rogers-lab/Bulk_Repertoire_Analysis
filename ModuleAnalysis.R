@@ -2,8 +2,11 @@
 ## Lauren Overend 
 ## lauren.overend@oriel.ox.ac.uk
 ## ISOTYPER R ANALYSIS 
+#module purge
+#module use -a /apps/eb/dev/ivybridge/modules/all
+#module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
 
-
+library(optparse)
 option_list <- list( 
   make_option(c("-o", "--outputdir"), action="store", type="character", default="NA", help="Path to BCR/TCR Outputdir"),
   make_option(c("-s", "--samplesfilepost"), action="store", type="character", help="Sample Files Post"),
@@ -13,7 +16,7 @@ option_list <- list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trailingOnly = TRUE)) 
 options(bitmapType='cairo-png')
-setwd("/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE")
+
 
 ## Location of OUTS directory from BCR/TCR Run
 outputdir <- opt$o
@@ -22,58 +25,97 @@ gene <- opt$g
 path_to_layout <- opt$l
 
 # Source Auxillary Functions
+setwd("/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE")
 my_aux_functions <- c("RFunctions/ModuleSelection")           
 source_files <- list.files(my_aux_functions, "*.R$", full.names=TRUE)  # locate all .R files
 for (f in source_files) {
     source(f)
 }
 
-if(type_use %like% "TCRA" | type_use %like% "TCRB"){ 
-	## Trial
-	type_use <- "TCRAB"
-	subsampled_depth_all<- 400
-	outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/TCRA_CH2/'
-	outputdir2<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/TCRB_CH2/'
-	productivity <- "PRODUCTIVE"
-	subsampled_deptha <- 300
-	subsampled_depthb  <- 400
-	plot_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/'
-	meta_data <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt'
-	#new_eigenvectors <- read.delim(paste0(outputdir, "Eigenvectors_", type_use, "_", iso_type, ".txt"), sep='\t')
-	cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data)
-}
-
-
-if(type_use %like% "TCRG" | type_use %like% "TCRD"){ 
+#if(type_use %like% "TCRG" | type_use %like% "TCRD"){ 
 	##FOR TCRGD
-	subsampled_depth_all<- 150
-	outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/TCRG_CH2/'
-	outputdir2<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/TCRD_CH2/'
-	outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/'
+	#outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRG/'
+	#outputdir2<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRD/'
+	#outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD/'
+	#type_use <- "TCRGD"
+	#productivity <- "PRODUCTIVE"
+	#subsampled_deptha <- 200
+	#subsampled_depthb  <- 80
+	#plot_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD/'
+	#meta_data <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt'
+	#try_imp <- "YES"
+	#try_imp <- "NO"
+	#try_cor <- "NO"
+	#run_imp <- "NO"
+	#cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data, try_imp, try_cor, run_imp)
+	#print("Done TCRGD")
+#}
+
+#########################################
+## REPEAT with filtered TCRG
+###################################
+#if(type_use %like% "TCRG" | type_use %like% "TCRD"){ 
+	##FOR TCRGD
+	print("Running for TCRGD")
+	outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRG_NEW/'
+	outputdir2<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRD/'
+	outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/'
 	type_use <- "TCRGD"
 	productivity <- "PRODUCTIVE"
-	subsampled_deptha <- 300
-	subsampled_depthb  <- 150
-	plot_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/'
+	subsampled_deptha <- 80
+	subsampled_depthb  <- 80
+	plot_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/'
 	meta_data <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt'
-	cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data)
-}
+	try_imp <- "YES"
+	#try_imp <- "NO"
+	try_cor <- "YES"
+	run_imp <- "YES"
+	cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data, try_imp, try_cor, run_imp)
+	print("Done TCRGD")
+#}
 
 
-if(type_use %like% "BCR"){ 
-	##FOR BCR
-	subsampled_depth_all<- 1500
-	outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/BCR_CH2/'
-	outputdir2<- NA
-	outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/BCR_CH2/'
-	type_use <- "BCR"
+#if(type_use %like% "TCRA" | type_use %like% "TCRB"){ 
+	## Trial
+	print("Running for TCRAB")
+	type_use <- "TCRAB"
+	#subsampled_depth_all<- 400.375
+	outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRA/'
+	outputdir2<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRB/'
 	productivity <- "PRODUCTIVE"
-	subsampled_deptha <- 1000
-	subsampled_depthb  <- NA
-	plot_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_FINAL/BCR_CH2/'
+	subsampled_deptha <- 375
+	subsampled_depthb  <- 400
+	plot_outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/'
 	meta_data <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt'
-	cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data)
-}
+	#try_imp <- "YES"
+	try_imp <- "YES"
+	try_cor <- "YES"
+	run_imp <- "YES"
+	cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data,try_imp, try_cor, run_imp)
+	print("Done TCRAB")
+#}
+
+
+#if(type_use %like% "BCR"){ 
+	##FOR BCR
+	#print("Running for BCR")
+	#subsampled_depth_all<- 1500
+	#outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/'
+	#outputdir2<- NA
+	#outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/'
+	#type_use <- "BCR"
+	#productivity <- "PRODUCTIVE"
+	#subsampled_deptha <- 1500
+	#subsampled_depthb  <- NA
+	#plot_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/'
+	#meta_data <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt'
+	#try_imp <- "YES"
+	#try_imp <- "NO"
+	#try_cor <- "NO"
+	#run_imp <- "NO"
+	#cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data, try_imp, try_cor, run_imp)
+	#print("Done BCR")
+#}
 
 
 

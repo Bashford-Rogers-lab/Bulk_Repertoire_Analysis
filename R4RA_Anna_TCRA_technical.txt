@@ -1,0 +1,5 @@
+SampleID	Barcode	Lane	Plate	Library	Position	PCRBarcode
+OAcontrol_1	OAcontrol_1	2	1	1	H1	FORWARD_F8
+OAcontrol_2	OAcontrol_2	2	2	4	H1	FORWARD_F8
+OAcontrol_3	OAcontrol_3	2	3	7	H1	FORWARD_F8
+OAcontrol_4	OAcontrol_4	2	4	10	H1	FORWARD_F8

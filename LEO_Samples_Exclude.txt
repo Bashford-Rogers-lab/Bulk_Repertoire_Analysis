@@ -1,0 +1,7 @@
+Barcode_Exclude	AlternativeBarcode 	Reason
+UK17730209_1	UK17730209	Metastatic Tumour
+UK17730209_3	UK17730209	Metastatic Tumour
+UK17730209_5	UK17730209	Metastatic Tumour
+UK59580028_1	UK59580028	Leukemia 
+UK59580028_3	UK59580028	Leukemia 
+UK59580028_5	UK59580028	Leukemia 
