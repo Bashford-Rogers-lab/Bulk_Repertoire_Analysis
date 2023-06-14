@@ -248,8 +248,6 @@ visualise_filtering_tcr <- function(path_to_outputdir = path_to_outputdir, run_n
 	write.table(Filtering_Results, paste0(path_to_outputdir, "/Summary/Filtering_Results_", Run_name, ".txt"), sep="\t")		
 }
 
-
-
 visualise_filtering_tcr_layouts <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, cluster_nodes = 5, path_to_layout = path_to_layout){
 	library(tidyverse)
 	library(ggplot2)

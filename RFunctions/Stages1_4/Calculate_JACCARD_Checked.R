@@ -8,7 +8,7 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
+#suppressMessages(library(Gviz))
 suppressMessages(library(foreach))
 suppressMessages(library(doParallel))
 suppressMessages(library(gridExtra))
@@ -141,8 +141,8 @@ calculate_jaccard_matrix <- function(path_to_output, runname){
 	## Save the basic Jaccard Index. 
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_", runname, ".txt"), sep='\t')
 	#JACCARD_MATRIX_2 <- read.delim(paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_", runname, ".txt"), sep='\t')
-	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
-	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)/2)
+	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.08)
+	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.08)/2)
 	
 	## Generate Summary Plots 
 	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_", runname, ".pdf"), width=widthx, height=heightx)
@@ -366,8 +366,8 @@ calculate_jaccard_matrix_libhopcorrection <- function(path_to_output, runname, p
 	## Save the basic Jaccard Index. 
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_LIBHOP_CORRECTED_", runname, ".txt"), sep='\t')
 	
-	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
-	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)/2)
+	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.08)
+	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.08)/2)
 	
 	## Generate Summary Plots
 	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBHOP_CORRECTED_", runname, ".pdf"), width=widthx, height=heightx)
@@ -596,8 +596,8 @@ calculate_jaccard_matrix_libcontam_correction <- function(path_to_output, runnam
 	## Save the basic Jaccard Index. 
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_LIBCONTAM_CORRECTED_", runname, ".txt"), sep='\t')
 	
-	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
-	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)/2)
+	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.08)
+	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.08)/2)
 	
 	## Generate Summary Plots
 	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBCONTAM_CORRECTED_", runname, ".pdf"), width=widthx, height=heightx)

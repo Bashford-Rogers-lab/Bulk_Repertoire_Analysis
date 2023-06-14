@@ -32,7 +32,7 @@ visualise_constant_region_bcr <- function(path_to_outputdir = path_to_outputdir,
 	Constant_Results_subset <- Constant_Results[Constant_Results$gene != "IGHD/M_mutated" & Constant_Results$gene != "ALL" & Constant_Results$gene != "class_switched" & Constant_Results$gene != "IGHD/M_unmutated",]
 	Constant_Results_mutation <- Constant_Results[Constant_Results$gene == "IGHD/M_mutated"  | Constant_Results$gene == "IGHD/M_unmutated",]
 	
-	widthx <- 0.1619718 * length(Constant_Results$totalreads)
+	widthx <- 0.1619718 * length(unique(Constant_Results$Sample))
 	if (widthx > 120){
 		widthx <- 120
 	}
@@ -134,7 +134,7 @@ visualise_constant_region_bcr_layouts <- function(path_to_outputdir = path_to_ou
 	Constant_Results_subset <- Constant_Results[Constant_Results$gene != "IGHD/M_mutated" & Constant_Results$gene != "ALL" & Constant_Results$gene != "class_switched" & Constant_Results$gene != "IGHD/M_unmutated",]
 	Constant_Results_mutation <- Constant_Results[Constant_Results$gene == "IGHD/M_mutated"  | Constant_Results$gene == "IGHD/M_unmutated",]
 	
-	widthx <- 0.1619718 * length(Constant_Results$Lane)
+	widthx <- 0.1619718 * length(unique(Constant_Results$SampleBase))
 	if (widthx > 120){
 		widthx <- 120
 	}

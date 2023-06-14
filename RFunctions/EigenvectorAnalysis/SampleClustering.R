@@ -33,6 +33,7 @@ library(moduleColor)
 library(WGCNA)
 library(fastcluster)
 library(cluster) 
+library(gghighlight)
 
 #new_eigenvectors <- "/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/Eigenvectors_BCR_PRODUCTIVE.txt"
 # Lets use the imputed data  - see what is driving the seperation

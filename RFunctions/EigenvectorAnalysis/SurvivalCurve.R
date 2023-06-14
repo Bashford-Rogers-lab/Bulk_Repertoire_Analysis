@@ -1,6 +1,7 @@
 ## Function to visualise survival for sepsis patients
 ## Lauren Overend
 ## Jan 2023
+library(cowplot)
 
 plot_survival <- function(eigenvectors, metadata, outputdir){
 	## Want to visualise survival for sepsis patients

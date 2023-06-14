@@ -3,17 +3,23 @@
 ## lauren.overend@oriel.ox.ac.uk
 # Rescomp Modules
 #
+print("Location of Packages:")
+print(.libPaths())
+
+
 library("optparse")
 suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
+#suppressMessages(library(Gviz))
 suppressMessages(library(foreach))
 suppressMessages(library(doParallel))
 suppressMessages(library(gridExtra))
 suppressMessages(library(cowplot))
 suppressMessages(library(gtools))
+suppressMessages(library(lemon))
+suppressMessages(library(patchwork))
 
 parser <- OptionParser()
 option_list <- list( 
@@ -32,10 +38,10 @@ runname <- opt$r
 gene <- opt$g
 batch <- opt$b
 
-#results_outputdir <- "/well/immune-rep/shared/MISEQ/TEST_PIPE/"
-#runname <- "TEST" 
+#results_outputdir <- "well/immune-rep/shared/MISEQ/TEST_LEO_ANNA_BCR"
+#runname <- "TESTING" 
 #gene <-"IGH" 
-#batch <-"LEO_SEPSIS_BCR_ALL_layouts.txt"
+#batch <-"LEO_ANNA_BATCH.txt"
 
 
 # Source Auxillary Functions

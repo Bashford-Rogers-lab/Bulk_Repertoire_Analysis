@@ -24,7 +24,7 @@ visualise_isoptype_cluster_bcr <- function(path_to_outputdir = path_to_outputdir
 	if(dir.exists(paste0(path_to_outputdir, "/Plots"))==FALSE){
 		dir.create(paste0(path_to_outputdir, "/Plots"))
 	}
-	widthx <- 0.2112676 * length(Iso_Clustering$Sample)
+	widthx <- 0.2112676 * length(unique(Iso_Clustering$Sample))
 	if (widthx > 120){
 		widthx <- 120
 	}
@@ -32,7 +32,7 @@ visualise_isoptype_cluster_bcr <- function(path_to_outputdir = path_to_outputdir
 		widthx <- 5
 	}
 	
-	pdf(paste0(path_to_outputdir,'/Plots/CLUSTERING_QC.pdf'),width=widthx, height=20)
+	pdf(paste0(path_to_outputdir,'/Plots/CLUSTERING_QC.pdf'),width=widthx, height=7.5)
 	p1 <- ggplot(Iso_Clustering, aes(x=Sample, y=Largest_cluster_percent, fill=Isotype)) +geom_bar(stat="identity", position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Largest Cluster (%)") +labs(fill="Isotype")
 	p2 <- ggplot(Iso_Clustering, aes(x=Sample, y=Second_cluster_percent, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Second Large Cluster (%)") +labs(fill="Isotype")
 	p3 <- ggplot(Iso_Clustering, aes(x=Sample, y= Cluster_Gini_Index, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge()) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Cluster Gini Index") +labs(fill="Isotype")
@@ -99,7 +99,7 @@ visualise_isoptype_cluster_tcr <- function(path_to_outputdir = path_to_outputdir
 		plot_width <- 30
 	} 
 	
-	widthx <- 0.2112676 * length(Iso_Clustering$Sample)
+	widthx <- 0.2112676 * length(unique(Iso_Clustering$Sample))
 	if (widthx > 120){
 		widthx <- 120
 	} 
@@ -107,7 +107,7 @@ visualise_isoptype_cluster_tcr <- function(path_to_outputdir = path_to_outputdir
 		widthx <- 5
 	}
 	
-	pdf(paste0(path_to_outputdir,'/Plots/CLUSTERING_QC.pdf'),width=widthx, height=20)
+	pdf(paste0(path_to_outputdir,'/Plots/CLUSTERING_QC.pdf'),width=widthx, height=7.5)
 	p1 <- ggplot(Iso_Clustering_subset, aes(x=Sample, y=Largest_cluster_percent, fill=Isotype)) +geom_bar(stat="identity", position=position_dodge(), colour="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Largest Cluster (%)") +labs(fill="Constant Region") +facet_wrap(~Isotype, scales="free_y")
 	p2 <- ggplot(Iso_Clustering_subset, aes(x=Sample, y=Second_cluster_percent, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge(), colour="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Second Large Cluster (%)") +labs(fill="Constant Region")+facet_wrap(~Isotype, scales="free_y")
 	p3 <- ggplot(Iso_Clustering_subset, aes(x=Sample, y= Cluster_Gini_Index, fill=Isotype)) +geom_bar(stat="identity" , position=position_dodge(), colour="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("Cluster Gini Index") +labs(fill="Constant Region")+facet_wrap(~Isotype, scales="free_y")

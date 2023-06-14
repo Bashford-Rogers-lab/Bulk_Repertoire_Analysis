@@ -229,7 +229,7 @@ cluster_features <- function(outputdir, correlation_matrix, type, iso_type, data
 	#########################################
 	### Lets try using dynamic tree cut allows for cutting at different heights of the dendrogram
 	print("Attempting Dynamic Tree Cutting: deep Split")
-	pdf(paste0(outputdir, "Plots/CLUSTERING_PARTITION_DynamicTreeCut_", type, "_", iso_type, ".pdf"), width=40, height=10)
+	pdf(paste0(outputdir, "Plots/CLUSTERING_PARTITION_DynamicTreeCut_", type, "_", iso_type, ".pdf"), width=dimension, height=10)
 	dynamic_cut <-  cutreeDynamic(hc, minClusterSize = min_size, method="hybrid", deepSplit = TRUE, distM=as.matrix(dist1), maxDistToLabel = 0, verbose = 0)
 	dynamic_cut2 <- labels2colors(dynamic_cut)
 	plotDendroAndColors(dendro=hc,colors=dynamic_cut2, main="Feature Dendrogram: Dynamic Tree Cut", cex.rowText=0.3)

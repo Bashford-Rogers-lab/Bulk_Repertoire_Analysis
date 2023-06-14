@@ -8,7 +8,7 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
+#suppressMessages(library(Gviz))
 suppressMessages(library(foreach))
 suppressMessages(library(doParallel))
 suppressMessages(library(gridExtra))
@@ -168,8 +168,8 @@ calculate_jaccard_matrix_UMI_RAW <- function(path_to_output, runname){
 	## Save the basic Jaccard Index. 
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_UMI_RAW_", runname, ".txt"), sep='\t')
 	
-	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
-	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)/2)
+	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.07)
+	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.07)/2)
 	
 	## Generate Summary Plots 
 	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_UMI_RAW_", runname, ".pdf"), width=widthx, height=heightx)
@@ -418,8 +418,8 @@ calculate_jaccard_matrix_libhopcorrection_UMI_RAW <- function(path_to_output, ru
 	## Save the basic Jaccard Index. 
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_LIBHOP_CORRECTED_UMI_RAW_", runname, ".txt"), sep='\t')
 	
-	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
-	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)/2)
+	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.07)
+	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.07)/2)
 	## Generate Summary Plots
 	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBHOP_CORRECTED_UMI_RAW_", runname, ".pdf"), width=widthx, height=heightx)
 	e <- ggplot(JACCARD_MATRIX_2, aes(Sample1, Sample2)) + geom_tile(aes(fill=SharedSeq.MeanSubsample)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +scale_fill_gradientn( colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = JACCARD_MATRIX_2[JACCARD_MATRIX_2$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence\nCorrected", values = c("green", '#00000000'))+ggtitle(paste0("Sequence Overlap:\nSub.Depth: ", subsample_depth))+labs(fill="Subsampled:\nSO")
@@ -672,8 +672,8 @@ calculate_jaccard_matrix_libcontam_correction_UMI_RAW <- function(path_to_output
 	## Save the basic Jaccard Index. 
 	write.table(JACCARD_MATRIX_2, paste0(path_to_output, "Summary/JACCARDMATRIX_BASIC_AllSAMPLES_LIBCONTAM_CORRECTED_UMI_RAW_", runname, ".txt"), sep='\t')
 	
-	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
-	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)/2)
+	widthx <- 10+(length(unique(JACCARD_MATRIX_2$Sample1))*0.07)
+	heightx <- (6+(length(unique(JACCARD_MATRIX_2$Sample1))*0.07)/2)
 	
 	## Generate Summary Plots
 	pdf(paste0(path_to_output, "Plots/JACCARDMATRIX_BASIC_AllSAMPLES_LIBCONTAM_CORRECTED_UMI_RAW_", runname, ".pdf"), width=widthx, height=heightx)

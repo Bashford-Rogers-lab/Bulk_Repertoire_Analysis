@@ -45,7 +45,7 @@ type_receptor <- "TCRAB"
 metahealth <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/LabKeyMetaData/Healthies_ClinData.txt'
 feature_assignment <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Summary/Clustered_Features_assignment_TCRAB_PRODUCTIVE_NON_IMPUTED.txt'
 imputed_data <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Imputed_DATA_FINAL_SCALED_TCRAB_PRODUCTIVE.txt'
-loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Summary/Module_FeaturePCALoadings_TCRAB_375_PRODUCTIVE.rds'
+loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Summary/Module_FeaturePCALoadings_TCRAB_300_PRODUCTIVE.rds'
 srs_assignment <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_SRS_RNA_seq_assignment.txt'
 cyber_sort  <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_CYBERSORT_assignment.txt'
 final_data <- "/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Imputed_DATA_FINAL_TCRAB_PRODUCTIVE.txt"
@@ -73,9 +73,10 @@ type_receptor <- "TCRGD"
 metahealth <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/LabKeyMetaData/Healthies_ClinData.txt'
 feature_assignment <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Summary/Clustered_Features_assignment_TCRGD_PRODUCTIVE_NON_IMPUTED.txt'
 imputed_data <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Imputed_DATA_FINAL_SCALED_TCRGD_PRODUCTIVE.txt'
-loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Summary/Module_FeaturePCALoadings_TCRGD_80_PRODUCTIVE.rds'
+loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Summary/Module_FeaturePCALoadings_TCRGD_50_PRODUCTIVE.rds'
 srs_assignment <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_SRS_RNA_seq_assignment.txt'
 final_data <- "/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD/Imputed_DATA_FINAL_TCRGD_PRODUCTIVE.txt"
+cyber_sort  <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/SampleOrganisation/Repertoire_CYBERSORT_assignment.txt'
 iso_type <- "PRODUCTIVE"
 meta <- '/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/sepsis_meta_health.txt'
 minClusterSizex <- 20
@@ -102,6 +103,7 @@ p_hd_extended <- correlate_eigenvectors_hvd(eigenvectors, metadata, outputdir, t
 source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/EigenvectorAnalysis/Model_Eigenvectors_Mortality.R')
 p_hd_extended_mort <- correlate_eigenvectors_outcome(eigenvectors, metadata, outputdir, type_receptor, "NO")
 ## STEP 5: MODULE VIGNETTE PLOTS 
+## May want to change plotting dimensions for these !!!
 source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/EigenvectorAnalysis/PlotModuleVignette.R')
 plot_module_vignette(eigenvectors, feature_assignment, imputed_data, outputdir)
 ## STEP 6: SRS
@@ -119,9 +121,7 @@ correlate_eigenvectors_t1(eigenvectors, metadata, outputdir, type_receptor, NA)
 ## STEP 10: CORRELATE TO Longitudinal Clinical variables 
 source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/EigenvectorAnalysis/Model_Continuous_Metadata.R')
 correlate_eigenvectors_continuous(eigenvectors, metadata, outputdir, type_receptor)
-## Cluster Samples 
-source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/EigenvectorAnalysis/SampleClustering.R')
-cluster_samples(final_data, paste0(outputdir, "/"), type_receptor, iso_type, meta, minClusterSizex, thresh_sd)
+
 
 ##------------------------------------------------------------------------------------------------------------
 ##------------------------------------------------------------------------------------------------------------
@@ -142,3 +142,15 @@ outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/'
 eigenvector_list <- list('/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/Eigenvectors_No_Technical_BCR_PRODUCTIVE.txt', '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Eigenvectors_No_Technical_TCRGD_PRODUCTIVE.txt')
 type_receptor <- "BCR_TCRGD"
 plot_correlation_across(eigenvector_list, outputdir, type_receptor)## Functions to correlate eigenvectors to clinical variables!!
+
+
+##########################################
+#########################################
+quit()
+module purge
+module use -a /apps/eb/dev/ivybridge/modules/all
+module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
+R
+## Cluster Samples 
+source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/EigenvectorAnalysis/SampleClustering.R')
+cluster_samples(final_data, paste0(outputdir, "/"), type_receptor, iso_type, meta, minClusterSizex, thresh_sd)

@@ -6,7 +6,7 @@
 
 # Set permissions so any user in the group can 
 # read/write what it's created by the script
-#umask 002
+umask 002
 
 echo `date`: Executing task ${SLURM_ARRAY_TASK_ID} of job ${SLURM_ARRAY_JOB_ID} on `hostname` as user ${USER} 
 echo "********************************************************"
@@ -27,6 +27,7 @@ RUNNAME=$4
 BATCH_FILE=$5
 JACCARD_TASK=$6
 TECHNICAL_SAMPLES=$6
+CPU_TYPE=$MODULE_CPU_TYPE
 
 # "catch exit status 1" grep wrapper
 # exit status 1 when no lines matched  - this is causing the script to fail with set -e hence the catch error
@@ -34,12 +35,26 @@ TECHNICAL_SAMPLES=$6
 # exit status 2 when error
 c1grep() { grep "$@" || test $? = 1; }
 
+echo "Running SLURM WRAPPER with ERROR CATCH"
 
 ## Set up module environement for R scripts
 if [[ "$TASK" == "RS" || "$TASK" == "JACCARD" ]]; then
 module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
+
+if [[ "$CPU_TYPE" == "skylake" ]]; then
+echo "CPU TYPE: ${CPU_TYPE}"
+echo "exporting R packages from /well/immune-rep/shared/CODE/Communal_R_packages/4.0/skylake"
+export R_LIBS=/well/immune-rep/shared/CODE/Communal_R_packages/4.0/skylake
+fi 
+
+if [[ "$CPU_TYPE" == "ivybridge" ]]; then
+echo "CPU TYPE: ${CPU_TYPE}"
+echo "exporting R packages from /well/immune-rep/shared/CODE/Communal_R_packages/4.0/ivybridge"
+export R_LIBS=/well/immune-rep/shared/CODE/Communal_R_packages/4.0/ivybridge
+fi 
+
 echo "Loaded R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0 Module"
 fi
 
@@ -140,14 +155,14 @@ if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIO
 			echo "ID ${ID} PRESENT in Outs file of PRIOR TASK ${PRIORTASK}"
 		else 
 			echo "Warning ${ID} is NOT Present in OUTS file of PRIOR TASK ${PRIORTASK} - check sample naming"
-			FAILED="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
-			eval "${FAILED}" 
+			#FAILED="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
+			#eval "${FAILED}" 
 		fi 
 	fi 
 	
 	if [[ "$PRIORTASK" -eq 4 ]]; then
 		echo "Looking for failed samples.." 
-		c1grep -v -f ${FILE} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt
+		#c1grep -v -f ${FILE} ${IDS_FILE} > COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt
 		echo "DONE"
 	fi 
 		
@@ -155,14 +170,14 @@ if [[ "$PRIORTASK" -lt 5 &&  "$PRIORTASK" -ge 1 || "$PRIORTASK" == "-1" ||"$PRIO
 		if fgrep -qx "$SAMPLE" $FILE
 		then
 			echo "ID ${SAMPLE} PRESENT in Outs file of PRIOR TASK ${PRIORTASK}"
-		else 
-			FAILED="echo ${SAMPLE} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
-			eval "${FAILED}" 
+		#else 
+			#FAILED="echo ${SAMPLE} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${PRIORTASK}_FAILED_SAMPLES.txt"
+			#eval "${FAILED}" 
 		fi 
 	fi 
 		
 	if [[ $LENGTHJOBS -ne $SAMPLES ]]; then 
-		echo "DEPENDANCIES: Not all dependancies ran sucessfully to completion"
+		echo "WARNING: DEPENDANCIES: Not all dependancies ran sucessfully to completion"
 		echo "ERROR: NO FURTHER ANALYSIS WILL BE PERFORMED"
 		exit 999
 	else 
@@ -325,7 +340,7 @@ else
 echo "PARAMETER NOT RECOGNISED."
 fi 
 
- 
+ #########################################################
 ## RUN THE JOB 1
 if [[ "$TASK" -ne "ISO1_COMPLETE" ]]; then
 # PRINT JOB TO LOGFILE
@@ -336,8 +351,24 @@ echo "Command : ${CMD}"
 echo "********************************************************"
 echo
 eval "${CMD}"
+status=$?
+### Has the sample/file run successfully 
+if [ $status -eq 0 ]; then
+	echo "********************************************************"
+    echo "COMMAND EXECUTED SUCCESSFULLY"
+	echo "********************************************************"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
+	eval "${NWCMD}"
+else
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    echo "ERROR: COMMAND FAILED WITH ERROR STATUS: $status"
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}_FAILED_SAMPLESX.txt"
+	eval "${NWCMD}"
+fi
 fi
 
+##### If its the R script
 if [[ "$TASK" == "RS" || "$TASK" == "JACCARD" ]]; then
 # PRINT JOB TO LOGFILE
 echo "********************************************************"
@@ -347,9 +378,25 @@ echo "Command : ${CMD}"
 echo "********************************************************"
 echo
 eval "${CMD}"
+status=$?
+if [ $status -eq 0 ]; then
+    echo "********************************************************"
+    echo "COMMAND EXECUTED SUCCESSFULLY"
+	echo "********************************************************"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
+	eval "${NWCMD}"
+else
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    echo "ERROR: COMMAND FAILED WITH ERROR STATUS: $status"
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}_FAILED_SAMPLESX.txt"
+	eval "${NWCMD}"
 fi
+fi
+#########################################################
 
 
+#########################################################
 if [[ "$TASK" == "ISO1_COMPLETE" ]]; then
 ##ALL
 echo "********************************************************"
@@ -358,44 +405,82 @@ echo "********************************************************"
 echo "Command : ${CMDA}"
 echo "********************************************************"
 eval "${CMDA}" || true
-NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1.txt"
-eval "${NWCMD}"
+status=$?
+if [ $status -eq 0 ]; then
+	echo "********************************************************"
+    echo "COMMAND EXECUTED SUCCESSFULLY"
+	echo "********************************************************"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1.txt"
+	eval "${NWCMD}"
+else
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    echo "ERROR: COMMAND FAILED WITH ERROR STATUS: $status"
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_FAILED_SAMPLESX.txt"
+	eval "${NWCMD}"
+fi
 eval "${CMD2}"
 echo "********************************************************"
 echo "["`date`"] Done"
 echo "********************************************************"
 echo "********************************************************"
+
 ## PRODUCTIVE
 echo "Command : ${CMDB}"
 echo "********************************************************"
 eval "${CMDB}" || true
-NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_PRODUCTIVE.txt"
-eval "${NWCMD}"
+status=$?
+if [ $status -eq 0 ]; then
+	echo "********************************************************"
+    echo "COMMAND EXECUTED SUCCESSFULLY"
+	echo "********************************************************"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_PRODUCTIVE.txt"
+	eval "${NWCMD}"
+else
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    echo "ERROR: COMMAND FAILED WITH ERROR STATUS: $status"
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1__PRODUCTIVE_FAILED_SAMPLESX.txt"
+	eval "${NWCMD}"
+fi
 eval "${CMD2}" 
 echo "********************************************************"
 echo "["`date`"] Done"
 echo "********************************************************"
+
+
 ## NON_PRODUCTIVE
 echo "********************************************************"
 echo "Command : ${CMDC}"
 echo "********************************************************"
 eval "${CMDC}" || true
-NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_NON_PRODUCTIVE.txt"
-eval "${NWCMD}"
+status=$?
+if [ $status -eq 0 ]; then
+	echo "********************************************************"
+    echo "COMMAND EXECUTED SUCCESSFULLY"
+	echo "********************************************************"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_UNPRODUCTIVE.txt"
+	eval "${NWCMD}"
+else
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    echo "ERROR: COMMAND FAILED WITH ERROR STATUS: $status"
+	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1__UNPRODUCTIVE_FAILED_SAMPLESX.txt"
+	eval "${NWCMD}"
+fi
 eval "${CMD2}" 
 echo "********************************************************"
 echo "["`date`"] Done"
 echo "******************************************************"
 fi
+#########################################################
 
-# Move the file if running isotyper 
-if [[ "$TASK" == "ISO1" || "$TASK" == "ISO1_PRODUCTIVE" || "$TASK" == "ISO1_NON_PRODUCTIVE" ]]; then 
-	eval "${CMD2}"
-fi
+	
+## Make read writeable by everyone 
+## Sometimes you get errors if its accessing files that another job has already edited to lets not save the output 
+echo "Updating Permissions"
+chmod -R g+wrx ${OUTPUTDIR} 2>/dev/null
 
-## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
-NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_${TASK}.txt"
-eval "${NWCMD}"
 
 # Done 
 echo

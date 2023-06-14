@@ -59,7 +59,9 @@ visualise_vj_QC_neat <- function(path_to_outputdir = path_to_outputdir, cluster_
 		Known_V_genes$Family <- str_split_fixed(Known_V_genes$Family, "\\/", 2)[,1]
 		
 		pdf(paste0(plot_dir, "/VGENE_DETECTION.pdf"), width=12, height=5)
-		p1 <- ggplot(Known_V_genes, aes(x=Vgene, y=count, fill=Family)) +geom_bar(stat="identity", col="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, colour=Known_V_genes$colour)) +xlab("V Genes in Reference") + ylab("log10(Count+1)") + ggtitle("V Gene Detection")
+		p1 <- ggplot(Known_V_genes, aes(x=Vgene, y=count, fill=Family)) +geom_bar(stat="identity", col="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, colour=Known_V_genes$colour)) +xlab("V Genes in Reference") + ylab("Count") + ggtitle("V Gene Detection")
+		plot(p1)
+		p1 <- ggplot(Known_V_genes, aes(x=Vgene, y=log10(count+1), fill=Family)) +geom_bar(stat="identity", col="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, colour=Known_V_genes$colour)) +xlab("V Genes in Reference") + ylab("log10(Count+1)") + ggtitle("V Gene Detection")
 		plot(p1)
 		dev.off()
 	}
@@ -104,6 +106,8 @@ visualise_vj_QC_neat <- function(path_to_outputdir = path_to_outputdir, cluster_
 		
 		pdf(paste0(plot_dir, '/VGENE_DETECTION.pdf'), width=20, height=10)
 		p1 <- ggplot(Known_V_genes, aes(x=Vgene, y=count)) +geom_bar(stat="identity") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, colour=Known_V_genes$colour)) +xlab("All known V genes + V genes identified in data") + ylab("Count") + ggtitle("V gene detection in full dataset")+ggtitle(chain)
+		plot(p1)
+		p1 <- ggplot(Known_V_genes, aes(x=Vgene, y=log10(count+1))) +geom_bar(stat="identity") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, colour=Known_V_genes$colour)) +xlab("All known V genes + V genes identified in data") + ylab("log10(Count+1)") + ggtitle("V gene detection in full dataset")+ggtitle(chain)
 		plot(p1)
 		dev.off()
 	}

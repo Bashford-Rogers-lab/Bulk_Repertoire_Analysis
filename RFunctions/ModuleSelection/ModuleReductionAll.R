@@ -466,7 +466,7 @@ cluster_immunerep <- function(type_use, subsampled_deptha,subsampled_depthb=NA, 
 	
 	#########################################################################
 	## If we have already run the correlation comparison (takes a long time) 
-	if(cor_try !="YES" & outputdir %like% "SEPSIS"){
+	if(outputdir %like% "SEPSIS"){
 		print("Loading correlation from previous run file....")
 		print("This is a SEPSIS ANALYSIS")
 		## First lets do another plot comparing the correlations 
@@ -488,7 +488,7 @@ cluster_immunerep <- function(type_use, subsampled_deptha,subsampled_depthb=NA, 
 		
 	}
 	
-	if(cor_try !="YES" & !outputdir %like% "SEPSIS"){
+	if(!outputdir %like% "SEPSIS"){
 		print("Loading correlation from previous run file...")
 		file_use <-  paste0(outputdir, "Summary/Correlation_between_measures_SUBSAMPLED_", type_use, "_", iso_type, ".rds")
 		print(paste0("File used for correlation: ", file_use))

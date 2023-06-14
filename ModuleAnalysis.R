@@ -62,14 +62,14 @@ for (f in source_files) {
 	outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/'
 	type_use <- "TCRGD"
 	productivity <- "PRODUCTIVE"
-	subsampled_deptha <- 80
-	subsampled_depthb  <- 80
+	subsampled_deptha <- 50
+	subsampled_depthb  <- 50
 	plot_outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/'
 	meta_data <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt'
-	try_imp <- "YES"
+	try_imp <- "NO"
 	#try_imp <- "NO"
-	try_cor <- "YES"
-	run_imp <- "YES"
+	try_cor <- "NO"
+	run_imp <- "NO"
 	cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data, try_imp, try_cor, run_imp)
 	print("Done TCRGD")
 #}
@@ -83,14 +83,14 @@ for (f in source_files) {
 	outputdir1<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRA/'
 	outputdir2<- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRB/'
 	productivity <- "PRODUCTIVE"
-	subsampled_deptha <- 375
-	subsampled_depthb  <- 400
+	subsampled_deptha <- 300
+	subsampled_depthb  <- 300
 	plot_outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/'
 	meta_data <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/Cohort1/Meta_data_for_Cohort1and2.txt'
-	#try_imp <- "YES"
-	try_imp <- "YES"
-	try_cor <- "YES"
-	run_imp <- "YES"
+	#try_imp <- "NO"
+	try_imp <- "NO"
+	try_cor <- "NO"
+	run_imp <- "NO"
 	cluster_immunerep(type_use, subsampled_deptha,subsampled_depthb, productivity, outputdir1, outputdir2, plot_outputdir, meta_data,try_imp, try_cor, run_imp)
 	print("Done TCRAB")
 #}

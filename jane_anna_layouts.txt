@@ -1,8 +1,0 @@
-SampleID	Barcode	Lane	Plate	Library	Position	PCRBarcode
-2105_Tissue	2105	11	2	1	A1	A
-2107_Tissue	2107	11	2	1	B1	B
-2108_Tissue	2108	11	2	1	C1	C
-HV_D115T5	HV_D115T5	11	2	1	D1	D
-2105_PBMC	2105	11	2	2	A1	A
-2107_PBMC	2107	11	2	2	B1	B
-HV_Technical	HV_Technical	11	2	2	C1	C

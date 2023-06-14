@@ -13,7 +13,7 @@ suppressMessages(library(gridExtra))
 suppressMessages(library(stringr))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
+#suppressMessages(library(Gviz))
 suppressMessages(library(cowplot))
 suppressMessages(library(gtools))
 	

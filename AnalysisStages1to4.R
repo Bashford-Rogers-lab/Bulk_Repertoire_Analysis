@@ -2,17 +2,38 @@
 ## Lauren Overend 
 ## lauren.overend@oriel.ox.ac.uk
 
+
+#### Set Location of librarys for SKYLAKE!!!!!!
+#### THIS WILL NEED TO BE EDITED
+print("Location of Packages:")
+print(.libPaths())
+
+####
+
+####
 library("optparse")
-suppressMessages(library(tidyverse))
-suppressMessages(library(data.table))
-suppressMessages(library(ggplot2))
-suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
-suppressMessages(library(foreach))
-suppressMessages(library(doParallel))
-suppressMessages(library(gridExtra))
+#suppressMessages(library(Gviz))
+suppressMessages(library(BBmisc))
+suppressMessages(library(coin))
 suppressMessages(library(cowplot))
+suppressMessages(library(data.table))
+suppressMessages(library(doParallel))
+suppressMessages(library(foreach))
+suppressMessages(library(ggforce))
+suppressMessages(library(ggplot2))
+suppressMessages(library(ggpubr))
+suppressMessages(library(ggrepel))
+suppressMessages(library(gridExtra))
+suppressMessages(library(gtools) )
 suppressMessages(library(gtools))
+suppressMessages(library(optparse))
+suppressMessages(library(plyr))
+suppressMessages(library(purrr))
+suppressMessages(library(rstatix))
+suppressMessages(library(seqinr))
+suppressMessages(library(stringr))
+suppressMessages(library(tidyverse))
+
 
 parser <- OptionParser()
 option_list <- list( 
@@ -39,6 +60,12 @@ opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trai
 #gene <- 'TCRG'
 #layoutsx <- 'LEO_SEPSIS_TCRG_ALL_layouts.txt'
 #technicals <- 'LEO_SEPSIS_TCRG_ALL_technicals.txt'
+
+#results_outputdir <- '/well/immune-rep/shared/MISEQ/TEST_LEO_ANNA_BCR/'
+#runname <- 'TEST'
+#gene <- 'IGH'
+#layoutsx <- 'LEO_ANNA_BATCH.txt'
+#technicals <- 'LEO_ANNA_tech.txt'
 #########################################
 
 
@@ -78,19 +105,27 @@ if(gene=="IGH"){
 	if(opt$b != "FALSE" & opt$b != "False" & opt$b != "false"){
 	
 	## STAGE 1: VISUALISE READ DEPTH AND PERCENTAGE PASSED FILTERING BY LIBRARY 
+	print("stage 1")
 	visualise_filtering_bcr_layouts_neat(results_outputdir, runname, layoutsx, plot_dir, stat_dir, cluster_nodes = 5, gene)
+	print("stage 2")
 	## STAGE 2: VISUALISE READ DEPTH AND PERCENTAGE PASSED FILTERING BY SAMPLE
 	visualise_filtering_bcr_layouts(results_outputdir, runname, layoutsx)
+	print("stage 3")
 	## STAGE 3: VISUALISE CONSTANT REGION USAGE 
 	visualise_constant_region_bcr_layouts(results_outputdir,runname, layoutsx, plot_dir)
+	print("stage 4")
 	## STAGE 4: VISUALISE CONSTANT REGION + V GENE USAGE FOR TECHNICALS 
 	compare_technicals_neat(results_outputdir, runname, technicals, plot_dir, layoutsx, stat_dir, cluster_nodes = 5)
+	print("stage 5")
 	## STAGE 5: VJ USAGE FOR ALL SAMPLES 
 	visualise_vj_usage_bcr(results_outputdir, runname)
+	print("stage 6")
 	## STAGE 6: CLUSTER SIZE
 	visualise_isoptype_cluster_bcr(results_outputdir, runname)
+	print("stage 7")
 	## RAREFACTION
 	calculate_rarefaction_neat(results_outputdir, gene, plot_dir)
+	print("stage 8")
 	## DETECTED_VGENES
 	visualise_vj_QC_neat(results_outputdir, cluster_nodes = 5, gene, plot_dir)	
 }

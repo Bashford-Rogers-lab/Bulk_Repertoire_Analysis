@@ -220,7 +220,7 @@ plot_correlation_across <- function(eigenvector_list, outputdir, type_receptor){
 			}
 		}	
 	pdf(paste0(outputdir, "/AcrossModuleCorrelation_RMCORR_", type_receptor, ".pdf"), height=7, width=7)
-	corrplot(to_plot, p.mat=m, insig="label_sig",  sig.level=0.05, title =paste0("Receptor Module Correlations \nRMCORR (BH Adj p): ", type_receptor), method = "circle",  order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black", pch.cex = 2)
+	corrplot(to_plot, p.mat=m, insig="label_sig",  sig.level=0.05, title =paste0("Receptor Module Correlations \nRMCORR: ", type_receptor), method = "circle",  order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black", pch.cex = 2)
 	if(min(madj)<0.05){
 		corrplot(to_plot, p.mat=madj, insig="label_sig",  sig.level=0.05, title =paste0("Receptor Module Correlations \nRMCORR (BH Adj p): ", type_receptor), method = "circle",  order = 'original', tl.cex = 0.7, mar=c(0,0,2,0), tl.col = "black", pch.cex = 2)
 	}

@@ -9,7 +9,7 @@ suppressMessages(library(gridExtra))
 suppressMessages(library(stringr))
 suppressMessages(library(tidyverse))
 suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
+#suppressMessages(library(Gviz))
 suppressMessages(library(cowplot))
 suppressMessages(library(gtools))
 suppressMessages(library(tidyverse))
@@ -19,7 +19,7 @@ suppressMessages(library(doParallel))
 suppressMessages(library(gridExtra))
 suppressMessages(library(cowplot))
 suppressMessages(library(data.table))
-#--------------------------------------------------------------------------------------------------------------------------------------
+
 visualise_filtering_bcr_layouts_neat <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, path_to_layout = path_to_layout, plot_dir=plot_dir, stat_dir=stat_dir, cluster_nodes = 5, chain=chain){
 	path <- path_to_outputdir
 	Run_name <- run_name

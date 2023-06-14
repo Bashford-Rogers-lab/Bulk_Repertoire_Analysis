@@ -2,11 +2,11 @@
 #$ -cwd
 
 # If there's an error, fail the whole script
-#set -e -o pipefail
+set -e -o pipefail
 
 # Set permissions so any user in the group can 
 # read/write what it's created by the script
-#umask 002
+umask 002
 
 echo "********************************************************"
 echo `date`: Executing task ${SLURM_ARRAY_TASK_ID} of job ${SLURM_ARRAY_JOB_ID} on `hostname` as user ${USER} 
@@ -21,6 +21,7 @@ CODE_DIRECTORY=$4
 IMGT_MUTATION=$5
 SAMPLES_EXCLUDE=$6
 NORMALISE_VGENEUSAGE=$7
+CPU_TYPE=$MODULE_CPU_TYPE
 
 ## Job arguments 
 OUTPUTDIR=$(awk -F '\t' "{if (NR==$SLURM_ARRAY_TASK_ID) print \$8}" $SAMPLES_FILE_POST)
@@ -396,9 +397,24 @@ NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_CAT.txt"
 eval "${NWCMD}"
 
 echo "DONE PART 1"
+
 module purge
 module use -a /apps/eb/dev/ivybridge/modules/all
 module load R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0
+
+### Need to export the right architecture of r packages
+if [[ "$CPU_TYPE" == "skylake" ]]; then
+echo "CPU TYPE: ${CPU_TYPE}"
+echo "exporting R packages from /well/immune-rep/shared/CODE/Communal_R_packages/4.0/skylake"
+export R_LIBS=/well/immune-rep/shared/CODE/Communal_R_packages/4.0/skylake
+fi 
+
+if [[ "$CPU_TYPE" == "ivybridge" ]]; then
+echo "CPU TYPE: ${CPU_TYPE}"
+echo "exporting R packages from /well/immune-rep/shared/CODE/Communal_R_packages/4.0/ivybridge"
+export R_LIBS=/well/immune-rep/shared/CODE/Communal_R_packages/4.0/ivybridge
+fi 
+
 echo "Loaded R-bundle-Bioconductor/3.11-foss-2020a-R-4.0.0 Module"
 
 echo "RUNNING ISOTYPER ANALYSIS SUMMARY SCRIPT and PLOTTING"
@@ -409,8 +425,12 @@ eval "${CMD}"
 echo "DONE"
 
 ## IF JOB RUN SUCESSFULLY SAVE TO SAMPLE COUNTER FILE 
+echo "Samples Ran Successfully Outputting to successful sample file"
 NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISOPLOTTING.txt"
 eval "${NWCMD}"
+
+echo "Updating Permissions"
+chmod -R g+wrx ${OUTPUTDIR}
 
 # Done 
 echo

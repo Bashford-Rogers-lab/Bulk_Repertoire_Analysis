@@ -3,28 +3,40 @@
 ## lauren.overend@oriel.ox.ac.uk
 ## ISOTYPER R ANALYSIS 
 
+
+### Set Location of librarys for SKYLAKE!!!!!!
+#### THIS WILL NEED TO BE EDITED
+print("Location of Packages:")
+print(.libPaths())####
+######
+
 library("optparse")
-suppressMessages(library(tidyverse))
-suppressMessages(library(data.table))
-suppressMessages(library(ggplot2))
-suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
-suppressMessages(library(foreach))
-suppressMessages(library(doParallel))
-suppressMessages(library(gridExtra))
-suppressMessages(library(cowplot))
-suppressMessages(library(gtools))
-suppressMessages(library(purrr))
-suppressMessages(library(reshape2))
-suppressMessages(library(Hmisc))
 suppressMessages(library(corrplot))
-suppressMessages(library(stringr))
+suppressMessages(library(data.table))
+suppressMessages(library(doParallel))
 suppressMessages(library(dplyr))
-suppressMessages(library(tidyr))
-suppressMessages(library(matrixStats))
+suppressMessages(library(foreach))
+suppressMessages(library(ggforce))
+suppressMessages(library(ggplot2))
 suppressMessages(library(ggpubr))
 suppressMessages(library(ggrastr))
-suppressMessages(library(ggpubr))
+suppressMessages(library(gridExtra))
+suppressMessages(library(gtools))
+suppressMessages(library(Gviz))
+suppressMessages(library(Hmisc))
+suppressMessages(library(matrixStats))
+suppressMessages(library(moments))
+suppressMessages(library(mousetrap))
+suppressMessages(library(Peptides))
+suppressMessages(library(plot3D))
+suppressMessages(library(plyr))
+suppressMessages(library(purrr))
+suppressMessages(library(reshape2))
+suppressMessages(library(ShortRead))
+suppressMessages(library(stringr))
+suppressMessages(library(tidyr))
+suppressMessages(library(tidyverse))
+
 
 option_list <- list( 
   make_option(c("-o", "--outputdir"), action="store", type="character", default="NA", help="Path to BCR/TCR Outputdir"),
@@ -63,19 +75,20 @@ normalise <- opt$n
 #gene <- "TCR"
 #exclude_samples <- 'LEO_Samples_Exclude.txt'
 
-#samplesfilepost <- "LEO_SEPSIS_TCRA_ALL_post.txt"
-#outputdir <- "/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRA/"
-#cluster_nodes <- 10
-#path_to_layout <- "LEO_SEPSIS_TCRA_ALL_layouts.txt"
+#samplesfilepost <- "R4RA_Anna_BCR_post.txt"
+#outputdir <- "/well/immune-rep/shared/MISEQ/R4RA_FINAL/BCR_indiv/"
+#cluster_nodes <-5
+#path_to_layout <- "R4RA_Anna_Batch_file_BCR.txt"
 #path_to_outputdir <- outputdir
 #productivity <- "PRODUCTIVE"
 #iso_type <- "PRODUCTIVE"
-#run_mutation <- "Y"
-#gene <- "TCR"
-#class_vdj <- "TCR"
+#run_mutation <- "N"
+#gene <- "IGH"
+#normalise <- "FALSE"
+#exclude_samples <- NA
+#class_vdj <- "IGH"
 #all_class <- "TCRA"
 #exclude_samples <- 'LEO_Samples_Exclude.txt'
-
 
 # Source Auxillary Functions
 my_aux_functions <- c("RFunctions/Isotyper")           
@@ -111,13 +124,13 @@ if(dir.exists(paste0(outputdir, "Plots/ISOTYPER"))==FALSE){
 }	
 
 # Create Summary Matrices 
-summary_isotyper(outputdir, samplesfilepost, "ALL", exclude_samples, path_to_layout, normalise)
+summary_isotyper(outputdir, samplesfilepost, "ALL", exclude_samples, path_to_layout, normalise, run_mutation)
 print("ISOTYPER Summary statistics for  ALL complete")
 gc()
-summary_isotyper(outputdir, samplesfilepost, "UNPRODUCTIVE", exclude_samples, path_to_layout, normalise)
+summary_isotyper(outputdir, samplesfilepost, "UNPRODUCTIVE", exclude_samples, path_to_layout, normalise, run_mutation)
 print("ISOTYPER Summary statistics for  UNPRODUCTIVE complete")
 gc()
-summary_isotyper(outputdir, samplesfilepost, "PRODUCTIVE", exclude_samples, path_to_layout, normalise)
+summary_isotyper(outputdir, samplesfilepost, "PRODUCTIVE", exclude_samples, path_to_layout, normalise, run_mutation)
 print("ISOTYPER Summary statistics for  PRODUCTIVE complete")
 gc()
 

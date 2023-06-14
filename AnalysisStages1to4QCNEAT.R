@@ -203,9 +203,11 @@ impt <- summary_imputation('/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/
 source('/gpfs2/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/RFunctions/ThesisSummaryPlots/summary_imputation.R')
 impt2 <- summary_imputation('/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW', '/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Plots', '/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Summary', "TCRGD", "PRODUCTIVE")
 
+if(length(impt) > 3){
 pdf(paste0('/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCR_thesis_plots/Imputation.pdf'), width=14, height=7)
 plot(plot_grid(impt[[4]], impt[[5]], impt[[6]], impt[[7]], impt2[[4]], impt2[[5]], impt2[[6]], impt2[[7]], ncol=4, align = "v", axis = "btlr", labels="AUTO"))
 dev.off()
+}
 
 pdf(paste0('/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCR_thesis_plots/Imputation_Method.pdf'), width=14, height=8)
 plot(plot_grid(impt[[1]], impt2[[1]], ncol=2, align = "v", axis = "btlr", labels="AUTO"))

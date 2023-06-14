@@ -101,7 +101,7 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1){
 	#JACCARD_MATRIX_2_cohort_X <- JACCARD_MATRIX_2_cohort1[!is.na(JACCARD_MATRIX_2_cohort1$Comparison),]
 
 	# Make plots 
-	pdf(paste0(path_to_output, "/Plots/JACCARD_MATRIX_BOXPLOTS_BoxPlotComparisons_", name, ".pdf"), width=7, height=5)
+	pdf(paste0(path_to_output, "/Plots/JACCARD_MATRIX_BOXPLOTS_BoxPlotComparisons_", name, ".pdf"), width=9, height=5)
 	if ("LibCorrected" %in% colnames(JACCARD_MATRIX_2)){
 		colNames <- names(JACCARD_MATRIX_2_cohort1)[c(3, 5, 6, 8, 9, 11, 12, 14, 16, 18, 19, 21, 22, 23, 26, 27)]
 	} else {
@@ -134,6 +134,14 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1){
 	widthx <- 7+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
 	heightx <- 7+(length(unique(JACCARD_MATRIX_2$Sample1))*0.05)
 	
+	if(widthx<20){
+		widthx=20
+	}
+	
+	if(heightx<10){
+		heightx=10
+	}
+	
 	pdf(paste0(path_to_output, "/Plots/JACCARD_MATRIX_BATCH_COMPARISONS_", name, ".pdf"), width=widthx, height=heightx)
 	if ("LibCorrected" %in% colnames(JACCARD_MATRIX_2)){
 		colNames <- names(JACCARD_MATRIX_2_cohort1)[c(3, 5, 6, 8, 9, 11, 12, 14, 16, 18, 19, 21, 22, 24, 25, 27)]
@@ -142,6 +150,7 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1){
 	}
 	for(s in colNames){
 		print(s)
+		namex <- gsub("\\.", "\n", s)
 		plots <- list()
 		for(i in 1:dim(batch_combinations)[1]){
 			subset_1 <- batch_combinations[i,1]
@@ -154,14 +163,20 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1){
 			maxima <- max(maxima)
 			data_use <- JACCARD_MATRIX_2_cohort1[JACCARD_MATRIX_2_cohort1$Plate_S1==subset_1 & JACCARD_MATRIX_2_cohort1$Plate_S2==subset_2,]
 			if ("LibCorrected" %in% colnames(JACCARD_MATRIX_2)){
-				e <- ggplot(data_use, aes_string("Sample1", "Sample2"))  + geom_tile(aes_string(fill=s)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +scale_fill_gradientn( limits = c(minimums_2, maxima), colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = data_use[data_use$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'), drop=FALSE) + xlab(paste0("Sample ID: Batch ", subset_1)) + ylab(paste0("Sample ID: Batch ", subset_2))
+				e <- ggplot(data_use, aes_string("Sample1", "Sample2"))  + geom_tile(aes_string(fill=s)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +scale_fill_gradientn( limits = c(minimums_2, maxima), colours=c("navyblue", "darkorange1"), name=namex)  + geom_tile(aes(width = 1, height = 1), data = data_use[data_use$ANYNAS=="YES",], fill = "white", color='#00000000') + geom_tile(aes(color=factor(LibCorrected, c("YES", "NO"))), fill = '#00000000', size = 0.2) + scale_color_manual(name = "Sequence Corrected", values = c("green", '#00000000'), drop=FALSE) + xlab(paste0("Sample ID: Batch ", subset_1)) + ylab(paste0("Sample ID: Batch ", subset_2))
 			} else {
-				e <- ggplot(data_use, aes_string("Sample1", "Sample2", fill=s)) + geom_tile(aes_string(fill=s)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +scale_fill_gradientn(limits = c(minimums_2, maxima),  colours=c("navyblue", "darkorange1"))  + geom_tile(aes(width = 1, height = 1), data = data_use[data_use$ANYNAS=="YES",], fill = "white", color='#00000000')+ xlab(paste0("Sample ID: Batch ", subset_1)) + ylab(paste0("Sample ID: Batch ", subset_2))
+				e <- ggplot(data_use, aes_string("Sample1", "Sample2", fill=s)) + geom_tile(aes_string(fill=s)) + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +scale_fill_gradientn(limits = c(minimums_2, maxima),  colours=c("navyblue", "darkorange1"), name=namex)  + geom_tile(aes(width = 1, height = 1), data = data_use[data_use$ANYNAS=="YES",], fill = "white", color='#00000000')+ xlab(paste0("Sample ID: Batch ", subset_1)) + ylab(paste0("Sample ID: Batch ", subset_2))
 			} 
 			plots[[i]] <- e
 			}
+		lengthx <- length(plots)
+		ncol = 5
+		nrow = ceiling(lengthx/ncol)
 		tryCatch({ 
-			multiplot(plotlist = plots, cols = 5)
+			#multiplot(plotlist = plots, cols = 5)
+			#grid_arrange_shared_legend(plotlist = plots, ncol = 5, position="right")
+			#wrap_plots(plotlist = plots) + plot_layout(guides = "collect")
+			eval(parse( text = paste0("grid_arrange_shared_legend(", paste0("plots", "[[", c(1:lengthx), "]]", sep = '', collapse = ','), ",ncol =", ncol, ",nrow =", nrow, ", position = 'right')", sep = '')))
 		}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 	}
 	dev.off()

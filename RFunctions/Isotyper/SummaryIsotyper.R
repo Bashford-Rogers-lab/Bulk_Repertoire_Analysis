@@ -5,28 +5,38 @@
 ## lauren.overend@oriel.ox.ac.uk
 
 # Recquired Packages
-suppressMessages(library(reshape2))
-suppressMessages(library(ggplot2))
-suppressMessages(library(Hmisc))
 suppressMessages(library(corrplot))
-suppressMessages(library(stringr))
+suppressMessages(library(cowplot))
 suppressMessages(library(data.table))
-suppressMessages(library(purrr))
-suppressMessages(library(tidyr))
-suppressMessages(library(data.table))
-suppressMessages(library(foreach))
-suppressMessages(library(doParallel)) 
-suppressMessages(library(ggforce))
-suppressMessages(library(plot3D))
-suppressMessages(library(Peptides))
-suppressMessages(library(plyr))
+suppressMessages(library(doParallel))
 suppressMessages(library(dplyr))
+suppressMessages(library(foreach))
+suppressMessages(library(ggforce))
+suppressMessages(library(ggplot2))
+suppressMessages(library(ggpubr))
+suppressMessages(library(ggrastr))
+suppressMessages(library(gridExtra))
+suppressMessages(library(gtools))
+suppressMessages(library(Gviz))
+suppressMessages(library(Hmisc))
+suppressMessages(library(matrixStats))
 suppressMessages(library(moments))
 suppressMessages(library(mousetrap))
+suppressMessages(library(Peptides))
+suppressMessages(library(plot3D))
+suppressMessages(library(plyr))
+suppressMessages(library(purrr))
+suppressMessages(library(reshape2))
+suppressMessages(library(ShortRead))
+suppressMessages(library(stringr))
+suppressMessages(library(tidyr))
+suppressMessages(library(tidyverse))
+
 
 
 ## Function 
-summary_isotyper <- function(outputdir=outputdir, samplesfilepost=samplesfilepost, iso_type=iso_type, exclude_samples=exclude_samples,  path_to_layout=path_to_layout, normalise=FALSE){
+summary_isotyper <- function(outputdir=outputdir, samplesfilepost=samplesfilepost, iso_type=iso_type, exclude_samples=exclude_samples,  path_to_layout=path_to_layout, normalise=FALSE, run_mutation=run_mutation){
+
 
 iso_type=iso_type
 #Getting SampleIDs
@@ -46,7 +56,6 @@ path <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT")
 source('RFunctions/Isotyper/ReadDepths.R')
 read_depths_all <- getdepths(path, iso_type)
 write.table(read_depths_all, paste0(outputdir, "Summary/Read_Depths_", iso_type, ".txt"), sep="\t", row.names=TRUE)
-
 
 ## Getting subsample depths which were used for isotyper script 
 counts_used <- paste0(outputdir, "ORIENTATED_SEQUENCES/ANNOTATIONS")
@@ -352,6 +361,7 @@ print("Filtered for valid Metrics from file")
 ## Add in the proportions of different SHM isotypes across groups!
 ## Only relevant for BCRs
 if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
+		if(run_mutation %like% "Y" | run_mutation %like% "y"){
 		file <- paste0(outputdir, "Summary/IMGT/IMGT_Prop_SHM_", iso_type, ".txt")
 		proportions_file <- read.delim(file, sep="\t", header=TRUE)
 		colnames(proportions_file) <- gsub("\\.", "_", colnames(proportions_file))
@@ -382,9 +392,9 @@ if(chain_vdj %like% "BC" | chain_vdj %like% "I"){
 		
 		overall_matrix <- merge(overall_matrix, datar, by.x="sample", by.y=paste0("Sample"))
 		rownames(overall_matrix) <- overall_matrix$sample
-		
-		
+		}		
 } 
+
 overall_matrix <- overall_matrix %>% select(ReadDepth, everything())
 
 ## REPLACE ANY INSTANCES OF '-1' (meaning to small sample size so not calculated with NA!" 
@@ -398,7 +408,7 @@ overall_matrix<- overall_matrix[, c(!colnames(overall_matrix) %in% names(empty_c
 ####################################################################################################
 
 print("Removing Samples Present in Exclude Sample File")
-if (exclude_samples!="NA"){
+if (!is.na(exclude_samples) & exclude_samples!="NA"){
 	exclude_samples <- read.delim(exclude_samples, header=TRUE, sep="\t")
 	if(iso_type == "UNPRODUCTIVE"){
 	exclude_samples[,1] <- paste0(exclude_samples[,1], "_unproductive")

@@ -1,6 +1,6 @@
-#module purge
-#module use -a /apps/eb/dev/ivybridge/modules/all
-#module load R/4.1.0-foss-2021a 
+module purge
+module use -a /apps/eb/dev/ivybridge/modules/all
+module load R/4.1.0-foss-2021a 
 ########################
 library(ggplot2) 
 library(data.table) 
@@ -44,8 +44,8 @@ outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/GeneExpP
 gene_expression_file <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/GeneExpression/REPERTOIRE_SAMPLES_GEX_EnsembeID.txt'
 
 ## TCRGD
-eigenvectors_file <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD/Eigenvectors_No_Technical_TCRGD_PRODUCTIVE.txt'
-outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD/GeneExpPlots/'
+eigenvectors_file <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/Eigenvectors_No_Technical_TCRGD_PRODUCTIVE.txt'
+outputdir <- '/gpfs2/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRGD_NEW/GeneExpPlots/'
 gene_expression_file <- '/gpfs2/well/immune-rep/shared/MISEQ/LEO_GAinS_RNASEQ_2023/GeneExpression/REPERTOIRE_SAMPLES_GEX_EnsembeID.txt'
 
 #####################################################################################################	

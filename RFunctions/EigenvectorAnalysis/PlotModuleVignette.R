@@ -3,13 +3,13 @@
 ## Jan 2023
 ##############################################################
 
-#eigenvectors <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/Eigenvectors_No_Technical_BCR_PRODUCTIVE.txt'
-#feature_assignment <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/Summary/Clustered_Features_assignment_BCR_PRODUCTIVE_NON_IMPUTED.txt'
-#imputed_data <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/Imputed_DATA_FINAL_SCALED_BCR_PRODUCTIVE.txt'
+#eigenvectors <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Eigenvectors_No_Technical_TCRAB_PRODUCTIVE.txt'
+#feature_assignment <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Summary/Clustered_Features_assignment_TCRAB_PRODUCTIVE_NON_IMPUTED.txt'
+#imputed_data <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Imputed_DATA_FINAL_SCALED_TCRAB_PRODUCTIVE.txt'
 #metadata <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/LabKeyMetaData/Final_metadata_Reduced.txt'
 #metahealth <- '/gpfs2/well/immune-rep/users/kvi236/GAinS_Data/LabKeyMetaData/Healthies_ClinData.txt'
-#outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR'
-#loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/BCR/Summary/Module_FeaturePCALoadings_BCR_1500_PRODUCTIVE.rds'
+#outputdir <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB'
+#loadings_use <- '/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCRAB/Summary/Module_FeaturePCALoadings_TCRAB_300_PRODUCTIVE.rds'
 
 library(ggpubr)
 library(lme4)
@@ -79,8 +79,9 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 		###################################
 		## Ready for doing the models!!!!!!
 		### We want to do a plot of the features in each module
+		
 		for(i in 1:no_clusters){
-			
+			cors <- c()
 			if(!i %in% feature_assignments$Cluster){
 				i <- "Unassigned"
 				assigned <- "NO"
@@ -96,6 +97,16 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 			cluster_id <- i 
 			features <- feature_assignments$Feature[feature_assignments$Cluster==i]
 			data_use <- imputed_datas[,c(features)]
+			
+			## Get limits so each plot has same axis 
+			### This is just for the features will need to check against module 
+			min_values <- sapply(data_use, function(x) if(is.numeric(x)) min(x) else NA)
+			ymin <- min(min_values[!is.na(min_values)]) + 1
+			
+			max_values <- sapply(data_use, function(x) if(is.numeric(x)) max(x) else NA)
+			ymax <- max(max_values[!is.na(max_values)]) -1 
+			
+			
 			rownames(data_use) <- gsub("_productive", "", rownames(data_use))
 			
 			## Get module eigenvector score 
@@ -123,7 +134,11 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 				data_usex <- merge(data_allx, meta_all, by.x="Sample", by.y="SampleID_alternative")
 				module_raw <- "Unassigned_Features"
 			}	
-					    
+			
+			### Update comparing to module 
+
+
+			
 			data_usex$Scaled_Score <- as.numeric(data_usex$Scaled_Score)
 			data_usex$DAY <- as.numeric(data_usex$DAY)	
 			
@@ -150,21 +165,27 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 			myplots_hvsd <- list()
 			myplots_mort <- list()
 			col_number <- ceiling(sqrt(length(features)))
-			dims_pdfh <- col_number*3
-			dims_pdfw <- col_number*4
+			dims_pdfh <- col_number*3.25
+			dims_pdfw <- col_number*4.25
 			
 			## Set plot dimensions
-			if(dims_pdfh < 15){
-				dims_pdfh <- 20
+			if(dims_pdfh < 13){
+				dims_pdfh <- 13
 			}
 			
-			if(dims_pdfw < 20){
-				dims_pdfw <- 20
+			if(dims_pdfw < 15){
+				dims_pdfw <- 15
 			}
 
 			p_estimatesh <- c() 
 			p_estimatesm <- c() 
 			pdf(paste0(outputdir,"/Module_VignettesModel_", module_raw, ".pdf"), width=dims_pdfw, height=dims_pdfh)
+			
+			minner <- c()
+			maxxer <- c()
+					
+			minner_mort <- c()
+			maxxer_mort <- c()
 			for (x in 1:length(levels(data_usex$Feature))){
 				#print(x)
 				feature_use <- levels(data_usex$Feature)[x]
@@ -174,6 +195,7 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 					score <- unique(data_feature$Loading)
 					score <- round(score, 2)
 					scorex <- unique(data_feature$Loading)
+					print(ft_cutoff)
 					if(scorex>=ft_cutoff){
 						col_text <- "red"
 					} else {
@@ -194,10 +216,37 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 				hvsdp <- estimates[2]
 				tp <- estimates[1]
 				
+				### Lets calculate correlaton between feature and module
+				if(assigned=="YES" & !feature_use %like% "Module"){
+					s1 <- data_ei
+					s2 <- data_feature[, c("Sample", "Scaled_Score")]
+					s3 <- merge(s1, s2, by="Sample")
+					correl <- cor.test(s3[, module_raw], s3[, "Scaled_Score"], method="pearson")
+					correlval <- correl$estimate
+					correlpval <- correl$p.value
+					summarys <- paste0("\nCor.Module: R=", round(correlval, 2), " p=", round(correlpval,2))
+					cors_row <- c(module_raw, feature_use, correlval, correlpval)
+					cors <- rbind(cors, cors_row)
+				} else {
+					summarys <- ""
+				}
+				
 				if(feature_use %like% "Module"){
 							p1 <- interactions::interact_plot(xmdl, pred = DAY, modx = DISEASE, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nSepsis: p=", round(hvsdp,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Module Score") + theme(plot.title = element_text(color = col_text, size=10))
+							#e <- ggplot_build(p1)$data[[3]]
+							#minx <- min(e$y)-0.2
+							#manx <- max(e$y)+0.2
+							#minner <- c(minner, minx)
+							#maxxer <- c(maxxer, manx)
+
+							
 				} 	else{
-					p1 <- interactions::interact_plot(xmdl, pred = DAY, modx = DISEASE, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nSepsis: p=", round(hvsdp,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Scaled Score") + theme(plot.title = element_text(color = col_text, size=10))
+					p1 <- interactions::interact_plot(xmdl, pred = DAY, modx = DISEASE, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nSepsis: p=", round(hvsdp,2), "\nTimepoint: p=",round(tp,2), summarys), y.label="Residual Scaled Score") + theme(plot.title = element_text(color = col_text, size=10))
+							e <- ggplot_build(p1)$data[[3]]
+							minx <- min(e$y)-0.2
+							manx <- max(e$y)+0.2
+							minner <- c(minner, minx)
+							maxxer <- c(maxxer, manx)
 				}
 				myplots_hvsd[[(x)]] <- p1
 					
@@ -223,8 +272,19 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 				
 				if(feature_use %like% "Module"){
 					p1x <- interactions::interact_plot(xmdlx, pred = DAY, modx = Mortality, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nED: p=", round(ed,2), ", LD: p=", round(ld,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Module Score")+ theme(plot.title = element_text(color = col_text, size=10))
+					#e <- ggplot_build(p1x)$data[[3]]
+					#minx <- min(e$y)-0.2
+					#manx <- max(e$y)+0.2
+					#minner_mort <- c(minner_mort, minx)
+					#maxxer_mort <- c(maxxer_mort, manx)
+				
 				} else {
-					p1x <- interactions::interact_plot(xmdlx, pred = DAY, modx = Mortality, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nED: p=", round(ed,2), ", LD: p=", round(ld,2), "\nTimepoint: p=",round(tp,2)), y.label="Residual Scaled Score")+ theme(plot.title = element_text(color = col_text, size=10))
+					p1x <- interactions::interact_plot(xmdlx, pred = DAY, modx = Mortality, partial.residuals = TRUE, interval = TRUE, main.title= paste0(str_wrap(feature_use, width=30), "\nPCA Loading: ", score, "\nED: p=", round(ed,2), ", LD: p=", round(ld,2), "\nTimepoint: p=",round(tp,2), summarys), y.label="Residual Scaled Score")+ theme(plot.title = element_text(color = col_text, size=10))
+					e <- ggplot_build(p1x)$data[[3]]
+					minx <- min(e$y)-0.2
+					manx <- max(e$y)+0.2
+					minner_mort <- c(minner_mort, minx)
+					maxxer_mort <- c(maxxer_mort, manx)
 				}
 				myplots_mort[[(x)]] <- p1x
 				
@@ -232,6 +292,12 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 				p_estimatesh	<- rbind(estimates1,	p_estimatesh)	
 				p_estimatesm	<- rbind(estimates2,	p_estimatesm)	
 			}
+			
+			all_min <- min(minner)
+			all_max <- max(maxxer)
+			
+			all_min_mort <- min(minner_mort)
+			all_max_mort <- max(maxxer_mort)
 			
 			## For HvsS 
 			colnames(p_estimatesh) <- c("Feature", "TIMEPOINT", "DISEASE.SEPSIS", "AGE", "SEX.MALE", "COMORBIDITIES.CI", "TIMEPOINTxSEPSIS", "ANALYSIS", "LOADING")
@@ -247,7 +313,21 @@ plot_module_vignette <- function(eigenvectors, feature_assignment, imputed_data,
 			write.table(p_estimatesh, paste0(outputdir, "/Summary/Mortality_ALLFEATURES_STATISTICS_", module_raw, ".txt"), sep="\t")
 			p_estimatesx_m <- p_estimatesm[!p_estimatesm$Feature %like% "Module",]
 			
-		
+			## save correlations 
+			write.table(cors, paste0(outputdir, "/Summary/FeaturevsEigenvectorCorrelation_", module_raw, ".txt"), sep="\t")
+
+			### Update plot coordinates
+			## We want to update the scaled one but not the module one as that has different axes
+			for (u in 2:length(myplots_hvsd)) {
+			  myplots_hvsd[[u]] <- myplots_hvsd[[u]] + 
+				coord_cartesian(ylim = c(all_min, all_max))
+			}
+			
+			for (u in 2:length(myplots_mort)) {
+			  myplots_mort[[u]] <- myplots_mort[[u]] + 
+				coord_cartesian(ylim = c(all_min_mort, all_max_mort))
+			}
+
 			## Set up plots to look whether significance correlates with module assignment
 			if(assigned=="YES"){
 			p1 <- ggplot(p_estimatesx_h, aes(x=as.numeric(LOADING), y=as.numeric(DISEASE.SEPSIS))) + geom_point(aes(colour=as.numeric(DISEASE.SEPSIS)<0.05))+geom_hline(yintercept=0.05, col="red") +theme_classic()+labs(colour="P < 0.05")+xlab("PCA loading Score") + ylab("P value for model effect")+ggtitle("Module Membership vs \nSignificance: \nDisease Sepsis") +                                     

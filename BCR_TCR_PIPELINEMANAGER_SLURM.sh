@@ -19,6 +19,8 @@
 ## BATCH_FILE: Layouts file detailing sample organisation e.g. lanes/libraries etc 
 ## TECHNICAL_SAMPLES: subset of BATCH_FILE detailing which are technical samples 
 ## SAMPLES_EXCLUDE: Only include if there are any samples you want to exclude all together - e.g. you discover they have significant comorbidities 
+## NOTE THAT FOR RSCRIPTS WE ARE CONSTRAINED TO SKYLAKE ARCHITECTURE!!!!!
+
 DEPENDANCIES=$1
 SAMPLES_FILE_PRE=$2
 SAMPLES_FILE_POST=$3
@@ -31,7 +33,7 @@ SAMPLES_EXCLUDE=$8
 ## HARD CODED YOU MAY NEED TO EDIT 
 ## MOST PEOPLE WILL WANT NORMALISE NORMALISE_VGENEUSAGE==
 CODE_DIRECTORY='/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/'
-NORMALISE_VGENEUSAGE=TRUE
+NORMALISE_VGENEUSAGE=FALSE
 ## If this is BCR set to either YES or NO - if TCR it doesnt matter as it wont run 
 IMGT_MUTATION=YES 
 GENE=$(awk -F '\t' "{if (NR==1) print \$4}" $SAMPLES_FILE_POST)  
@@ -131,7 +133,7 @@ if [[ "$STAGE" -eq 1 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_2.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/2/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_2 -e ${OUT}/STAGE_2_%a.e -o ${OUT}/STAGE_2_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_2 -e ${OUT}/STAGE_2_%a.e -o ${OUT}/STAGE_2_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_2 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	echo "${SAMPLES_FILE_POST},TASK2,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
@@ -139,7 +141,7 @@ if [[ "$STAGE" -eq 1 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_3.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/3/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_3 -e ${OUT}/STAGE_3_%a.e -o ${OUT}/STAGE_3_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_3 -e ${OUT}/STAGE_3_%a.e -o ${OUT}/STAGE_3_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_3 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	echo "${SAMPLES_FILE_POST},TASK3,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 	
@@ -147,7 +149,7 @@ if [[ "$STAGE" -eq 1 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_4.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/4/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_4 -e ${OUT}/STAGE_4_%a.e -o ${OUT}/STAGE_4_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_4 -e ${OUT}/STAGE_4_%a.e -o ${OUT}/STAGE_4_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_4 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	#JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK4,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
@@ -157,7 +159,7 @@ if [[ "$STAGE" -eq 1 ]]; then
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/5/
 	mkdir ${OUT}
 	#Part five uses only 'one task e.g. not an array'
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_5 -e ${OUT}/STAGE_5_%a.e -o ${OUT}/STAGE_5_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_5 -e ${OUT}/STAGE_5_%a.e -o ${OUT}/STAGE_5_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1 -N STAGE_5 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
 	echo "${SAMPLES_FILE_POST},TASK5,ARRAYSIZE:1,JOBID:${JOB_ID}"
 
@@ -165,7 +167,7 @@ if [[ "$STAGE" -eq 1 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_RS.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/RS/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=8 -J STAGE_RS -e ${OUT}/STAGE_RS_%a.e -o ${OUT}/STAGE_RS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh  ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=8 -J STAGE_RS -e ${OUT}/STAGE_RS_%a.e -o ${OUT}/STAGE_RS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh  ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
 	#JOB_ID=$(qsub -pe shmem 8 -q short.qc -t 1 -N STAGE_RS -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
 	echo "${SAMPLES_FILE_POST},TASK.RS,ARRAYSIZE:1,JOBID:${JOB_ID},RUNNAME:${RUNNAME},BATCH_FILE:${BATCH_FILE}"
 
@@ -209,7 +211,7 @@ if [[ "$STAGE" -eq 2 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_2.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/2/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_2 -e ${OUT}/STAGE_2_%a.e -o ${OUT}/STAGE_2_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_2 -e ${OUT}/STAGE_2_%a.e -o ${OUT}/STAGE_2_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_2 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	echo "${SAMPLES_FILE_POST},TASK2,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
@@ -217,7 +219,7 @@ if [[ "$STAGE" -eq 2 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_3.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/3/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_3 -e ${OUT}/STAGE_3_%a.e -o ${OUT}/STAGE_3_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_3 -e ${OUT}/STAGE_3_%a.e -o ${OUT}/STAGE_3_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_3 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	echo "${SAMPLES_FILE_POST},TASK3,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 	
@@ -225,7 +227,7 @@ if [[ "$STAGE" -eq 2 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_4.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/4/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_4 -e ${OUT}/STAGE_4_%a.e -o ${OUT}/STAGE_4_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_4 -e ${OUT}/STAGE_4_%a.e -o ${OUT}/STAGE_4_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_4 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	#JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK4,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
@@ -235,7 +237,7 @@ if [[ "$STAGE" -eq 2 ]]; then
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/5/
 	mkdir ${OUT}
 	#Part five uses only 'one task e.g. not an array'
-	JOB5_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_5 -e ${OUT}/STAGE_5_%a.e -o ${OUT}/STAGE_5_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
+	JOB5_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_5 -e ${OUT}/STAGE_5_%a.e -o ${OUT}/STAGE_5_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1 -N STAGE_5 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
 	echo "${SAMPLES_FILE_POST},TASK5,ARRAYSIZE:1,JOBID:${JOB_ID}"
 
@@ -244,7 +246,7 @@ if [[ "$STAGE" -eq 2 ]]; then
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/RS/
 	mkdir ${OUT}
 	#Part five uses only 'one' and runs the R script 
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOB5_ID} --cpus-per-task=8 -J STAGE_RS -e ${OUT}/STAGE_RS_%a.e -o ${OUT}/STAGE_RS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOB5_ID} --cpus-per-task=8 -J STAGE_RS -e ${OUT}/STAGE_RS_%a.e -o ${OUT}/STAGE_RS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
 	#JOB_ID=$(qsub -pe shmem 8 -q short.qc -t 1 -N STAGE_RS -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
 	echo "${SAMPLES_FILE_POST},TASK.RS,ARRAYSIZE:1,JOBID:${JOB_ID},RUNNAME:${RUNNAME},BATCH_FILE:${BATCH_FILE}"
 
@@ -254,9 +256,9 @@ if [[ "$STAGE" -eq 2 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_JACCARD.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/JI/
 	mkdir ${OUT}
-	JOBA_ID1=$(sbatch --parsable -p short -d afterok:${JOB5_ID} --cpus-per-task=10 -J STAGE_J1 -e ${OUT}/STAGE_JACCARD1_%a.e -o ${OUT}/STAGE_JACCARD1_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
+	JOBA_ID1=$(sbatch --parsable -p short -d afterany:${JOB5_ID} --cpus-per-task=10 -J STAGE_J1 -e ${OUT}/STAGE_JACCARD1_%a.e -o ${OUT}/STAGE_JACCARD1_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
 	#JOB_ID1=$(qsub -pe shmem 10 -q long.qc -t 1 -N STAGE_JACCARD1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
-	JOBA_ID2=$(sbatch --parsable -p short -d afterok:${JOB5_ID} --cpus-per-task=10 -J STAGE_J2 -e ${OUT}/STAGE_JACCARD2_%a.e -o ${OUT}/STAGE_JACCARD2_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
+	JOBA_ID2=$(sbatch --parsable -p short -d afterany:${JOB5_ID} --cpus-per-task=10 -J STAGE_J2 -e ${OUT}/STAGE_JACCARD2_%a.e -o ${OUT}/STAGE_JACCARD2_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
 	#JOB_ID2=$(qsub -pe shmem 10 -q long.qc -t 1 -N STAGE_JACCARD2 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
 	exit 0
 fi 
@@ -286,9 +288,9 @@ if [[ "$STAGE" == "R" ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_JACCARD.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/JI/
 	mkdir ${OUT}
-	JOBA_ID1=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=10 -J STAGE_J1 -e ${OUT}/STAGE_JACCARD1_%a.e -o ${OUT}/STAGE_JACCARD1_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
+	JOBA_ID1=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=10 -J STAGE_J1 -e ${OUT}/STAGE_JACCARD1_%a.e -o ${OUT}/STAGE_JACCARD1_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
 	#JOB_ID1=$(qsub -pe shmem 10 -q long.qc -t 1 -N STAGE_JACCARD1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
-	JOBA_ID2=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=10 -J STAGE_J2 -e ${OUT}/STAGE_JACCARD2_%a.e -o ${OUT}/STAGE_JACCARD2_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
+	JOBA_ID2=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=10 -J STAGE_J2 -e ${OUT}/STAGE_JACCARD2_%a.e -o ${OUT}/STAGE_JACCARD2_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
 	#JOB_ID2=$(qsub -pe shmem 10 -q long.qc -t 1 -N STAGE_JACCARD2 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
 	exit 0
 fi 
@@ -331,7 +333,7 @@ if [[ "$STAGE" -eq 3 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_2.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/2/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_2 -e ${OUT}/STAGE_2_%a.e -o ${OUT}/STAGE_2_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_2 -e ${OUT}/STAGE_2_%a.e -o ${OUT}/STAGE_2_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_2 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/2/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 2 ${SAMPLES_FILE_PRE})
 	echo "${SAMPLES_FILE_POST},TASK2,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
@@ -339,7 +341,7 @@ if [[ "$STAGE" -eq 3 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_3.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/3/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_3 -e ${OUT}/STAGE_3_%a.e -o ${OUT}/STAGE_3_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_3 -e ${OUT}/STAGE_3_%a.e -o ${OUT}/STAGE_3_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_3 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/3/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 3)
 	echo "${SAMPLES_FILE_POST},TASK3,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
@@ -347,7 +349,7 @@ if [[ "$STAGE" -eq 3 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_4.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/4/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_4 -e ${OUT}/STAGE_4_%a.e -o ${OUT}/STAGE_4_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_4 -e ${OUT}/STAGE_4_%a.e -o ${OUT}/STAGE_4_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_4 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/4/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 4)
 	#JOB_ID=${JOB_ID%.*}
 	echo "${SAMPLES_FILE_POST},TASK4,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
@@ -357,7 +359,7 @@ if [[ "$STAGE" -eq 3 ]]; then
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/5/
 	mkdir ${OUT}
 	#Part five uses only 'one task e.g. not an array'
-	JOB5_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_5 -e ${OUT}/STAGE_5_%a.e -o ${OUT}/STAGE_5_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
+	JOB5_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_5 -e ${OUT}/STAGE_5_%a.e -o ${OUT}/STAGE_5_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
 	#JOB_ID=$(qsub -pe shmem 1 -q short.qc -t 1 -N STAGE_5 -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/5/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} 5)
 	echo "${SAMPLES_FILE_POST},TASK5,ARRAYSIZE:1,JOBID:${JOB_ID}"
 
@@ -366,7 +368,7 @@ if [[ "$STAGE" -eq 3 ]]; then
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/RS/
 	mkdir ${OUT}
 	#Part five uses only 'one' and runs the R script 
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOB5_ID} --cpus-per-task=8 -J STAGE_RS -e ${OUT}/STAGE_RS_%a.e -o ${OUT}/STAGE_RS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOB5_ID} --cpus-per-task=8 -J STAGE_RS -e ${OUT}/STAGE_RS_%a.e -o ${OUT}/STAGE_RS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
 	#JOB_ID=$(qsub -pe shmem 8 -q short.qc -t 1 -N STAGE_RS -hold_jid ${JOB_ID} -e COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/RS/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} RS ${RUNNAME} ${BATCH_FILE} ${TECHNICAL_SAMPLES})
 	echo "${SAMPLES_FILE_POST},TASK.RS,ARRAYSIZE:1,JOBID:${JOB_ID},RUNNAME:${RUNNAME},BATCH_FILE:${BATCH_FILE}"
 
@@ -376,9 +378,9 @@ if [[ "$STAGE" -eq 3 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_JACCARD.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/JI/
 	mkdir ${OUT}
-	JOBA_ID1=$(sbatch --parsable -p short -d afterok:${JOB5_ID} --cpus-per-task=10 -J STAGE_J1 -e ${OUT}/STAGE_JACCARD1_%a.e -o ${OUT}/STAGE_JACCARD1_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
+	JOBA_ID1=$(sbatch --parsable -p short -d afterany:${JOB5_ID} --cpus-per-task=10 -J STAGE_J1 -e ${OUT}/STAGE_JACCARD1_%a.e -o ${OUT}/STAGE_JACCARD1_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
 	#JOB_ID1=$(qsub -pe shmem 10 -q long.qc -t 1 -N STAGE_JACCARD1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 1)
-	JOBA_ID2=$(sbatch --parsable -p short -d afterok:${JOB5_ID} --cpus-per-task=10 -J STAGE_J2 -e ${OUT}/STAGE_JACCARD2_%a.e -o ${OUT}/STAGE_JACCARD2_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
+	JOBA_ID2=$(sbatch --parsable -p short -d afterany:${JOB5_ID} --cpus-per-task=10 -J STAGE_J2 -e ${OUT}/STAGE_JACCARD2_%a.e -o ${OUT}/STAGE_JACCARD2_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
 	#JOB_ID2=$(qsub -pe shmem 10 -q long.qc -t 1 -N STAGE_JACCARD2 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID5} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 2)
 	
 	# RUN STAGE  CONSENSUS
@@ -386,7 +388,7 @@ if [[ "$STAGE" -eq 3 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_CONSENSUS.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/CONSENSUS/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOB5_ID} --cpus-per-task=1 -J STAGE_CO -e ${OUT}/STAGE_CONSENSUS_%a.e -o ${OUT}/STAGE_CONSENSUS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} CONSENSUS)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOB5_ID} --cpus-per-task=1 -J STAGE_CO -e ${OUT}/STAGE_CONSENSUS_%a.e -o ${OUT}/STAGE_CONSENSUS_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} CONSENSUS)
 	#JOB_ID=$(qsub -pe shmem 1 -q long.qc -t 1-${TASKS} -N STAGE_CONSENSUS -hold_jid ${JOB_ID5} -e COMMANDLOGS/${SAMPLES_FILE_POST}/CONSENSUS/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/CONSENSES/ -terse BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} CONSENSUS)
 	echo "${SAMPLES_FILE_POST},TASK.CONSENSUS,ARRAYSIZE:${TASKS},JOBID:${JOB_ID}"
 
@@ -396,7 +398,7 @@ if [[ "$STAGE" -eq 3 ]]; then
 	rm COMMANDLOGS/job_${SAMPLES_FILE_POST}_CONSENSUS.txt
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/JI/
     # Running the JACCARD with UMI correction 
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=10 -J STAGE_CJ -e ${OUT}/STAGE_CONSENSUS_JI_%a.e -o ${OUT}/STAGE_CONSENSUS_JI_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 3)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=10 -J STAGE_CJ -e ${OUT}/STAGE_CONSENSUS_JI_%a.e -o ${OUT}/STAGE_CONSENSUS_JI_%a.o --array 1 BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 3)
 	#JOB_ID3=$(qsub -pe shmem 10 -q long.qc -t 1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -N STAGE_JACCARD3 -o COMMANDLOGS/${SAMPLES_FILE_POST}/JI/ -terse -hold_jid ${JOB_ID} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} JACCARD ${RUNNAME} ${BATCH_FILE} 3)
 	echo "${SAMPLES_FILE_PRE},TASK.JACCARD1-3,ARRAYSIZE:1,JOBID:${JOB_ID}"
 	exit 0
@@ -439,7 +441,7 @@ if [[ "$STAGE" -eq 4 ]]; then
 	# RUN STAGE: ISO1_PRODUCTIVE_NONPRODUCTIVE sequentially (requires fewer slots to become availible)
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/ISO_COMPLETE/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=1 -J STAGE_ISO1 -e ${OUT}/STAGES_ISO1_%a.e -o ${OUT}/STAGE_ISO1_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ISO1_COMPLETE)
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=1 -J STAGE_ISO1 -e ${OUT}/STAGES_ISO1_%a.e -o ${OUT}/STAGE_ISO1_%a.o --array 1-${TASKS} BCR_TCR_Wrapper_Cluster_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ISO1_COMPLETE)
 	#JOB_ID1=$(qsub -pe shmem 1 -q short.qc -t 1-${TASKS} -N STAGE_ISO1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/ISO_COMPLETE/ -o COMMANDLOGS/${SAMPLES_FILE_POST}/ISO_COMPLETE/ -terse -hold_jid ${JOB_ID} BCR_TCR_Wrapper_Cluster.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ISO1_COMPLETE)
 	echo "${SAMPLES_FILE_POST},TASK.ISO1,ARRAYSIZE:${TASKS},JOBID:${JOB_ID1}"
 	JOB_ID1=${JOB_ID1%.*}
@@ -448,7 +450,7 @@ if [[ "$STAGE" -eq 4 ]]; then
 	# Needs more memory if running BCR IMGT 
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=5 -J STAGE_CAT -e ${OUT}/STAGE_CAT_%a.e -o ${OUT}/STAGE_CAT_%a.o --array 1 cat_IMGT_files_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} ${IMGT_MUTATION} ${SAMPLES_EXCLUDE} ${NORMALISE_VGENEUSAGE})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=10 -J STAGE_CAT -e ${OUT}/STAGE_CAT_%a.e -o ${OUT}/STAGE_CAT_%a.o --array 1 cat_IMGT_files_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} ${IMGT_MUTATION} ${SAMPLES_EXCLUDE} ${NORMALISE_VGENEUSAGE})
 	#JOB_ID4=$(qsub -pe shmem 10 -q short.qc -t 1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/ -N STAGE_CAT -o COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/ -terse -hold_jid ${JOB_ID1} cat_IMGT_files.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} YES ${SAMPLES_EXCLUDE})
 	echo "${SAMPLES_FILE_POST},TASKCAT,ARRAYSIZE:1,JOBID:${JOB_ID4}"
 	exit 0
@@ -488,7 +490,7 @@ if [[ "$STAGE" -eq 5 ]]; then
 	# RUN CAT 
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short -d afterok:${JOBA_ID} --cpus-per-task=5 -J STAGE_CAT -e ${OUT}/STAGE_CAT_%a.e -o ${OUT}/STAGE_CONSENSUS_CAT_%a.o --array 1 cat_IMGT_files_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} ${IMGT_MUTATION} ${SAMPLES_EXCLUDE} ${NORMALISE_VGENEUSAGE})
+	JOBA_ID=$(sbatch --parsable -p short -d afterany:${JOBA_ID} --cpus-per-task=10 -J STAGE_CAT -e ${OUT}/STAGE_CAT_%a.e -o ${OUT}/STAGE_CONSENSUS_CAT_%a.o --array 1 cat_IMGT_files_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} ${IMGT_MUTATION} ${SAMPLES_EXCLUDE} ${NORMALISE_VGENEUSAGE})
 	#JOB_ID4=$(qsub -pe shmem 10 -q short.qc -t 1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/ -N STAGE_CAT -o COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/ -terse -hold_jid ${JOB_ID1} cat_IMGT_files.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} YES ${SAMPLES_EXCLUDE})
 	echo "${SAMPLES_FILE_POST},TASKCAT,ARRAYSIZE:1,JOBID:${JOB_ID4}"
 	exit 0
@@ -509,7 +511,7 @@ if [[ "$STAGE" -eq 6 ]]; then
 	# RUN CAT
 	OUT=COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/
 	mkdir ${OUT}
-	JOBA_ID=$(sbatch --parsable -p short --cpus-per-task=5 -J STAGE_CAT -e ${OUT}/STAGE_CAT_%a.e -o ${OUT}/STAGE_CAT_%a.o --array 1 cat_IMGT_files_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} ${IMGT_MUTATION} ${SAMPLES_EXCLUDE} ${NORMALISE_VGENEUSAGE})
+	JOBA_ID=$(sbatch --parsable -p short --cpus-per-task=10 -J STAGE_CAT -e ${OUT}/STAGE_CAT_%a.e -o ${OUT}/STAGE_CAT_%a.o --array 1 cat_IMGT_files_SLURM.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} ${IMGT_MUTATION} ${SAMPLES_EXCLUDE} ${NORMALISE_VGENEUSAGE})
 	#JOB_ID=$(qsub -pe shmem 10 -q long.qc -t 1 -e COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/ -N STAGE_CAT -o COMMANDLOGS/${SAMPLES_FILE_POST}/CAT/ -terse BCR_TCR_Wrapper_2.sh ${DEPENDANCIES} ${SAMPLES_FILE_POST} ${BATCH_FILE} ${CODE_DIRECTORY} YES ${SAMPLES_EXCLUDE})
 	echo "${SAMPLES_FILE_POST},TASKCAT,ARRAYSIZE:1,JOBID:${JOB_ID}"
 	exit 0

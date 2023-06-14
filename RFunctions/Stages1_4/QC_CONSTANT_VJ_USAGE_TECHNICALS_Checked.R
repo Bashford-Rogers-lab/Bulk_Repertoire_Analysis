@@ -3,7 +3,11 @@
 # lauren.overend@oriel.ox.ac.uk 
 # neat format for thesis 
 
-
+#Rscript AnalysisStages1to4.R -o /well/immune-rep/shared/MISEQ/TEST_LEO_ANNA_BCR/ -r TESTING -g IGH -b R4RA_Anna_Batch_file_BCR.txt -t R4RA_Anna_BCR_technical.txt
+#path_to_outputdir='/well/immune-rep/shared/MISEQ/TEST_LEO_ANNA_BCR/'
+#run_name='TESTING' 
+#path_to_layout='R4RA_Anna_Batch_file_BCR.txt'
+#technical_replicates_file="R4RA_Anna_BCR_technical.txt"
 
 compare_technicals_neat <- function(path_to_outputdir = path_to_outputdir, run_name = run_name, technical_replicates_file=technical_replicates_file, plot_dir=plot_dir, path_to_layout = path_to_layout, stat_dir=stat_dir, cluster_nodes = 5){
 	
@@ -60,10 +64,10 @@ compare_technicals_neat <- function(path_to_outputdir = path_to_outputdir, run_n
 		colnames(frequency_variable_genes_J)[3] <- "count"
 		frequency_variable_genes_J <- merge(frequency_variable_genes_J, technical_samples, by.x="Sample", by.y="SampleID")
 		
-		percentage <- frequency_variable_genes_J %>% dplyr::group_by(Sample, J_gene) %>% dplyr::summarise(cnt = count) %>% mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
+		percentage <- frequency_variable_genes_J %>% dplyr::group_by(Sample, J_gene) %>% dplyr::summarise(cnt = count) %>%  dplyr::mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
 		percentage2 <- percentage  %>% dplyr::group_by(J_gene)  %>% dplyr::summarize(Meanpercentage = round(mean(percent, na.rm=TRUE),2), SDpercentage = round(sd(percent, na.rm=TRUE),2), NSDpercentage=round(sd(percent, na.rm=TRUE)/mean(percent, na.rm=TRUE),2))
 		colnames(percentage2)[1] <- "Gene"
-		percentagex <- frequency_variable_genes_family %>% dplyr::group_by(Sample, V_family) %>% dplyr::summarise(cnt = count) %>% mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
+		percentagex <- frequency_variable_genes_family %>% dplyr::group_by(Sample, V_family) %>% dplyr::summarise(cnt = count) %>%  dplyr::mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
 		percentage2x <- percentagex  %>% dplyr::group_by(V_family)  %>% dplyr::summarize(Meanpercentage = round(mean(percent, na.rm=TRUE),2), SDpercentage = round(sd(percent, na.rm=TRUE),2), NSDpercentage=round(sd(percent, na.rm=TRUE)/mean(percent, na.rm=TRUE),2))
 		colnames(percentage2x)[1] <- "Gene"
 		results <- rbind(percentage2, percentage2x)
@@ -129,7 +133,7 @@ compare_technicals_neat <- function(path_to_outputdir = path_to_outputdir, run_n
 		Constant_Results_subset$Lane <- as.numeric(Constant_Results_subset$Lane )
 		Constant_Results_subset$Lane <- factor(Constant_Results_subset$Lane, levels=c(1:max(Constant_Results_subset$Lane)))
 		pdf(paste0(plot_dir, "/Constant_Region_Counts_QC_ISOTYPEUSAGE_TECHNICAL.pdf"), width=8, height=8)
-		p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=as.character(Lane))) + geom_boxplot(alpha=0.5) + geom_point(aes(colour=totalreads)) +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")+ scale_colour_viridis_c()+ labs(fill="Lane", colour="Total Unique VDJs")+ggtitle("Isotype Usage across Technical Replicates") +xlab("Lane") + guides(fill="none")
+		p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=as.character(Lane))) + geom_boxplot(alpha=0.5) + geom_point(aes(colour=totalreads)) +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")+ scale_colour_viridis_c()+ labs(fill="Lane", colour="Total VDJs")+ggtitle("Isotype Usage across Technical Replicates") +xlab("Lane") + guides(fill="none")
 		plot(p1)
 		dev.off()
 		stats <- Constant_Results_subset %>% arrange(Lane) %>% dplyr::group_by(Lane, gene)  %>% dplyr::summarize(Meanpercentage = round(mean(percentage, na.rm=TRUE),2), SDpercentage = round(sd(percentage, na.rm=TRUE),2), NSDpercentage=round(sd(percentage, na.rm=TRUE)/mean(percentage, na.rm=TRUE),2))
@@ -233,10 +237,10 @@ compare_technicals_neat_tcr <- function(path_to_outputdir = path_to_outputdir, r
 		colnames(frequency_variable_genes_J)[3] <- "count"
 		frequency_variable_genes_J <- merge(frequency_variable_genes_J, technical_samples, by.x="Sample", by.y="SampleID")
 		
-		percentage <- frequency_variable_genes_J %>% dplyr::group_by(Sample, J_gene) %>% dplyr::summarise(cnt = count) %>% mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
+		percentage <- frequency_variable_genes_J %>% dplyr::group_by(Sample, J_gene) %>% dplyr::summarise(cnt = count) %>%  dplyr::mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
 		percentage2 <- percentage  %>% dplyr::group_by(J_gene)  %>% dplyr::summarize(Meanpercentage = round(mean(percent, na.rm=TRUE),2), SDpercentage = round(sd(percent, na.rm=TRUE),2), NSDpercentage=round(sd(percent, na.rm=TRUE)/mean(percent, na.rm=TRUE),2))
 		colnames(percentage2)[1] <- "Gene"
-		percentagex <- frequency_variable_genes_family %>% dplyr::group_by(Sample, V_Gene) %>% dplyr::summarise(cnt = count) %>% mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
+		percentagex <- frequency_variable_genes_family %>% dplyr::group_by(Sample, V_Gene) %>% dplyr::summarise(cnt = count) %>%  dplyr::mutate(percent = cnt / sum(cnt)*100, totalcnt =sum(cnt))
 		percentage2x <- percentagex  %>% dplyr::group_by(V_Gene)  %>% dplyr::summarize(Meanpercentage = round(mean(percent, na.rm=TRUE),2), SDpercentage = round(sd(percent, na.rm=TRUE),2), NSDpercentage=round(sd(percent, na.rm=TRUE)/mean(percent, na.rm=TRUE),2))
 		colnames(percentage2x)[1] <- "Gene"
 		results <- rbind(percentage2, percentage2x)
