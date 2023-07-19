@@ -121,12 +121,16 @@ visualise_constant_region_bcr_layouts <- function(path_to_outputdir = path_to_ou
 	Constant_Results$Plate <- as.character(Constant_Results$Plate)
 	Constant_Results$Lane <- as.character(Constant_Results$Lane)
 	
-	if(any(!layouts$Barcode==layouts$SampleID)){	
+	if(any(!layouts$Barcode==layouts$SampleID)& path_to_outputdir %like% "SEPSIS"){	
 		days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
 		days <- days$X2
 		Constant_Results <- cbind(Constant_Results, days)
 		Constant_Results$days <- gsub("T", "", Constant_Results$days)
 		Constant_Results$days[Constant_Results$days != 1 & Constant_Results$days != 3 & Constant_Results$days != 5] <- "Control"
+	} else if (any(!layouts$Barcode==layouts$SampleID)& !path_to_outputdir %like% "SEPSIS"){
+		days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
+		days <- days$X2
+		Constant_Results <- cbind(Constant_Results, days)
 	} else {
 		Constant_Results$days <- "NA"
 	} 
@@ -143,18 +147,24 @@ visualise_constant_region_bcr_layouts <- function(path_to_outputdir = path_to_ou
 	}
 	
 	pdf(paste0(plot_dir,'/PERSAMPLE_CONSTANT_USAGE_QC.pdf'), width=widthx, height=14)
-	p1 <- ggplot(Constant_Results_subset, aes(x=Sample, y=percentage, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Isotype")
-	p2 <- ggplot(Constant_Results_mutation, aes(x=Sample, y=percent_IGM, fill=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% IgHM Reads") +labs(fill="Mutation Status") + scale_fill_discrete(labels = c("Mutated", "Unmutated"))
+	p1 <- ggplot(Constant_Results_subset, aes(x=Sample, y=percentage, fill=gene, colour=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% Reads") +labs(fill="Isotype")
+	p2 <- ggplot(Constant_Results_mutation, aes(x=Sample, y=percent_IGM, fill=gene, colour=gene)) + geom_bar(position="stack", stat="identity", color="black") +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylab("% IgHM Reads") +labs(fill="Mutation Status") + scale_fill_discrete(labels = c("Mutated", "Unmutated"))
 	plot(plot_grid(p1, p2, ncol=1))
 	dev.off()
 	
-	pdf(paste0(plot_dir,'/PERSAMPLE_CONSTANT_USAGE_QC_LAYOUT.pdf'), width=30, height=14)
-	p1 <- ggplot(Constant_Results_subset, aes(x=Library, y=percentage, fill=Lane)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
-	p2 <- ggplot(Constant_Results_mutation, aes(x=Library, y=percent_IGM, fill=Lane)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% of IgM_D Reads") +facet_wrap(~gene, scales = "free_x")
+	width2 <- length(unique(Constant_Results_subset$Library))*1.5
+	pdf(paste0(plot_dir,'/PERSAMPLE_CONSTANT_USAGE_QC_LAYOUT.pdf'), width=width2, height=10)
+	p1 <- ggplot(Constant_Results_subset, aes(x=Library, y=percentage, colour=Lane)) + geom_boxplot(aes(fill=Lane), alpha=0.5)  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
+	p2 <- ggplot(Constant_Results_mutation, aes(x=Library, y=percent_IGM, colour=Lane)) + geom_boxplot(aes(fill=Lane),alpha=0.5)  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% of IgM_D Reads") +facet_wrap(~gene, scales = "free_x")
 	plot(p1)
 	plot(p2)
-	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
-	p2 <- ggplot(Constant_Results_mutation, aes(x=Lane, y=percent_IGM, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% of IgM_D Reads") +facet_wrap(~gene, scales = "free_x")
+	if(path_to_outputdir %like% "SEPSIS"){
+	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, colour=days)) + geom_boxplot(aes(fill=days), alpha=0.5)  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
+	p2 <- ggplot(Constant_Results_mutation, aes(x=Lane, y=percent_IGM, colour=days)) + geom_boxplot(aes(fill=days), alpha=0.5)  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% of IgM_D Reads") +facet_wrap(~gene, scales = "free_x")
+	} else {
+	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, colour=days)) + geom_boxplot(aes(fill=days), alpha=0.5)  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")+ labs(fill='GROUP', colour='GROUP') 
+	p2 <- ggplot(Constant_Results_mutation, aes(x=Lane, y=percent_IGM, colour=days)) + geom_boxplot(aes(fill=days), alpha=0.5) +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% of IgM_D Reads") +facet_wrap(~gene, scales = "free_x")+ labs(fill='GROUP', colour='GROUP') 
+	}
 	plot(p1)
 	plot(p2)
 	dev.off()
@@ -276,12 +286,17 @@ visualise_constant_region_tcr_layouts <- function(path_to_outputdir = path_to_ou
 	Constant_Results$Plate <- as.character(Constant_Results$Plate)
 	Constant_Results$Lane <- as.character(Constant_Results$Lane)
 	
-	if(any(!layouts$Barcode==layouts$SampleID)){	
+	
+	if(any(!layouts$Barcode==layouts$SampleID)& path_to_outputdir %like% "SEPSIS"){	
 		days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
 		days <- days$X2
 		Constant_Results <- cbind(Constant_Results, days)
 		Constant_Results$days <- gsub("T", "", Constant_Results$days)
 		Constant_Results$days[Constant_Results$days != 1 & Constant_Results$days != 3 & Constant_Results$days != 5] <- "Control"
+	} else if (any(!layouts$Barcode==layouts$SampleID)& !path_to_outputdir %like% "SEPSIS"){
+		days <- data.frame(str_split_fixed(Constant_Results$SampleBase, "_", 2))
+		days <- days$X2
+		Constant_Results <- cbind(Constant_Results, days)
 	} else {
 		Constant_Results$days <- "NA"
 	} 
@@ -306,11 +321,16 @@ visualise_constant_region_tcr_layouts <- function(path_to_outputdir = path_to_ou
 	plot(plot_grid(p1, ncol=1))
 	dev.off()
 	
-	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_CONSTANTUSAGE_Layouts', Run_name, '.pdf'), width=30, height=14)
+	width2 <- length(unique(Constant_Results_subset$Library))*1.5
+	pdf(paste0(path_to_outputdir,'/Plots/Constant_Region_Counts_QC_CONSTANTUSAGE_Layouts', Run_name, '.pdf'), width=width2, height=10)
 	p1 <- ggplot(Constant_Results_subset, aes(x=Library, y=percentage, fill=Lane)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
 	plot(p1)
-		
-	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")
+	
+	if(path_to_outputdir %like% "SEPSIS"){	
+	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x")+labs(fill="Day")
+	} else {
+	p1 <- ggplot(Constant_Results_subset, aes(x=Lane, y=percentage, fill=days)) + geom_boxplot()  +theme_bw() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +ylab("% Reads") +facet_wrap(~gene, scales = "free_x") +labs(fill="Group")
+	}
 	plot(p1)
 	dev.off()		
 

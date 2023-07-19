@@ -61,11 +61,12 @@ opt = parse_args(opt_parser, print_help_and_exit = TRUE, args = commandArgs(trai
 #layoutsx <- 'LEO_SEPSIS_TCRG_ALL_layouts.txt'
 #technicals <- 'LEO_SEPSIS_TCRG_ALL_technicals.txt'
 
-#results_outputdir <- '/well/immune-rep/shared/MISEQ/TEST_LEO_ANNA_BCR/'
+#Rscript AnalysisStages1to4.R -o /well/immune-rep/shared/MISEQ/COV_OPTIC_OUT/ -r COV_OPTIC -g IGH -b cov_optic_batch.txt -t cov_optic_tech.txt
+#results_outputdir <- '/well/immune-rep/shared/MISEQ/COV_OPTIC_OUT/'
 #runname <- 'TEST'
 #gene <- 'IGH'
-#layoutsx <- 'LEO_ANNA_BATCH.txt'
-#technicals <- 'LEO_ANNA_tech.txt'
+#layoutsx <- 'cov_optic_lauren.txt'
+#technicals <- 'cov_optic_tech.txt'
 #########################################
 
 
@@ -115,7 +116,10 @@ if(gene=="IGH"){
 	visualise_constant_region_bcr_layouts(results_outputdir,runname, layoutsx, plot_dir)
 	print("stage 4")
 	## STAGE 4: VISUALISE CONSTANT REGION + V GENE USAGE FOR TECHNICALS 
-	compare_technicals_neat(results_outputdir, runname, technicals, plot_dir, layoutsx, stat_dir, cluster_nodes = 5)
+	present <- read.delim(technicals, header=TRUE, sep="\t")
+	if(dim(present)[1]!=0){
+		compare_technicals_neat(results_outputdir, runname, technicals, plot_dir, layoutsx, stat_dir, cluster_nodes = 5)
+	}
 	print("stage 5")
 	## STAGE 5: VJ USAGE FOR ALL SAMPLES 
 	visualise_vj_usage_bcr(results_outputdir, runname)
@@ -145,7 +149,10 @@ if(gene=="TCR" || gene=="TRB" || gene=="TRA"|| gene=="TRG"|| gene=="TRD"){
 	## STAGE 3: VISUALISE CONSTANT REGION USAGE 
 	visualise_constant_region_tcr_layouts(path_to_outputdir=results_outputdir, run_name=runname, path_to_layout=layoutsx)
 	## STAGE 4: VISUALISE CONSTANT REGION USAGE FOR TECHNICALS 
-	compare_technicals_neat_tcr(results_outputdir, runname, technicals, plot_dir, layoutsx, stat_dir, gene, cluster_nodes = 5)
+	present <- read.delim(technicals, header=TRUE, sep="\t")
+	if(dim(present)[1]!=0){
+		compare_technicals_neat_tcr(results_outputdir, runname, technicals, plot_dir, layoutsx, stat_dir, gene, cluster_nodes = 5)
+	}
 	## STAGE 5: VJ USAGE FOR ALL SAMPLES
 	visualise_vj_usage_tcr(results_outputdir, runname)
 	## STAGE 6: CLUSTER SIZE

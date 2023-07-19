@@ -7,7 +7,7 @@ suppressMessages(library(stringr))
 suppressMessages(library(data.table))
 suppressMessages(library(foreach))
 suppressMessages(library(doParallel))
-suppressMessages(library(ShortRead))
+#suppressMessages(library(ShortRead))
 
 
 #productivity <- "ALL"

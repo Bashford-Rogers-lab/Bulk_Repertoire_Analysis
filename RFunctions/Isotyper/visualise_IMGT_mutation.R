@@ -26,7 +26,6 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	suppressMessages(library(data.table))
 	suppressMessages(library(ggplot2))
 	suppressMessages(library(ggforce))
-	suppressMessages(library(Gviz))
 	suppressMessages(library(foreach))
 	suppressMessages(library(doParallel))
 	suppressMessages(library(gridExtra))
@@ -209,6 +208,12 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	} 
 	
 	datas <- c()
+	
+	### Need summary stat dir 
+	if(dir.exists(paste0(path_to_outputdir, "Summary/IMGT/"))==FALSE){
+		dir.create(paste0(path_to_outputdir, "Summary/IMGT/"))
+	}	
+
 	## Get kurtosis, skewness and bimodality 
 	for(i in 1:length(unique(FullData$Sample))){
 		sampler <- unique(FullData$Sample)[i]
@@ -223,7 +228,7 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	colnames(datas) <- c("Sample", "V_gene_total_mutations_kurtosis__ALL",  "V_gene_total_mutations_skewness__ALL",  "V_gene_total_mutations_biomdality__ALL")
 	rownames(datas) <- datas$Sample
 	datas$Sample <- NULL
-	write.table(datas, paste0(path_to_outputdir, "/Summary/IMGT/Mutation_stats_", productivity, ".txt"), sep="\t")
+	write.table(datas, paste0(path_to_outputdir, "Summary/IMGT/Mutation_stats_", productivity, ".txt"), sep="\t")
 	
 	## Get Relevant plotting columns 
 	mutations <- grep('mutations', cols_calc, value=TRUE)
@@ -243,15 +248,29 @@ imgt_mutation_statistics <- function(path_to_outputdir = path_to_outputdir, clus
 	######
 	
 	print("Plotting Mutation Data..")
+	if(outputdir %like% "SEPSIS"){
 	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_', productivity, '.pdf'), width=widthx, height=heightx, useDingbats = TRUE)
-	for(i in 1:length(mutations)){
-		column_id <- mutations[i]
-		column_id_neat <- gsub("[[:punct:]]", " ", column_id)	
-		FullData[, c(column_id)] <- as.numeric(FullData[, c(column_id)])
-		p1 <- ggplot(FullData, aes(x=Sample, y=as.numeric(FullData[,column_id]), colour=days)) + rasterise(geom_boxplot(), dpi = 300) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.7, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, fill="blue", position = position_dodge(width = .75)) + ylab(column_id_neat) +xlab("Sample") + ggtitle(productivity) +labs(colour="Timepoint")
-		p2 <- ggplot(FullData, aes(x=as.numeric(FullData[,column_id]), fill=days)) + geom_histogram(color="black", na.rm = TRUE, binwidth=2) +xlab(column_id_neat) + theme_classic()+ ggtitle(productivity) +facet_wrap(~days)
-		plot(plot_grid(p1, p2, ncol=1))
+		for(i in 1:length(mutations)){
+				column_id <- mutations[i]
+				column_id_neat <- gsub("[[:punct:]]", " ", column_id)	
+				FullData[, c(column_id)] <- as.numeric(FullData[, c(column_id)])
+				p1 <- ggplot(FullData, aes(x=Sample, y=as.numeric(FullData[,column_id]), colour=days)) + rasterise(geom_boxplot(), dpi = 300) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.7, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, fill="blue", position = position_dodge(width = .75)) + ylab(column_id_neat) +xlab("Sample") + ggtitle(productivity) +labs(colour="Timepoint")
+				p2 <- ggplot(FullData, aes(x=as.numeric(FullData[,column_id]), fill=days)) + geom_histogram(color="black", na.rm = TRUE, binwidth=2) +xlab(column_id_neat) + theme_classic()+ ggtitle(productivity) +facet_wrap(~days)
+				plot(plot_grid(p1, p2, ncol=1))
+			}
+	} else {
+	pdf(paste0(path_to_outputdir,'Plots/IMGT/IMGT_Mutation_', productivity, '.pdf'), width=15, height=15, useDingbats = TRUE)
+		for(i in 1:length(mutations)){
+			column_id <- mutations[i]
+			column_id_neat <- gsub("[[:punct:]]", " ", column_id)	
+			FullData[, c(column_id)] <- as.numeric(FullData[, c(column_id)])
+			p1 <- ggplot(FullData, aes(x=Sample, y=as.numeric(FullData[,column_id]), colour=days)) + rasterise(geom_boxplot(), dpi = 300) +theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.7, hjust=1)) + stat_summary(fun=mean, geom="point", shape=23, size=2, fill="blue", position = position_dodge(width = .75)) + ylab(column_id_neat) +xlab("Sample") + ggtitle(productivity) +labs(colour="Group")+guides(colour = guide_legend(ncol = 2))
+			p2 <- ggplot(FullData, aes(x=as.numeric(FullData[,column_id]), fill=days)) + geom_histogram(color="black", na.rm = TRUE, binwidth=2) +xlab(column_id_neat) + theme_classic()+ ggtitle(productivity) +facet_wrap(~days, scales="free")+labs(fill="Group")+guides(fill = guide_legend(ncol = 2))
+			plot(plot_grid(p1, p2, ncol=1))
+		}
 	}
+
+	
 	dev.off()
 	print("..DONE")
 	
@@ -315,7 +334,6 @@ imgt_mutation_statistics_sepsis <- function(path_to_outputdir = path_to_outputdi
 	suppressMessages(library(data.table))
 	suppressMessages(library(ggplot2))
 	suppressMessages(library(ggforce))
-	suppressMessages(library(Gviz))
 	suppressMessages(library(foreach))
 	suppressMessages(library(doParallel))
 	suppressMessages(library(gridExtra))

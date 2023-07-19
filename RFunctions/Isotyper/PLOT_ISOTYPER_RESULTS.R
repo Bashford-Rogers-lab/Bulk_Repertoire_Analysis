@@ -2,7 +2,7 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(data.table))
 suppressMessages(library(ggplot2))
 suppressMessages(library(ggforce))
-suppressMessages(library(Gviz))
+#suppressMessages(library(Gviz))
 suppressMessages(library(foreach))
 suppressMessages(library(doParallel))
 suppressMessages(library(gridExtra))
@@ -12,7 +12,7 @@ suppressMessages(library(ggrastr))
 suppressMessages(library(purrr))
 suppressMessages(library(ggpubr))
 suppressMessages(library(doParallel))
-suppressMessages(library(ShortRead))
+#suppressMessages(library(ShortRead))
 
 plot_isotyper_sepsis <- function(file_use=file_use, outputdir, info, iso_type, depth_file){
 	

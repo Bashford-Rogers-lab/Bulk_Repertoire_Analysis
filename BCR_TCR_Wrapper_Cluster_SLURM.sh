@@ -404,7 +404,7 @@ echo "["`date`"] Running TCR/BCR"
 echo "********************************************************"
 echo "Command : ${CMDA}"
 echo "********************************************************"
-eval "${CMDA}" || true
+eval "${CMDA}" 
 status=$?
 if [ $status -eq 0 ]; then
 	echo "********************************************************"
@@ -428,7 +428,7 @@ echo "********************************************************"
 ## PRODUCTIVE
 echo "Command : ${CMDB}"
 echo "********************************************************"
-eval "${CMDB}" || true
+eval "${CMDB}" 
 status=$?
 if [ $status -eq 0 ]; then
 	echo "********************************************************"
@@ -440,7 +440,7 @@ else
 	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     echo "ERROR: COMMAND FAILED WITH ERROR STATUS: $status"
 	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1__PRODUCTIVE_FAILED_SAMPLESX.txt"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_PRODUCTIVE_FAILED_SAMPLESX.txt"
 	eval "${NWCMD}"
 fi
 eval "${CMD2}" 
@@ -453,19 +453,19 @@ echo "********************************************************"
 echo "********************************************************"
 echo "Command : ${CMDC}"
 echo "********************************************************"
-eval "${CMDC}" || true
+eval "${CMDC}" 
 status=$?
 if [ $status -eq 0 ]; then
 	echo "********************************************************"
     echo "COMMAND EXECUTED SUCCESSFULLY"
 	echo "********************************************************"
-	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_UNPRODUCTIVE.txt"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_NON_PRODUCTIVE.txt"
 	eval "${NWCMD}"
 else
 	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     echo "ERROR: COMMAND FAILED WITH ERROR STATUS: $status"
 	echo "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1__UNPRODUCTIVE_FAILED_SAMPLESX.txt"
+	NWCMD="echo ${ID} >> COMMANDLOGS/job_${SAMPLES_FILE_POST}_ISO1_NON_PRODUCTIVE_FAILED_SAMPLESX.txt"
 	eval "${NWCMD}"
 fi
 eval "${CMD2}" 

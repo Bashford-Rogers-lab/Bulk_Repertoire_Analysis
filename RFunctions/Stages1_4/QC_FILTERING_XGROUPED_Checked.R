@@ -60,7 +60,7 @@ visualise_filtering_bcr_layouts_neat <- function(path_to_outputdir = path_to_out
 	Filtering_Results$Plate <- as.character(Filtering_Results$Plate)
 	Filtering_Results$Lane <- as.character(Filtering_Results$Lane)
 
-	Filtering_Results$Library <- as.numeric(Filtering_Results$Library )
+	Filtering_Results$Library <- as.numeric(Filtering_Results$Library)
 	Filtering_Results$Library <- factor(Filtering_Results$Library, levels=c(1:max(Filtering_Results$Library)))   
 	Filtering_Results$Lane <- as.numeric(Filtering_Results$Lane )
 	Filtering_Results$Lane <- factor(Filtering_Results$Lane, levels=c(1:max(Filtering_Results$Lane)))
@@ -79,11 +79,13 @@ visualise_filtering_bcr_layouts_neat <- function(path_to_outputdir = path_to_out
 	if(length(unique(Filtering_Results$Lane)) >1){
 		colnames(stats) <- c("Lane", "Mean no. VDJs", "SD no. VDJs", "NSD no. VDJs", "Mean % Passed Filtering","SD % Passed Filtering", "NSD % Passed Filtering")
 	} else {
-		colnames(stats) <- c("Mean no. VDJs", "SD no. VDJs", "NSD no. VDJs", "Mean % Passed Filtering","SD % Passed Filtering", "NSD % Passed Filtering")
+		colnames(stats) <- c("Lane", "Mean no. VDJs", "SD no. VDJs", "NSD no. VDJs", "Mean % Passed Filtering","SD % Passed Filtering", "NSD % Passed Filtering")
 	}
 	pdf(paste0(plot_dir,'/GROUPED_FILTERING_QC_STATS.pdf'), width=15, height=6)
 	grid.table(stats, rows = NULL)
 	dev.off()	
+
+	
 	
 	## SAVE STATISTICS
 	write.table(stats, paste0(stat_dir, "/GROUPED_FILTERING_QC_STATS.txt"), sep=",", row.names=FALSE)

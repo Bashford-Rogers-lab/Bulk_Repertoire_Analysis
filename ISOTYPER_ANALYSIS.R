@@ -22,7 +22,7 @@ suppressMessages(library(ggpubr))
 suppressMessages(library(ggrastr))
 suppressMessages(library(gridExtra))
 suppressMessages(library(gtools))
-suppressMessages(library(Gviz))
+#suppressMessages(library(Gviz))
 suppressMessages(library(Hmisc))
 suppressMessages(library(matrixStats))
 suppressMessages(library(moments))
@@ -32,7 +32,7 @@ suppressMessages(library(plot3D))
 suppressMessages(library(plyr))
 suppressMessages(library(purrr))
 suppressMessages(library(reshape2))
-suppressMessages(library(ShortRead))
+#suppressMessages(library(ShortRead))
 suppressMessages(library(stringr))
 suppressMessages(library(tidyr))
 suppressMessages(library(tidyverse))
@@ -75,14 +75,14 @@ normalise <- opt$n
 #gene <- "TCR"
 #exclude_samples <- 'LEO_Samples_Exclude.txt'
 
-#samplesfilepost <- "R4RA_Anna_BCR_post.txt"
-#outputdir <- "/well/immune-rep/shared/MISEQ/R4RA_FINAL/BCR_indiv/"
+#samplesfilepost <- "R4RA_Anna_BCR_post_V0_1.txt"
+#outputdir <- "/well/immune-rep/shared/MISEQ/R4RA_FINAL/BCR/"
 #cluster_nodes <-5
 #path_to_layout <- "R4RA_Anna_Batch_file_BCR.txt"
 #path_to_outputdir <- outputdir
 #productivity <- "PRODUCTIVE"
 #iso_type <- "PRODUCTIVE"
-#run_mutation <- "N"
+#run_mutation <- "Y"
 #gene <- "IGH"
 #normalise <- "FALSE"
 #exclude_samples <- NA
@@ -97,6 +97,20 @@ for (f in source_files) {
     source(f)
 }
 
+
+############### Make sure directories are there 
+plot_dir <- paste0(outputdir, "/Plots")
+stat_dir <- paste0(outputdir, "/Stats")
+
+## CREATE PLOT DIR
+if (!dir.exists(plot_dir)){
+  dir.create(plot_dir)
+}
+
+if (!dir.exists(stat_dir)){
+  dir.create(stat_dir)
+}
+############### 
 
 if(normalise == "TRUE"){
 	print("WARNING Normalised IGHV gene usage will be calculated!!")
