@@ -1482,6 +1482,100 @@ def Get_network_parameters_per_classificiation_subsample(samplex,per_cluster_dev
   fh.close()
   return()
 
+def Get_features_most_expanded_clones(cluster_file, annot_file_IMGT,sample,most_expanded_clone_file):
+  CDR3s,mutations = Get_annotations(annot_file_IMGT)
+  fh = open(cluster_file,"r")
+  clone_size = {}
+  clone_mutations = {}
+  total=0
+  for l in fh:
+    if(l[0]!="#"):
+      l=l.strip().split()
+      clust, id =l[1],l[2]
+      freq = map(int, id.split("|")[0].split("__")[1].split("_"))
+      id1 = id.split("__")[0]
+      if(clust in clone_size): 
+        freq1 = map(add, freq,clone_size[clust])
+        clone_size[clust] = freq1
+      else:
+        clone_size[clust]=freq
+      pas = 0
+      if(clust in clone_mutations):
+        if(clone_mutations[clust] is not None):
+          pas = 1
+        else:
+          del clone_mutations[clust]
+      if(pas==0):
+        if(id1 in mutations):
+          mut = mutations[id1][0]
+          if(mut is not None):
+            clone_mutations[clust] = [mut]
+      else:
+        if(id1 in mutations):
+          mut = mutations[id1][0]
+          if(mut is not None):
+            a = clone_mutations[clust]
+            a.append(mut)
+            clone_mutations[clust] = a
+      total = total+sum(freq)
+  fh.close()
+  classes = id.split("|")[1].split("_")
+  classes = ["TRBC" if i in ["TRBC1","TRBC2"] else i for i in classes]
+  classes = ["TRGC" if i in ["TRGC1","TRGC2"] else i for i in classes]
+  freqs1 = [0]*len(classes)
+  freqs2 = [0]*len(classes)
+  clone_sizes = {}
+  clone_ids = []
+  clone_size_total = []
+  threshold1 = total*0.01/100.0
+  for c in clone_size:
+    if(sum(clone_size[c])>1):
+      clone_ids.append(c)
+      clone_size_total.append(sum(clone_size[c]))
+  print clone_size_total
+  array = np.array(clone_size_total)
+  temp = array.argsort()
+  ranks = np.empty_like(temp)
+  ranks[temp] = np.arange(len(array))
+  ranks = len(array)-ranks
+  print ranks
+  out="sample\tcluster_id\trank\ttotal\tpercentage\tmean_mutations\t"+"\t".join(map(str,classes))+"\n"
+  print out
+  for i in range(1, 10):
+    itemindex = np.where(ranks == i)
+    mean_mutations =clone_mutations[clone_ids[itemindex[0]]]
+    mean_mutations = sum(mean_mutations)*1.0/len(mean_mutations)
+    out=out+"\t".join(map(str,[sample,clone_ids[itemindex[0]], i, clone_size_total[itemindex[0]], clone_size_total[itemindex[0]]*100.0/total, mean_mutations, "\t".join(map(str,clone_size[clone_ids[itemindex[0]]])) ]))+"\n"
+    print i, itemindex, clone_size_total[itemindex[0]], clone_ids[itemindex[0]], clone_size[clone_ids[itemindex[0]]]
+  fh=open(most_expanded_clone_file,"w")
+  fh.write(out)
+  fh.close()
+  return()
+
+def ndfgdg():
+  for c in clone_size:
+    c1 = 'all'
+    print clone_size[c]
+    if(c1 in clone_sizes):clone_sizes[c1] = clone_sizes[c1]+[sum(clone_size[c])]
+    else:clone_sizes[c1]=[sum(clone_size[c])]
+    freq = clone_size[c]
+    nz = [i for i in range(len(freq)) if freq[i]!=0]
+    for i in range(len(nz)):
+      c1 = classes[nz[i]]
+      if(c1 in ["TRBC1","TRBC2"]):c1 ="TRBC"
+      if(c1 in ["TRGC1","TRGC2"]):c1 ="TRGC"
+      if(c1 in clone_sizes):clone_sizes[c1] = clone_sizes[c1]+[freq[nz[i]]]
+      else:clone_sizes[c1]=[freq[nz[i]]]
+    clone_ids.append(c)
+    clone_size_total.append(sum(clone_sizes[c1]))
+    #if(sum(clone_size[c])*100.0/total>threshold1):
+    #  print clone_size[c], c
+    #  freqs1 = map(add, freqs1, clone_size[c])
+  #classes.append("all")
+  ## sort clone sizes
+  np.argsort(clone_size_total)
+  return()
+
 def Get_expanded_cluster_summary(cluster_file,sample, cluster_isotype_expansion_SUBSAMPLE_file):
   fh = open(cluster_file,"r")
   clone_size = {}
@@ -3901,6 +3995,7 @@ per_cluster_developmental_classification_network_parameters_subsampled_CLONE = o
 per_cluster_developmental_classification_network_parameters_subsampled = output_dir+"ISOTYPER/Cluster_percluster_network_parameters_SUBSAMPLED_"+id+".txt"
 cluster_properties_per_isotype_SUBSAMPLED = output_dir+"ISOTYPER/Cluster_properties_per_isotype_SUBSAMPLED_"+id+".txt"
 per_cluster_developmental_classification_network_parameters_subsampled_CLONE = output_dir+"ISOTYPER/Cluster_per_cluster_network_parameters_SUBSAMPLED_"+id+".txt"
+most_expanded_clone_file=output_dir+"ISOTYPER/Cluster_expanded_features_"+id+".txt"
 isotype_count_file =  output_dir+"ISOTYPER/Isotype_count_file_"+id+".txt"
 class_overlap_file= output_dir+"ISOTYPER/Isotype_overlapping_frequencies_"+id+".txt"
 per_sequence_classification_network_parameters = output_dir+"ISOTYPER/Cluster_per_sequence_network_parameters_"+id+".txt"
@@ -3973,8 +4068,8 @@ STAGE = 5 ### get CDR3 information
 STAGE = 6 ### get secondary rearrangement information
 STAGE = 7 ### get phylogenetic trees (NOT FULLY DEVELOPED)
 
-STAGE = [1,2,3,4,5,6]
-#STAGE = [1]
+STAGE = [1,2,3,4,5,6,8]
+#STAGE = [8]
 
 IMGT = True
 if(IMGT== True):seq_trimmed_file = IMGT_trimmed_sequence_file
@@ -4034,5 +4129,7 @@ if(7 in STAGE): ### get phylogenetic trees
   Annotating_clusters_for_analysis(cluster_file, cluster_annotation_file, annot_file,seq_file)
   Make_trees_from_clusters(cluster_annotation_file,cluster_file,seq_file,overall_cluster_large_file,id, output_dir)
 
+if(8 in STAGE):
+  Get_features_most_expanded_clones(cluster_file, annot_file, sample,most_expanded_clone_file)
 
 

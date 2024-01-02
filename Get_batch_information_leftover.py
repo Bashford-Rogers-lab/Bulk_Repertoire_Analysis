@@ -4,6 +4,7 @@ import sys
 import os
 import commands
 import numpy as np
+from collections import defaultdict
 
 def fasta_iterator(fh):
   while True:
@@ -33,7 +34,26 @@ def Get_sample_files(batch_file):
   fh.close()
   return(id, dir)
 
+class Tree(defaultdict):
+  def __init__(self, value=None):
+    super(Tree, self).__init__(Tree)
+    self.value = value
+
+def Get_run_ids():
+  file = "/gpfs3/well/immune-rep/shared/MISEQ/FMS/ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/IMGT_BCR1/1_Summary.txt"
+  done = Tree()
+  fh=open(file, "r")
+  for l in fh:
+    l=l.strip().split()
+    if(l[0]!="Sequence"):
+      seq = l[1].split("__")[0]
+      done[seq].value = 1
+  fh.close()
+  print len(done), "done"
+  return(done)
+
 def Batch_sequences_for_IMGT(id,dir):
+  done = Get_run_ids()
   file_out_pre = dir[0]+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+batch_file.replace(".txt","").replace("Samples_","")+"_"
   out, ind = '',0
   batch_size,batch = 1000000-10,1
@@ -41,24 +61,25 @@ def Batch_sequences_for_IMGT(id,dir):
   fh=open(file_out_pre+str(batch)+".fasta","w")
   fh.close()
   for s in range(len(id)):
+    print s
     sample,dir_use = id[s],dir[s]
     fasta_file = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+sample+".fasta"
     if(os.path.exists(fasta_file)):
       fh= open(fasta_file,"r")
       for header,sequence in fasta_iterator(fh):
-        n,ind=n+1,ind+1
-        out=out+">"+header+"\n"+sequence+"\n"
-        if(ind>1000 or n>=batch_size):
-          Write_out(out, file_out_pre+str(batch)+".fasta")
-          out, ind = '',0
-          if(n>=batch_size):
-            n,batch = 0,batch+1
-            fh=open(file_out_pre+str(batch)+".fasta","w")
-            fh.close()
+        if(header.split("__")[0] not in done):
+          n,ind=n+1,ind+1
+          out=out+">"+header+"\n"+sequence+"\n"
+          if(ind>1000 or n>=batch_size):
+            Write_out(out, file_out_pre+str(batch)+".fasta")
+            out, ind = '',0
+            if(n>=batch_size):
+              n,batch = 0,batch+1
+              fh=open(file_out_pre+str(batch)+".fasta","w")
+              fh.close()
       fh.close()
   Write_out(out, file_out_pre+str(batch)+".fasta")
   out, ind = '',0
-  print "scp -p mfj169@rescomp1.well.ox.ac.uk:"+file_out_pre+"* ./"
   return()
 
 def Write_out(out, file):
@@ -96,7 +117,6 @@ def Get_isotype_depth(id,dir):
   out = "#isotype\ttype\tmin\t5th percentile\t10th percentile\t20th percentile\n"
   for iso in isotypes_uniq:
     print iso
-    print isotypes_uniq[iso]
     quantiles = [np.percentile(isotypes_uniq[iso],5), np.percentile(isotypes_uniq[iso],10),np.percentile(isotypes_uniq[iso],20)]
     out = out+"\t".join(map(str, [iso,"UNIQ",min(isotypes_uniq[iso])]+quantiles))+"\n"
   for iso in isotypes_total:
@@ -116,7 +136,6 @@ print batch_file
 
 id, dir = Get_sample_files(batch_file)
 
-Get_isotype_depth(id,dir)
+#Get_isotype_depth(id,dir)
 Batch_sequences_for_IMGT(id,dir)
-
 

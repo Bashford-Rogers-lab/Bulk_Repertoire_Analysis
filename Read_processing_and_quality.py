@@ -92,48 +92,70 @@ def QC_samples(dir,gene,id,source,length,species,barcode_group,quasr_location,re
   #os.system("gunzip "+reads2+".gz")
   #Edited by LEO
   if os.path.isfile(source+"R1_001.fastq"):
-	reads1 = source+"R1_001.fastq"
-	reads2 = source+"R2_001.fastq"
+    print "\t\t\t\t\t********************** 01"
+    reads1 = source+"R1_001.fastq"
+    reads2 = source+"R2_001.fastq"
   elif os.path.isfile(source+"R1_001.fastq.gz"):
-	reads1 = source+"R1_001.fastq"
-	reads2 = source+"R2_001.fastq"
-	os.system("gunzip "+reads1+".gz")
-	os.system("gunzip "+reads2+".gz")
+    print "\t\t\t\t\t********************** 02"
+    reads1 = source+"R1_001.fastq"
+    reads2 = source+"R2_001.fastq"
+    os.system("gunzip "+reads1+".gz")
+    os.system("gunzip "+reads2+".gz")
   elif os.path.isfile(source+"1.fastq"):
-	reads1 = source+"1.fastq"
-	reads2 = source+"2.fastq"
+    print "\t\t\t\t\t********************** 03"
+    reads1 = source+"1.fastq"
+    reads2 = source+"2.fastq"
   elif os.path.isfile(source+"1.fastq.gz"):
-	reads1 = source+"1.fastq"
-	reads2 = source+"2.fastq"
-	os.system("gunzip "+reads1+".gz")
-	os.system("gunzip "+reads2+".gz")
+    print "\t\t\t\t\t********************** 04"
+    reads1 = source+"1.fastq"
+    reads2 = source+"2.fastq"
+    os.system("gunzip "+reads1+".gz")
+    os.system("gunzip "+reads2+".gz")
   elif os.path.isfile(source.replace("XXXXX","1")):
-	reads1 = source.replace("XXXXX","1")
-	reads2 = source.replace("XXXXX","2")
+    print "\t\t\t\t\t********************** 05"
+    reads1 = source.replace("XXXXX","1")
+    reads2 = source.replace("XXXXX","2")
+    if(reads1==reads2):
+      reads2=reads2.replace("R1","R2")
+    if(reads1==reads2):
+      reads2=reads2.replace("r_1.fq","r_2.fq")
   elif os.path.isfile(source.replace("XXXXX","1")+".gz"):
-	reads1 = source.replace("XXXXX","1")
-	reads2 = source.replace("XXXXX","2")
-	os.system("gunzip "+source.replace("XXXXX","1")+".gz")
-	os.system("gunzip "+source.replace("XXXXX","2")+".gz")
+    print "\t\t\t\t\t********************** 06"
+    reads1 = source.replace("XXXXX","1")
+    reads2 = source.replace("XXXXX","2")
+    os.system("gunzip "+source.replace("XXXXX","1")+".gz")
+    os.system("gunzip "+source.replace("XXXXX","2")+".gz")
   elif os.path.isfile(source):
-	reads1 = source
-	reads2 = source.replace("1.fq","2.fq")
+    print "\t\t\t\t\t********************** 07"
+    reads1 = source
+    reads2 = source.replace("1.fq","2.fq")
   elif os.path.isfile(source+".gz"):
-	reads1 = source
-	reads2 = source.replace("1.fq","2.fq")
-	os.system("gunzip "+reads1+".gz")
-	os.system("gunzip "+reads2+".gz")
+    print "\t\t\t\t\t********************** 08"
+    reads1 = source
+    reads2 = source.replace("1.fq","2.fq")
+    os.system("gunzip "+reads1+".gz")
+    os.system("gunzip "+reads2+".gz")
+  elif (source.count("_R1_001.fastq")!=0):
+    print "\t\t\t\t\t********************** 09"
+    reads1 = source
+    reads2=reads1.replace("R1","R2")
+  else:print "\t\t\t\t\t********************** 10"
     
   if(1==1):
     print reads1
     print reads2
     if(1==1):
-      command0 = readjoin_location+" "+reads1 +" "+reads2 +" -O -o Joined_"+id+" -d "+dir+"FASTQ_FILES/  --min-overlap=15  --max-overlap=280"
+      command0 = readjoin_location+" "+reads1 +" "+reads2 +" -O -o Joined_"+id+" -d "+dir+"FASTQ_FILES/  --min-overlap=7  --max-overlap=350  "
+      #command0 = "/well/immune-rep/shared/CODE/INSTALLED_PROGRAMMES/PEAR-master/src/pear -f "+reads1 +" -r "+reads2 +"  -o "+dir+"FASTQ_FILES/Joined_"+id+" -b 30 --min-overlap 7"
+      print command0
       os.system(command0)
       threshold,length = "30","100"
+      out_file = dir+"FASTQ_FILES/Joined_"+id+".assembled.fastq"
       command1 = "java -jar "+quasr_location+"qualityControl.jar -f "+dir+"FASTQ_FILES/Joined_"+id+".extendedFrags.fastq -o "+dir+"FASTQ_FILES/Sequences_"+id+"_1 -m "+threshold+" -l "+length
       command2 = "cat "+dir+"FASTQ_FILES/Sequences_"+id+"_1.qc.fq | perl -e '$i=0;while(<>){if(/^\@/&&$i==0){s/^\@/\>/;print;}elsif($i==1){s/\./N/g;print;$i=-3}$i++;}' > "+dir+"FASTQ_FILES/Sequences_"+id+"_1.fasta"
       command2 = "/usr/bin/sed -n '1~4s/^@/>/p;2~4p' "+dir+"FASTQ_FILES/Sequences_"+id+"_1.qc.fq > "+dir+"FASTQ_FILES/Sequences_"+id+"_1.fasta"
+      ### command1 to run with PEARS not FLASH
+      #command1 = "java -jar "+quasr_location+"qualityControl.jar -f "+out_file+" -o "+dir+"FASTQ_FILES/Sequences_"+id+"_1 -m "+threshold+" -l "+length
       print command1
       os.system(command1)
       print command2

@@ -1,7 +1,0 @@
-def Unique(lst):
-  uniq = Uniq(lst)
-  count=[]
-  for i in range(0,len(uniq)):
-    count.append(lst.count(uniq[i]))
-  return(uniq,count)
-

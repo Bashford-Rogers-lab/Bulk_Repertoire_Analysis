@@ -34,9 +34,33 @@ def Get_info(file):
       else:other.append('')
       if(len(l)>=15):ORF_filter.append(l[14])
       else:ORF_filter.append("True")
-
   fh.close()
   return(id,  sample,  info,  gene,  directory, pair,pair_final,dir, platform,spec,primer,other,reverse_primer_group,ORF_filter)
+
+def Set_running(comm,wkg_dir, id):
+  file = "/gpfs3/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/sbatch-RBR/template_run_command.sh"
+  fh=open(file,"r")
+  out = ''
+  for l in fh:
+    l=l.strip()
+    if(l!="XXXCOMMANDXXX"):
+      out=out+l+"\n"
+    else:
+      out=out+comm+"\n"
+  fh.close()
+  file = "/gpfs3/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/sbatch-RBR/run_command_"+id+".sh"
+  fh=open(file, "w")
+  fh.write(out)
+  fh.close()
+  os.system("sbatch -p short "+file+" -o /gpfs3/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/sbatch-RBR/sbatch_out_"+id+".txt" )
+  print file
+  return()
+
+
+
+
+
+
 
 args=sys.argv
 queue = "short.qc"
@@ -126,9 +150,13 @@ else:
     commands.append(command2)
   ##### run commands
   for i in range(0,len(commands)):
-    comm, bsub = commands[i], bsubs[i]
-    if(bsub!=''):comm = "echo \'"+comm+"\' "+bsub
-    if(print_command=="Y"):print comm, "\n"
-    if(run_command=="Y"): os.system(comm)
+    comm, bsub, id = commands[i], bsubs[i],ids[i]
+    if(bsub!=''):
+      print "set up"
+      Set_running(comm,wkg_dir, id)
+      #comm = "echo \'"+comm+"\' "+bsub
+      print i, id
+    #if(print_command=="Y"):print comm, "\n"
+    #if(run_command=="Y"): os.system(comm)
 
 

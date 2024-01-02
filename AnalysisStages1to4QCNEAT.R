@@ -190,7 +190,7 @@ pdf(paste0('/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCR_thesis_plots
 plot(plot_grid(rar1, rar2, rar3, rar4, ncol=1, align = "v", rel_heights=c(1,1,1,1), labels="AUTO", axis = "btlr"))
 dev.off()
 
-pdf(paste0('/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCR_thesis_plots/Jaccard.pdf'), width=10, height=13)
+pdf(paste0('/gpfs3/well/immune-rep/shared/MISEQ/SEPSIS_COMPLETE/TCR_thesis_plots/Jaccards.pdf'), width=10, height=13)
 plot(plot_grid(Ja, Jb, Jc, Jd, ncol=1, align = "v", rel_heights=c(1,1,1,1), labels="AUTO", axis = "btlr"))
 dev.off()
 

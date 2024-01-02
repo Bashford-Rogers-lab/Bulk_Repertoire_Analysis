@@ -45,12 +45,13 @@ def Split_functional_non_function(id,dir):
     sample,dir_use = id[s],dir[s]
     dir_IMGT = dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT/"
     fasta_file = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+sample+".fasta"
-    fh= open(fasta_file,"r")
-    ids = {}
-    for header,sequence in fasta_iterator(fh):
-      ids[header.split("__")[0]] = ">"+header+"\n"+sequence
-    print "\r","read samples:",sample, "n sequences:",len(ids)
-    fh.close()
+    if(os.path.exists(fasta_file)):
+      fh= open(fasta_file,"r")
+      ids = {}
+      for header,sequence in fasta_iterator(fh):
+        ids[header.split("__")[0]] = ">"+header+"\n"+sequence
+      print "\r","read samples:",sample, "n sequences:",len(ids)
+      fh.close()
     files = ['10_V-REGION-mutation-hotspots.txt','1_Summary.txt','2_IMGT-gapped-nt-sequences.txt','3_Nt-sequences.txt','4_IMGT-gapped-AA-sequences.txt',
         '5_AA-sequences.txt','6_Junction.txt','7_V-REGION-mutation-and-AA-change-table.txt','8_V-REGION-nt-mutation-statistics.txt','9_V-REGION-AA-change-statistics.txt']
     type_seq = Tree()
@@ -139,23 +140,23 @@ def Extract_sequences_for_IMGT(id,dir,batch_name):
       os.system(command)
   ids = {}
   samples_count = Tree()
-  print "\n"
-#  id = ["BCR_1_HV_58_T0"] ########## remove
 #  id = ["BCR_2_UK02XX0029_T5"] ##### remove
   for s in range(len(id)):
     sample,dir_use = id[s],dir[s]
     fasta_file = dir_use+"ORIENTATED_SEQUENCES/NETWORKS/Fully_reduced_"+sample+".fasta"
-    fh= open(fasta_file,"r")
-    for header,sequence in fasta_iterator(fh):
-      ids[header.split("__")[0]] = sample
-      samples_count[sample][header.split("__")[0]].value = 1
-    print "\r","read samples:",s, "n sequences:",len(ids),
-  fh.close()
+    if(os.path.exists(fasta_file)):
+      fh= open(fasta_file,"r")
+      for header,sequence in fasta_iterator(fh):
+        ids[header.split("__")[0]] = sample
+        samples_count[sample][header.split("__")[0]].value = 1
+      print "\r","read samples:",s, "n sequences:",len(ids),
+    fh.close()
   for s in samples_count:
     print s, "\t",len(samples_count[s]), "unique sequences"
   dir_IMGT = dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_SPLIT/"
   ## Added by LEO as caused an error
-  os.system("mkdir "+dir_IMGT)
+  if(os.path.exists(dir_IMGT)==False):
+    os.system("mkdir "+dir_IMGT)
   ##################################
   files = ['10_V-REGION-mutation-hotspots.txt',
   '1_Summary.txt',
@@ -167,6 +168,7 @@ def Extract_sequences_for_IMGT(id,dir,batch_name):
   '7_V-REGION-mutation-and-AA-change-table.txt',
   '8_V-REGION-nt-mutation-statistics.txt',
   '9_V-REGION-AA-change-statistics.txt']
+  # files = ['9_V-REGION-AA-change-statistics.txt'] #by Sakina
   for f in range(len(files)):
     for s in range(len(id)):
        out_file = dir_IMGT+"IMGT_"+id[s]+"_"+files[f]
@@ -175,6 +177,7 @@ def Extract_sequences_for_IMGT(id,dir,batch_name):
     info = {}
     for batch in batch_name:
       input_file = dir_use+"ORIENTATED_SEQUENCES/ANNOTATIONS/IMGT_RAW/"+batch+"/"+files[f]
+      print input_file
       fh=open(input_file,"r")
       for l in fh:
         if(l[0]!="S"):
@@ -187,8 +190,6 @@ def Extract_sequences_for_IMGT(id,dir,batch_name):
             if(len(info[sam])>10000):
               Write_out(info[sam], dir_IMGT+"IMGT_"+sam+"_"+files[f])
               info[sam] = ''
-          #else:
-          #  print l
       fh.close()
       for sam in info: 
         Write_out(info[sam], dir_IMGT+"IMGT_"+sam+"_"+files[f])
@@ -217,11 +218,13 @@ for i in range(len(batch_name)):
     batch_name1 = batch_name1+[batch_name[i].split('.txz')[0]]
 
 batch_name = list(set(batch_name1))
+#batch_name = ["IMGT_BCR1/","IMGT_BCR2/"]
+#batch_name = ["IMGT_BCR3/"]
 print batch_name
 ##### extract sequences from batched files for IMGT
 Extract_sequences_for_IMGT(id,dir,batch_name)
 
 #### split functional and non-functional sequences + IMGT files for IsoTyper
-Split_functional_non_function(id,dir)
+#Split_functional_non_function(id,dir)
 
 
