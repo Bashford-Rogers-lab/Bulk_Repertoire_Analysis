@@ -102,6 +102,12 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1, chain
 	JACCARD_MATRIX_2_cohort1$Comparison[JACCARD_MATRIX_2_cohort1$Sample1T=="S" & JACCARD_MATRIX_2_cohort1$Sample2T=="H"] <- "H vs S"
 	JACCARD_MATRIX_2_cohort1$Comparison[JACCARD_MATRIX_2_cohort1$Sample1T=="H" & JACCARD_MATRIX_2_cohort1$Sample2T=="S"] <- "H vs S"
 	
+	#JACCARD_MATRIX_2_cohort1$Comparison[JACCARD_MATRIX_2_cohort1$Sample1T=="H" & JACCARD_MATRIX_2_cohort1$Sample2T=="H"] <- "Health vs Health"
+	#JACCARD_MATRIX_2_cohort1$Comparison[JACCARD_MATRIX_2_cohort1$Sample1T=="S" & JACCARD_MATRIX_2_cohort1$Sample2T=="S"] <- "Sepsis vs Sepsis"
+	#JACCARD_MATRIX_2_cohort1$Comparison[JACCARD_MATRIX_2_cohort1$Sample1T=="S" & JACCARD_MATRIX_2_cohort1$Sample2T=="H"] <- "Health vs Sepsis"
+	#JACCARD_MATRIX_2_cohort1$Comparison[JACCARD_MATRIX_2_cohort1$Sample1T=="H" & JACCARD_MATRIX_2_cohort1$Sample2T=="S"] <- "Health vs Sepsis"
+	
+	
 	## Make a summary Column incoperating the different categories which will be used for plotting
 	JACCARD_MATRIX_2_cohort1$Summary <- paste0(JACCARD_MATRIX_2_cohort1$SharedInternalBarcode, ".", JACCARD_MATRIX_2_cohort1$SharedLane)
 	JACCARD_MATRIX_2_cohort1$ANYNAS <- as.factor(JACCARD_MATRIX_2_cohort1$ANYNAS)
@@ -127,19 +133,28 @@ create_jaccard_plots <- function(path_to_output, jaccard_matrix, layouts1, chain
 	counts <- JACCARD_MATRIX_2_cohort_X %>% dplyr::group_by(SharedSample, SharedIndividual, SharedPCRBarcode, SharedLane,Comparison ) %>% dplyr::summarise(n = n()) 
 	counts2 <- JACCARD_MATRIX_2_cohort_X %>% dplyr::group_by(SharedSample, SharedIndividual, SharedPCRBarcode, SharedLane) %>% dplyr::summarise(n = n()) 
 	
+	#1.05
 	give.n <- function(x){
-	  return(c(y = median(x)*1.05, label = length(x))) 
+	  return(c(y = median(x)*0.5, label = length(x))) 
+	  # experiment with the multiplier to find the perfect position
+	}
+	
+	give.n2 <- function(x){
+	  return(c(y = median(x)*0.5, label = round(mean(x), digits=2))) 
 	  # experiment with the multiplier to find the perfect position
 	}
 
+
 	## There will be some NAs if there wasnt enough read depth to make the comparison!!!!!!!!!!
+	#1.5 for TCR 
 	pdf(paste0(path_to_output, "Plots/NeatJaccard.pdf"), width=10, height=5)
 	p1 <- ggplot(JACCARD_MATRIX_2_cohort_X, aes_string(x="SharedPCRBarcode", y=vars_to_plot2[1], fill="SharedIndividual")) +geom_boxplot(aes(fill=SharedIndividual, colour=SharedIndividual), alpha=0.5) +facet_grid(Comparison~SharedSample+SharedLane)+theme_classic()+xlab("Shared Internal PCR Barcode") +ylab("Log2(Subsampled Jaccard Index +C)")+
-	scale_color_manual(values=c("#F8766D", "#619CFF"))+scale_fill_manual(values=c("#F8766D", "#619CFF"))  + stat_summary(fun.data = give.n, geom = "text", fun.y = median, position = position_dodge(width = 0.75), vjust = -1, colour="black") +labs(colour="Same\nIndividual", fill="Same\nIndividual")+ggtitle(chain) +
-	scale_y_continuous(expand=c(1.5, 1.5))
+	scale_color_manual(values=c("#F8766D", "#619CFF"))+scale_fill_manual(values=c("#F8766D", "#619CFF"))  + stat_summary(fun.data = give.n, geom = "text", fun.y = median, position = position_dodge(width = 0.75), vjust = -1.75, colour="black", size=2.5) +labs(colour="Same\nIndividual", fill="Same\nIndividual")+ggtitle(chain)  +
+	scale_y_continuous(expand=c(2, 2)) +  stat_summary(fun.data = give.n2, geom = "text", fun.y = median, position = position_dodge(width = 0.75), vjust = -0.7, colour="red", size=2.5)
 	plot(p1)
 	dev.off()
 	
+	#+  stat_summary(fun.data = give.n2, geom = "text", fun.y = median, position = position_dodge(width = 0.75), vjust = -1.2, colour="black", size=5)
 	#p2 <- ggplot(counts, aes(x=SharedPCRBarcode, y=n, fill=SharedIndividual)) +geom_col(stat="identity", position=position_dodge()) +facet_grid(Comparison~SharedSample+SharedLane)+theme_classic()+labs(fill="Same\nIndividual")+xlab("Shared Internal PCR Barcode") +ylab("Number of Pairwise Comparisons")+geom_text(aes(label=n), vjust=-1, position = position_dodge(.9))
 	#plot(plot_grid(p1, p2, ncol=1,  align="hv", axis="tblr", labels="AUTO"))
 	
